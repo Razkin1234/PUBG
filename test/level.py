@@ -4,6 +4,7 @@ from tile import Tile
 from player import Player
 from debug import debug
 from YsortCameraGroup import *
+from support import *
 
 class Level:
     def __init__(self):
@@ -19,14 +20,21 @@ class Level:
 
     #here we will print every detail on the map (obstacles, players...)
     def create_map(self):
-        for row_index , row in enumerate(WORLD_MAP): #creating the visual map
-            for col_index , col in enumerate(row):
-                x = col_index * TILESIZE #checks the location
-                y = row_index * TILESIZE
-                if col == 'x':
-                    Tile((x,y),[self.visble_sprites, self.obstacle_sprites]) #prints a tile
-                if col == 'p':
-                    self.player = Player((x,y),[self.visble_sprites], self.obstacle_sprites) #creating the player
+        layouts = {
+            'boundary': import_csv_layout('graphics/map/map_FloorBlocks.csv')
+        }
+        for style,layout in layouts.items():
+            for row_index , row in enumerate(layout):
+                for col_index , col in enumerate(row):
+                    if col != '-1':
+                        x = col_index * TILESIZE #checks the location
+                        y = row_index * TILESIZE
+                        if style == 'boundary':
+                            Tile((x,y),self.obstacle_sprites,'invisible')
+        #         if col == 'x':
+        #             Tile((x,y),[self.visble_sprites, self.obstacle_sprites]) #prints a tile
+        #         if col == 'p':
+        self.player = Player((2000,1430),[self.visble_sprites], self.obstacle_sprites) #creating the player
 
 
     def run(self):  #update and draw the game
