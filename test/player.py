@@ -39,17 +39,14 @@ class Player(pygame.sprite.Sprite):
 
     def stop(self):  # chack if the character in the place the player prassed on
         if self.place_to_go is not None:
-            print(str(abs(self.place_to_go[0]-self.hitbox.center[0]))+"and " + str(abs(self.place_to_go[1]-self.hitbox.center[1])))
-            if abs(self.place_to_go[0]-self.hitbox.center[0]) < 32 and abs(self.place_to_go[1]-self.hitbox.center[1]) <32:
+            if abs(self.place_to_go[0]-self.hitbox.center[0]) < 64 and abs(self.place_to_go[1]-self.hitbox.center[1]) <64:
                 self.direction.x = 0
                 self.direction.y = 0
                 self.status = 'down'
 
     def inputm(self):  # checks the input from the player, mouse
 
-        if (
-                pygame.mouse.get_pressed()[
-                    0]):  # chack if the player prassed the mouse and insert the place on the screen in
+        if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
             self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
 
             # chack where the player prassed in relation to the middle of the screen
@@ -69,8 +66,8 @@ class Player(pygame.sprite.Sprite):
             y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
             self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
-        debug(self.place_to_go)
-        debug2(self.hitbox.center)
+        #debug(self.place_to_go)
+        #debug2(self.hitbox.center)
         # attack input
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] and not self.attacking:
@@ -110,7 +107,7 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_LCTRL] and not self.attacking:
             self.attacking = True
             self.attack_time = pygame.time.get_ticks()
-        debug(self.hitbox.center)
+        #debug(self.hitbox.center)
 
     def get_status(self):
 
@@ -138,7 +135,7 @@ class Player(pygame.sprite.Sprite):
         self.hitbox.y += self.direction.y * speed  # making the player move verticaly
         self.collision('vertical')
         self.rect.center = self.hitbox.center
-        # debug(self.hitbox.center)
+        debug(self.direction)
 
     def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
@@ -148,6 +145,10 @@ class Player(pygame.sprite.Sprite):
                         self.hitbox.right = sprite.hitbox.left
                     if self.direction.x < 0:  # when we are moving left
                         self.hitbox.left = sprite.hitbox.right
+                    self.direction.x = 0
+                    self.direction.y = 0
+                    self.status = 'down'
+
 
         if direction == 'vertical':
             for sprite in self.obstacle_sprits:
@@ -156,7 +157,9 @@ class Player(pygame.sprite.Sprite):
                         self.hitbox.bottom = sprite.hitbox.top
                     if self.direction.y < 0:  # when we are moving up
                         self.hitbox.top = sprite.hitbox.bottom
-
+                    self.direction.x = 0
+                    self.direction.y = 0
+                    self.status='down'
     def cooldowns(self):  # the cooldown of the attacking
         current_time = pygame.time.get_ticks()
         if self.attacking:
