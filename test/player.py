@@ -38,7 +38,7 @@ class Player(pygame.sprite.Sprite):
             self.animations[animation] = import_folder(full_path)
 
     def stop(self):  # chack if the character in the place the player prassed on
-        if self.place_to_go != None:
+        if self.place_to_go is not None:
             print(str(abs(self.place_to_go[0]-self.hitbox.center[0]))+"and " + str(abs(self.place_to_go[1]-self.hitbox.center[1])))
             if abs(self.place_to_go[0]-self.hitbox.center[0]) < 32 and abs(self.place_to_go[1]-self.hitbox.center[1]) <32:
                 self.direction.x = 0
