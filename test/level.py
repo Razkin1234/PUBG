@@ -38,8 +38,10 @@ class Level:
 
 
     def run(self):  #update and draw the game
-     self.visble_sprites.custom_draw(self.player)
-     self.visble_sprites.update()
+        self.visble_sprites.custom_draw(self.player)
+        self.visble_sprites.update()
+
+
 
 
 

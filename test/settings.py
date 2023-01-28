@@ -3,7 +3,7 @@ WIDTH = 1280
 HEIGTH = 720
 FPS = 60
 TILESIZE = 64
-
+MIDDLE_SCREEN = (WIDTH/2, HEIGTH/2)
 WORLD_MAP = [
 ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'],
 ['x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x'],
