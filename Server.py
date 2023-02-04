@@ -22,10 +22,10 @@
 #                                                                                                                                                |
 # ------------------------------------------------------------------                                                                             |
 # Headers API:                                                                                                                                   |
-#             - login_request: [user_name]                                                                             [only clients sends]      |
-#             - login_status: doesn't_exist [if user name doesn't exist in database] or [the ID given to him]          [only server sends]       |
+#             - login_request: [user_name],[password]                                                                  [only clients sends]      |
+#             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him] [only server sends]       |
 #             - register_request: [user name]                                                                          [only clients sends]      |
-#             - register_status: taken [if the user name already exists] or [the ID given to him]                      [only server sends]       |
+#             - register_status: taken [if the user name already exists] or success [if registered successfully]       [only server sends]       |
 #             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id    [clients and server send] |
 #             - moved_player_id: [the ID of the player who moved] [comes with player_place]                            [only server sends]       |
 #             - image_of_the_player: [the image of the player who moved] [comes with player_place]                     [clients and server send] |
@@ -36,9 +36,23 @@
 # ------------------------------------------------------------------                                                                             |
 # ===============================================================================================================================================|
 
+import sqlite3
 import threading
 from scapy.all import *
 from scapy.layers.inet import IP, UDP
+
+
+DEFAULT_WEAPONS = 'stick'
+DEFAULT_AMMO = 0
+DEFAULT_BOMBS = 0
+DEFAULT_MED_KITS = 0
+DEFAULT_BACKPACK = 0
+DEFAULT_ENERGY_DRINKS = 0
+DEFAULT_EXP = 0
+DEFAULT_ENERGY = 0
+
+db_connection = None    # The connection with the SQLite RDB
+cursor = None   # Cursor object to execute SQL commends on the server DB
 
 thread_list = []  # list of threads
 CLIENTS_IP_PORT_ID_USERNAME = []  # IPs, PORTs, IDs AND USER_NAMES of all clients as (ID, IP, PORT, USER_NAME)
@@ -46,12 +60,48 @@ PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for the server's packets (after this are the headers)
 
 
-def handle_login_request(user_name):
+def intialize_sqlite_rdb():
+    global db_connection, cursor
+
+    db_connection = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
+    cursor = db_connection.cursor()  # creating a cursor object to execute SQL commends
+    cursor.execute("CREATE TABLE IF NOT EXISTS clients_info"    # creating a table of clients data if not exists yet
+                   " (user_name TEXT PRIMARY KEY,"
+                   " password TEXT,"
+                   " weapons TEXT,"  # NOTE: to store separated by ',' like - 'sniper,AR,sword' [options are - stick,sniper,AR,sword]
+                   " ammo INTEGER,"
+                   " bombs INTEGER,"
+                   " med_kits INTEGER,"
+                   " backpack INTEGER,"
+                   " energy_drinks INTEGER,"
+                   " exp INTEGER,"
+                   " energy INTEGER")
+
+
+def handle_login_request(user_name, password, client_ip, client_port):
     """
-    checking if the user_name is real and its password
-    :param user_name:
-    :return:
+    Checking if the user_name exist and matches its password in the DB. if yes giving ID.
+    :param user_name: <Sting> the user name entered in the login request
+    :param password: <String> the password entered in the login request
+    :param client_ip: <String> the IP of the client
+    :param client_port <String> the port of the client
+    :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
+
+    global cursor
+
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
+    result = cursor.fetchone()
+    if result is None:
+        # user name does not exist in DB
+        return 'login_status: fail'
+    elif result[1] == password:
+        # user name exists in DB and matches the password
+        return 'login_status: ' + create_new_id((client_ip, client_port))
+    else:
+        # user name exists but password doesn't match
+        return 'login_status: fail'
+
 
 
 def create_new_id(client_ip_port):
@@ -63,7 +113,7 @@ def create_new_id(client_ip_port):
 
     global CLIENTS_IP_PORT_ID_USERNAME
 
-    # checking id the list is empty
+    # checking if the list is empty
     if not CLIENTS_IP_PORT_ID_USERNAME:
         # giving ID = 1
         CLIENTS_IP_PORT_ID_USERNAME.append(('1', client_ip_port[0], client_ip_port[1]))
@@ -90,20 +140,48 @@ def create_new_id(client_ip_port):
     return str(last_id)
 
 
-def handle_register_request(user_name, client_ip, client_port):
+def handle_register_request(user_name, password):
     """
-    checking if the user_name is asked already taken. if not i will give it to him but if yes i will send him that it is taken
-    :param client_port:
-    :param client_ip:
-    :param user_name:
-    :return:
+    Checking if user_name already taken. if not adds it to the DB with his password and gives default weapons, objects and skills.
+    :param user_name: <String> the user name entered in the register request
+    :param password: <String> the password entered in the register request
+    :return: <String> register_status header. (if taken - 'taken', if free - 'success').
     """
-    global CLIENTS_IP_PORT_ID_USERNAME
-    for client in CLIENTS_IP_PORT_ID_USERNAME:
-        if client[3] == user_name:
-            return 'register_status: taken'
-    create_new_id((client_ip, client_port))
-    return 'register_status: ' + create_new_id((client_ip, client_port))
+
+    global db_connection, cursor, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
+
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
+    result = cursor.fetchone()
+    if result is not None:
+        # user name is taken
+        return 'register_status: taken'
+
+    # user name is free. saving it to the DB
+    new_client = (f'{user_name}',
+                  f'{password}',
+                  f'{DEFAULT_WEAPONS}',
+                  DEFAULT_AMMO,
+                  DEFAULT_BOMBS,
+                  DEFAULT_MED_KITS,
+                  DEFAULT_BACKPACK,
+                  DEFAULT_ENERGY_DRINKS,
+                  DEFAULT_EXP,
+                  DEFAULT_ENERGY)
+    cursor.execute("INSERT INTO clients_info"
+                   " (user_name,"
+                   " password,"
+                   " weapons,"
+                   " ammo,"
+                   " bombs,"
+                   " med_kits,"
+                   " backpack,"
+                   " energy_drinks,"
+                   " exp,"
+                   " energy)"
+                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
+    db_connection.commit()
+
+    return 'register_status: success'
 
 
 def handle_shot_place(shot_place, hp):
@@ -186,8 +264,8 @@ def recognizing_headers(Rotshild):
         line_parts = line.split()  # in the opening line it will be - ['Rotshild',ID], and in the headers - [header_name, info]
         # Recognize and handle each header
         if line_parts[0] == 'login_request:':
-            print(line_parts[0])
-            answer_for_login_request = handle_login_request(line_parts[1])
+            user_name, password = line_parts[1].split(',')
+            answer_for_login_request = handle_login_request(user_name, password, Rotshild[IP].src, Rotshild[UDP].sport)
         elif line_parts[0] == 'register_request:':
             answer_for_register_request = handle_register_request(line_parts[1], Rotshild[IP].src, Rotshild[UDP].sport)
             send(IP(dst=Rotshild[IP].src) / UDP(dport=Rotshild[UDP].sport) / Raw(
@@ -199,10 +277,10 @@ def recognizing_headers(Rotshild):
                 l_parts = l.split()
                 if l_parts[0] == 'image_of_the_player:':
                     answer_for_player_place = handle_player_place(tuple(line_parts[1]),
-                                                                  lines[0].split()[
-                                                                      1], l_parts[
-                                                                      1])  # line_parts[0].split()[1]) == src client's ID and l_parts[1] == image_of_the_player
+                                                                  lines[0].split()[1],
+                                                                  l_parts[1])  # line_parts[0].split()[1]) == src client's ID and l_parts[1] == image_of_the_player
                     break
+
         elif line_parts[0] == 'shot_place:':
             # looking for the hit_hp header
             for l in lines:
@@ -215,10 +293,10 @@ def recognizing_headers(Rotshild):
             answer_for_dead = handle_dead(line_parts[1])
 
     for addr in CLIENTS_IP_PORT_ID_USERNAME:
-        send(IP(dst=addr[1]) / UDP(dport=addr[2]) / Raw(
-            (
-                    ROTSHILD_OPENING_OF_SERVER_PACKETS + answer_for_player_place + answer_for_shot_place + answer_for_dead).encode(
-                'utf-8')))
+        send(IP(dst=addr[1]) / UDP(dport=addr[2]) / Raw((ROTSHILD_OPENING_OF_SERVER_PACKETS +
+                                                         answer_for_player_place + '\r\n'
+                                                         + answer_for_shot_place + '\r\n'
+                                                         + answer_for_dead).encode('utf-8')))
 
 
 def Rotshild_filter(packet):
@@ -255,8 +333,18 @@ def create_threads(packet):
 
 
 def main():
-    while True:
-        packets = sniff(count=1, lfilter=Rotshild_filter, prn=create_threads)
+    global cursor
+    try:
+        intialize_sqlite_rdb()
+
+        while True:
+            packets = sniff(count=1, lfilter=Rotshild_filter, prn=create_threads)
+
+    except Exception as ex:
+        print(f'something went wrong... : {ex}\n')
+
+    finally:
+        db_connection.close()   # NOTE: remember doing this in each place where the script might end!
 
 
 if __name__ == '__main__':
