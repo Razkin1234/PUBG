@@ -1,0 +1,97 @@
+Index: test/level.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pygame , sys\r\nfrom settings import *\r\nfrom tile import Tile\r\nfrom player import Player\r\nfrom debug import debug\r\nfrom YsortCameraGroup import *\r\n\r\nclass Level:\r\n    def __init__(self):\r\n        #get the display surface\r\n        self.display_surface = pygame.display.get_surface()\r\n\r\n        #sprite groups setup\r\n        self.visble_sprites = YsortCameraGroup()\r\n        self.obstacle_sprites = pygame.sprite.Group()\r\n\r\n        # sprite setup\r\n        self.create_map()\r\n\r\n    #here we will print every detail on the map (obstacles, players...)\r\n    def create_map(self):\r\n        for row_index , row in enumerate(WORLD_MAP): #creating the visual map\r\n            for col_index , col in enumerate(row):\r\n                x = col_index * TILESIZE #checks the location\r\n                y = row_index * TILESIZE\r\n                if col == 'x':\r\n                    Tile((x,y),[self.visble_sprites, self.obstacle_sprites]) #prints a tile\r\n                if col == 'p':\r\n                    self.player = Player((x,y),[self.visble_sprites], self.obstacle_sprites) #creating the player\r\n\r\n\r\n    def run(self):  #update and draw the game\r\n     self.visble_sprites.custom_draw(self.player)\r\n     self.visble_sprites.update()\r\n\r\n\r\n\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test/level.py b/test/level.py
+--- a/test/level.py	(revision 996125724be46e9eaee8700d1813085569247b50)
++++ b/test/level.py	(date 1674494220144)
+@@ -19,14 +19,14 @@
+ 
+     #here we will print every detail on the map (obstacles, players...)
+     def create_map(self):
+-        for row_index , row in enumerate(WORLD_MAP): #creating the visual map
+-            for col_index , col in enumerate(row):
++        for row_index, row in enumerate(WORLD_MAP): #creating the visual map
++            for col_index, col in enumerate(row):
+                 x = col_index * TILESIZE #checks the location
+                 y = row_index * TILESIZE
+                 if col == 'x':
+-                    Tile((x,y),[self.visble_sprites, self.obstacle_sprites]) #prints a tile
++                    Tile((x, y), [self.visble_sprites, self.obstacle_sprites]) #prints a tile
+                 if col == 'p':
+-                    self.player = Player((x,y),[self.visble_sprites], self.obstacle_sprites) #creating the player
++                    self.player = Player((x, y), [self.visble_sprites], self.obstacle_sprites) #creating the player
+ 
+ 
+     def run(self):  #update and draw the game
+Index: test/player.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pygame\r\nfrom settings import *\r\n\r\n\r\nclass Player(pygame.sprite.Sprite):\r\n    def __init__(self, pos, groups, obstacle_sprites):\r\n        super().__init__(groups)\r\n        self.image = pygame.image.load('graphics/remington.png').convert_alpha()\r\n        self.rect = self.image.get_rect(topleft=pos)\r\n        self.place_to_go = (0, 0)\r\n        self.direction = pygame.math.Vector2()  # default: x=0 , y=0\r\n        self.speed = 5  # the player will move X pixels per second\r\n        self.obstacle_sprits = obstacle_sprites\r\n\r\n    def input(self):  # checks the input from the player, for now its the arrows\r\n        keys = pygame.key.get_pressed()\r\n        if keys[pygame.K_UP]:\r\n            self.direction.y = -1\r\n        elif keys[pygame.K_DOWN]:\r\n            self.direction.y = +1\r\n        else:\r\n            self.direction.y = 0\r\n\r\n        if keys[pygame.K_RIGHT]:\r\n            self.direction.x = +1\r\n        elif keys[pygame.K_LEFT]:\r\n            self.direction.x = -1\r\n        else:\r\n            self.direction.x = 0\r\n\r\n    def move(self, speed):  # moves the player around\r\n        if self.direction.magnitude() != 0:\r\n            self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions\r\n\r\n        self.rect.x += self.direction.x * speed  # making the player move horizontaly\r\n        self.collision('horizontal')\r\n        self.rect.y += self.direction.y * speed  # making the player move verticaly\r\n        self.collision('vertical')\r\n\r\n    def collision(self, direction):  # checking for collisions\r\n        if direction == 'horizontal':\r\n            for sprite in self.obstacle_sprits:\r\n                if sprite.rect.colliderect(self.rect):\r\n                    if self.direction.x > 0:  # when we are moving right\r\n                        self.rect.right = sprite.rect.left\r\n                    if self.direction.x < 0:  # when we are moving left\r\n                        self.rect.left = sprite.rect.right\r\n\r\n        if direction == 'vertical':\r\n            for sprite in self.obstacle_sprits:\r\n                if sprite.rect.colliderect(self.rect):\r\n                    if self.direction.y > 0:  # when we are moving down\r\n                        self.rect.bottom = sprite.rect.top\r\n                    if self.direction.y < 0:  # when we are moving up\r\n                        self.rect.top = sprite.rect.bottom\r\n\r\n    def update(self):\r\n        self.input()  # checking the input diraction\r\n        self.move(self.speed)  # making the player move\r\n\r\n    def inputm(self):  # checks the input from the player,mouse\r\n        for event in pygame.event.get():\r\n            if event.type == pygame.MOUSEBUTTONDOWN \\\r\n                    and event.button == 3:\r\n                self.place_to_go = pygame.mouse.get_pos()\r\n            self.direction.x = self.place_to_go[0]\r\n            self.direction.x = self.place_to_go[1]\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test/player.py b/test/player.py
+--- a/test/player.py	(revision 996125724be46e9eaee8700d1813085569247b50)
++++ b/test/player.py	(date 1674493728574)
+@@ -54,14 +54,15 @@
+                     if self.direction.y < 0:  # when we are moving up
+                         self.rect.top = sprite.rect.bottom
+ 
+-    def update(self):
+-        self.input()  # checking the input diraction
+-        self.move(self.speed)  # making the player move
+-
+     def inputm(self):  # checks the input from the player,mouse
+         for event in pygame.event.get():
+             if event.type == pygame.MOUSEBUTTONDOWN \
+                     and event.button == 3:
+                 self.place_to_go = pygame.mouse.get_pos()
+             self.direction.x = self.place_to_go[0]
+-            self.direction.x = self.place_to_go[1]
++            self.direction.y = self.place_to_go[1]
++
++    def update(self):
++        print(self.rect)
++        self.input()  # checking the input diraction
++        self.move(self.speed)  # making the player move
+Index: test/check mouse.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pygame\r\npygame.init()\r\n\r\nWINDOW_WIDTH = 700\r\nWINDOW_HEIGHT = 500\r\nLEFT = 1\r\nSCROLL = 2\r\nRIGHT = 3\r\ndirection = pygame.math.Vector2()\r\nspeed =5\r\nn=(0,0)\r\n\r\n\r\n\r\n\r\nsize = (WINDOW_WIDTH, WINDOW_HEIGHT)\r\nscreen = pygame.display.set_mode(size)\r\npygame.display.set_caption(\"Game\")\r\nclock =pygame.time.Clock()\r\nimage = pygame.image.load('graphics/remington.png').convert()\r\npos =\r\nrect = image.get_rect(topleft=pos)\r\n\r\n\r\nfinish = False\r\nwhile not finish:\r\n    for event in pygame.event.get():\r\n        if event.type == pygame.QUIT:\r\n            finish = True\r\n        elif event.type == pygame.MOUSEBUTTONDOWN \\\r\n                and event.button == LEFT:\r\n                n = pygame.mouse.get_pos()\r\n\r\n        direction.x = n[0]\r\n        direction.y = n[1]\r\n\r\n        if direction.magnitude() != 0:\r\n            direction = direction.normalize()  # making the speed good when we are gowing 2 diractions\r\n\r\n    screen.blit(image, [220, 300])\r\n    pygame.display.flip()\r\n    clock.tick(60)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test/check mouse.py b/test/check mouse.py
+--- a/test/check mouse.py	(revision 996125724be46e9eaee8700d1813085569247b50)
++++ b/test/check mouse.py	(date 1674493543924)
+@@ -18,9 +18,8 @@
+ pygame.display.set_caption("Game")
+ clock =pygame.time.Clock()
+ image = pygame.image.load('graphics/remington.png').convert()
+-pos =
+-rect = image.get_rect(topleft=pos)
+ 
++place=(0,0)
+ 
+ finish = False
+ while not finish:
+@@ -33,10 +32,12 @@
+ 
+         direction.x = n[0]
+         direction.y = n[1]
+-
++        print(direction)
+         if direction.magnitude() != 0:
+             direction = direction.normalize()  # making the speed good when we are gowing 2 diractions
++            print(direction)
+ 
+-    screen.blit(image, [220, 300])
++
++    screen.blit(image, place)
+     pygame.display.flip()
+     clock.tick(60)
+\ No newline at end of file
