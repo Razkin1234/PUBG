@@ -274,6 +274,7 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
     global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
+    individual_reply = False    # should the reply for that packet be for an individual client?
 
     lines = rotshild_raw_layer.split('\r\n')
     for line in lines:
@@ -284,6 +285,7 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
         if line_parts[0] == 'login_request:':
             user_name, password = line_parts[1].split(',')
             reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port)
+            individual_reply = True
             break
         # -------------
 
@@ -291,6 +293,7 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
         if line_parts[0] == 'register_request:':
             user_name, password = line_parts[1].split(',')
             reply_rotshild_layer += handle_register_request(user_name, password)
+            individual_reply = True
             break
         # --------------
 
@@ -321,9 +324,14 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
             reply_rotshild_layer += handle_dead(line_parts[1])
         # --------------
 
-    # sending the reply to all active clients
-    for client in CLIENTS_ID_IP_PORT:
-        send(IP(dst=client[1]) / UDP(dport=client[2]) / Raw(reply_rotshild_layer.encode('utf-8')))
+    if not individual_reply:
+        # sending the reply to all active clients
+        for client in CLIENTS_ID_IP_PORT:
+            send(IP(dst=client[1]) / UDP(dport=client[2]) / Raw(reply_rotshild_layer.encode('utf-8')))
+
+    else:
+        # sending the reply to the specific client
+        send(IP(dst=src_ip) / UDP(dport=src_port) / Raw(reply_rotshild_layer.encode('utf-8')))
 
 
 def rotshild_filter(packet: Packet) -> bool:
