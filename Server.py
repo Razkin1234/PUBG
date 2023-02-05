@@ -301,14 +301,14 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
             # looking for image header
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'image_of_the_player:':
+                if l_parts[0] == 'image:':
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
                     reply_rotshild_layer += handle_player_place(tuple_place, lines[0].split()[1], l_parts[1])
                     break
         # --------------
 
         # --------------
-        if line_parts[0] == 'shot_place:':
+        elif line_parts[0] == 'shot_place:':
             # looking for the hit_hp header
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
@@ -318,7 +318,7 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
         # --------------
 
         # --------------
-        if line_parts[0] == 'dead:':
+        elif line_parts[0] == 'dead:':
             reply_rotshild_layer += handle_dead(line_parts[1])
         # --------------
 
@@ -336,7 +336,7 @@ def rotshild_filter(packet: Packet) -> bool:
 
     if UDP not in packet or Raw not in packet:
         return False
-    payload = packet[Raw]
+    payload = packet[Raw].load
     expected = 'Rotshild'.encode('utf-8')
     return payload[:len(expected)] == expected
 
@@ -350,7 +350,7 @@ def create_threads(packet):
 def main():
     global CURSOR
     try:
-        intialize_sqlite_rdb()
+        intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
 
         while True:
             packets = sniff(count=1, lfilter=rotshild_filter, prn=create_threads)
