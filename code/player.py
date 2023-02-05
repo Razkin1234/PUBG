@@ -9,6 +9,7 @@ import math
 class Player(Entity):
     def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic):
         super().__init__(groups)
+        self.animations = None
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
         self.rect = self.image.get_rect(topleft = pos)
         self.hitbox = self.rect.inflate(0,-26) #if i want to overlap itemes
@@ -19,7 +20,6 @@ class Player(Entity):
 
         # movement
         self.direction = pygame.math.Vector2()  # default: x=0 , y=0
-        self.speed = 5 # the player will move X pixels per second
         self.attacking = False
         self.attack_cooldown = 400
         self.attack_time = None
@@ -214,7 +214,7 @@ class Player(Entity):
 
         # attacking cooldown
         if self.attacking:
-            if current_time - self.attack_time >= self.attack_cooldown:
+            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
                 self.attacking = False
                 self.destroy_attack()
 
@@ -240,6 +240,14 @@ class Player(Entity):
         self.image = animation[int(self.frame_index)]
         self.rect = self.image.get_rect(center=self.hitbox.center)
 
+    def get_full_weapon_damege(self):
+        """
+
+        :return: base_damage + weapon_damage
+        """
+        base_damage = self.stats['attack']
+        weapon_damage = weapon_data[self.weapon]['damage']
+        return base_damage + weapon_damage
 
     def update(self):
         self.inputm() #checking the input diraction

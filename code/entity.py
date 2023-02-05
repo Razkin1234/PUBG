@@ -1,5 +1,5 @@
 import pygame
-
+from math import sin
 class Entity(pygame.sprite.Sprite):
     def __init__(self,groups):
         super().__init__(groups)
@@ -17,7 +17,6 @@ class Entity(pygame.sprite.Sprite):
         self.hitbox.y += self.direction.y * speed  # making the player move verticaly
         self.collision('vertical')
         self.rect.center = self.hitbox.center
-
 
     def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
@@ -40,3 +39,9 @@ class Entity(pygame.sprite.Sprite):
                     self.direction.y = 0
                     self.direction.x = 0
 
+    def wave_value(self):
+        value = sin(pygame.time.get_ticks())
+        if value >= 0:
+            return 255
+        else:
+            return  0
