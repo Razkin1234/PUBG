@@ -25,7 +25,7 @@
 #             - login_request: [user_name],[password]                                                                  [only clients send]       |
 #             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him] [only server sends]       |
 #             - register_request: [user name],[password]                                                               [only clients send]       |
-#             - register_status: taken [if the user name already exists] or success [if registered successfully]       [only server sends]       |
+#             - register_status: taken [if the user name already exists] or success  or invalid                        [only server sends]       |
 #             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']    [only clients send]       |
 #                                  + weapons [weapon name]                                                                                       |
 #                                  - weapons [weapon name]                                                                                       |
@@ -154,6 +154,10 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
 
     global CURSOR
 
+    if ' ' in user_name or ' ' in password:
+        # user name and password can not contain spaces
+        return 'login_status: fail\r\n'
+
     CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
     result = CURSOR.fetchone()
     if not result:
@@ -207,11 +211,15 @@ def handle_register_request(user_name: str, password: str) -> str:
     Checking if user_name already taken. if not - adds it to the DB with his password and default values of player data.
     :param user_name: <String> the user name entered in the register request.
     :param password: <String> the password entered in the register request.
-    :return: <String> register_status header. (if taken - 'taken', if free - 'success').
+    :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
     global DB_CONNECTION, CURSOR, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
         DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
+
+    if ' ' in user_name or ' ' in password:
+        # user name and password can not contain spaces
+        return 'register_status: invalid\r\n'
 
     CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
     result = CURSOR.fetchone()
