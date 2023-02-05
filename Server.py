@@ -29,7 +29,7 @@
 #             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id    [clients and server send] |
 #             - moved_player_id: [the ID of the player who moved] [comes with player_place]                            [only server sends]       |
 #             - image: [the name of the file with the image of the player who moved] [comes with player_place]         [clients and server send] |
-#             - shot_place: ([the X coordinate],[the Y coordinate]) [comes with hit_hp]                                [clients and server send] |
+#             - shot_place: ([the X coordinate],[the Y coordinate]) [when client sends comes with hit_hp]              [clients and server send] |
 #             - hit_id: [the ID of the hitted client] [comes with hit_hp]                                              [only server sends]       |
 #             - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id]     [clients ans server send] |
 #             - dead: [the ID of the dead client]                                                                      [clients ans server send] |
@@ -196,31 +196,29 @@ def handle_register_request(user_name: str, password: str) -> str:
     return 'register_status: success\r\n'
 
 
-def handle_shot_place(shot_place, hp):
+def handle_shot_place(shot_place: tuple, hp: str) -> str:
     """
     Checking if the shot hit a client.
-    if no - informing all clients about where the shot is,
-    if yes - informing all clients there was a hit (so they stop showing the shot) and the ID of the hitted one (so he knows to take down hp), and how much hp to take off
-    :param shot_place: <String> the place of the shot as tuple (X,Y)
-    :param hp: <String> the amount of heal point the shot takes down if hit
+    if no - building Rotshild headers to inform all clients about where the shot is.
+    if yes - building Rotshild headers to inform all clients there was a hit (so they stop showing the shot),
+             the ID of the hitted one (so he knows to take down hp), and how much hp to take off.
+    :param shot_place: <Tuple> the place of the shot as (X,Y).  [X and Y are str]
+    :param hp: <String> the amount of heal point the shot takes down if hit.
+    :return: <String> Rotshild headers to describe the shot status.
+             if not hit then just shot_place,
+             if hit then hit_id and hit_hp.
     """
     global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
+
     # checking if one of the players got hit
-    for (player_id, player_place) in PLAYER_PLACES_BY_ID.items():
-        # checking the x place
-        if player_place[0] == shot_place[0]:
-            # checking the t place
-            if player_place[1] == shot_place[1]:
-                # looking for the ip and port of the player who got hit
-                for client in CLIENTS_ID_IP_PORT:
-                    if client[0] == player_id:
-                        # he got hit and telling him how many to decrease
-                        send(IP(dst=client[1]) / UDP(dport=client[2]) / Raw(
-                            (ROTSHILD_OPENING_OF_SERVER_PACKETS + 'hit_hp: ' + hp).encode('utf-8')))
-                        return
-    # no one got hit so sending to all the clients the shot place
-    # when the client gets shots place he prints it and after that he doesnt care
-    return 'shot_place: ' + shot_place
+    for player_id, player_place in PLAYER_PLACES_BY_ID.items():
+        # checking if current client was hitted
+        if player_place[0] == shot_place[0] and player_place[1] == shot_place[1]:
+            # if got here there was a hit.
+            return f'hit_id: {player_id}\r\nhit_hp: {hp}\r\n'
+
+    # if got here then no one got hit so sending to all the clients the shot place
+    return f'shot_place: {str(shot_place)}\r\n'
 
 
 def handle_dead(dead_id: str) -> str:
@@ -313,7 +311,8 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'hit_hp:':
-                    reply_rotshild_layer += handle_shot_place(line_parts[1], l_parts[1])
+                    tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
+                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1])
                     break
         # --------------
 
