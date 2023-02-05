@@ -22,10 +22,29 @@
 #                                                                                                                                                |
 # ------------------------------------------------------------------                                                                             |
 # Headers API:                                                                                                                                   |
-#             - login_request: [user_name],[password]                                                                  [only clients sends]      |
+#             - login_request: [user_name],[password]                                                                  [only clients send]       |
 #             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him] [only server sends]       |
-#             - register_request: [user name],[password]                                                               [only clients sends]      |
+#             - register_request: [user name],[password]                                                               [only clients send]       |
 #             - register_status: taken [if the user name already exists] or success [if registered successfully]       [only server sends]       |
+#             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']    [only clients send]       |
+#                                  + weapons [weapon name]                                                                                       |
+#                                  - weapons [weapon name]                                                                                       |
+#                                  + ammo [how much?]                                                                                            |
+#                                  - ammo [how much?]                                                                                            |
+#                                  + bombs [how much?]                                                                                           |
+#                                  - bombs [how much?]                                                                                           |
+#                                  + med_kits [how much?]                                                                                        |
+#                                  - med_kits [how much?]                                                                                        |
+#                                  + backpack [how much?]                                                                                        |
+#                                  - backpack [how much?]                                                                                        |
+#                                  + energy_drinks [how much?]                                                                                   |
+#                                  - energy_drinks [how much?]                                                                                   |
+#                                  + exp [how much?]                                                                                             |
+#                                  - exp [how much?]                                                                                             |
+#                                  + energy [how much?]                                                                                          |
+#                                  - energy [how much?]                                                                                          |
+#               [comes with user_name]                                                                                                           |
+#             - user_name: [user_name]  [comes with inventory_update]                                                  [only clients send]       |
 #             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id    [clients and server send] |
 #             - moved_player_id: [the ID of the player who moved] [comes with player_place]                            [only server sends]       |
 #             - image: [the name of the file with the image of the player who moved] [comes with player_place]         [clients and server send] |
@@ -90,6 +109,39 @@ def intialize_sqlite_rdb():
                    " energy INTEGER)")
 
 
+def handle_update_inventory(header_info: str, user_name: str):
+    """
+    updating the inventory of a client in the DB
+    :param header_info: <String> all the raw info in the update_inventory header.
+    :param user_name: <String> the user name of the client (get from the user_name header).
+    """
+
+    global DB_CONNECTION, CURSOR
+
+    updates = header_info.split(',')
+    # handle each inventory update
+    for update in updates:
+        operation, column, info = update.split()
+        if column != 'weapons':
+            CURSOR.execute(f"UPDATE clients_info"
+                           f" SET {column} = {column} {operation} {info}"
+                           f" WHERE user_name = '{user_name}'")
+        else:
+            if operation == '+':
+                CURSOR.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
+            else:
+                result = CURSOR.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
+                result = CURSOR.fetchone()
+                client_weapons = result[0].split(',')
+                updated_weapons = []
+                for weapon in client_weapons:
+                    if weapon != info:
+                        updated_weapons.append(weapon)
+                updated_weapons = ','.join(updated_weapons)
+                CURSOR.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
+    DB_CONNECTION.commit()
+
+
 def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str) -> str:
     """
     Checking if the user_name exists and matches its password in the DB. if yes giving ID.
@@ -102,7 +154,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
 
     global CURSOR
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
+    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
     result = CURSOR.fetchone()
     if not result:
         # user name does not exist in DB
@@ -322,6 +374,15 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
         # --------------
         elif line_parts[0] == 'dead:':
             reply_rotshild_layer += handle_dead(line_parts[1])
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'inventory_update:':
+            # looking for user_name
+            for l in lines:
+                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                if l_parts[0] == 'user_name:':
+                    handle_update_inventory(line[18::], l_parts[1])
         # --------------
 
     if not individual_reply:
