@@ -49,7 +49,7 @@ class Player(Entity):
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
         self.health = self.stats['health'] #our current health
         self.energy = self.stats['energy'] #our current energy
-        self.exp = 1000000
+        self.exp = 100
         self.speed = self.stats['speed'] #the speed of the player
 
 

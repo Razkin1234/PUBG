@@ -39,7 +39,7 @@ class Enemy(Entity):
         #invincibility timer
         self.vulnerable = True
         self.hit_time = None
-        self.invincibility_duration = 400
+        self.invincibility_duration = 300
 
     def import_graphics(self,name):
         self.animations = {'idle': [] ,'move': [],'attack': []}
