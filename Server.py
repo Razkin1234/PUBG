@@ -1,65 +1,73 @@
-# ====================================================PROTOCOL===================================================================================|                                                                                                                |
-# * It's a textual protocol                                                                                                                      |
-# * The protocol uses encapsulation of type utf-8 (to decode and encode)                                                                         |
-#                                                                                                                                                |
-# * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                          |
-#                                                                                                                                                |
-# structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                |
-# [ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0]                           |
-# [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                    |
-#                                                                                                                                                |
-# ------------------------------------------------------------------                                                                             |
-# The full packet looks like this:                                                                                                               |
-#                                    "Rotshild ID\r\n                                                                                            |
-#                                     \r\n                                                                                                       |
-#                                     header_name: header_info\r\n                                                                               |
-#                                     header_name: header_info\r\n                                                                               |
-#                                     header_name: header_info\r\n                                                                               |
-#                                     .                                                                                                          |
-#                                     .                                                                                                          |
-#                                     ."                                                                                                         |
-# ------------------------------------------------------------------                                                                             |
-#                                                                                                                                                |
-# ------------------------------------------------------------------                                                                             |
-# Headers API:                                                                                                                                   |
-#             - login_request: [user_name],[password]                                                                  [only clients send]       |
-#             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him] [only server sends]       |
-#             - register_request: [user name],[password]                                                               [only clients send]       |
-#             - register_status: taken [if the user name already exists] or success  or invalid                        [only server sends]       |
-#             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']    [only clients send]       |
-#                                  + weapons [weapon name]                                                                                       |
-#                                  - weapons [weapon name]                                                                                       |
-#                                  + ammo [how much?]                                                                                            |
-#                                  - ammo [how much?]                                                                                            |
-#                                  + bombs [how much?]                                                                                           |
-#                                  - bombs [how much?]                                                                                           |
-#                                  + med_kits [how much?]                                                                                        |
-#                                  - med_kits [how much?]                                                                                        |
-#                                  + backpack [how much?]                                                                                        |
-#                                  - backpack [how much?]                                                                                        |
-#                                  + energy_drinks [how much?]                                                                                   |
-#                                  - energy_drinks [how much?]                                                                                   |
-#                                  + exp [how much?]                                                                                             |
-#                                  - exp [how much?]                                                                                             |
-#                                  + energy [how much?]                                                                                          |
-#                                  - energy [how much?]                                                                                          |
-#               [comes with user_name]                                                                                                           |
-#             - user_name: [user_name]  [comes with inventory_update]                                                  [only clients send]       |
-#             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id    [clients and server send] |
-#             - moved_player_id: [the ID of the player who moved] [comes with player_place]                            [only server sends]       |
-#             - image: [the name of the file with the image of the player who moved] [comes with player_place]         [clients and server send] |
-#             - shot_place: ([the X coordinate],[the Y coordinate]) [when client sends comes with hit_hp]              [clients and server send] |
-#             - hit_id: [the ID of the hitted client] [comes with hit_hp]                                              [only server sends]       |
-#             - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id]     [clients ans server send] |
-#             - dead: [the ID of the dead client]                                                                      [clients ans server send] |
-# ------------------------------------------------------------------                                                                             |
-# ===============================================================================================================================================|
+"""
+====================================================PROTOCOL=================================================================================================|                                                                                                                |
+* It's a textual protocol                                                                                                                                    |
+* The protocol uses encapsulation of type utf-8 (to decode and encode)                                                                                       |
+                                                                                                                                                             |
+* Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
+                                                                                                                                                             |
+structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                                 |
+[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0]                                         |
+[each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
+                                                                                                                                                             |
+------------------------------------------------------------------                                                                                           |
+The full packet looks like this:                                                                                                                             |
+                                   "Rotshild ID\r\n                                                                                                          |
+                                    \r\n                                                                                                                     |
+                                    header_name: header_info\r\n                                                                                             |
+                                    header_name: header_info\r\n                                                                                             |
+                                    header_name: header_info\r\n                                                                                             |
+                                    .                                                                                                                        |
+                                    .                                                                                                                        |
+                                    ."                                                                                                                       |
+------------------------------------------------------------------                                                                                           |
+                                                                                                                                                             |
+------------------------------------------------------------------                                                                                           |
+Headers API:                                                                                                                                                 |
+            - login_request: [user_name],[password]                                                                                [only clients send]       |
+            - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him]               [only server sends]       |
+            - register_request: [user name],[password]                                                                             [only clients send]       |
+            - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
+            - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
+                                 + weapons [weapon name]                                                                                                     |
+                                 - weapons [weapon name]                                                                                                     |
+                                 + ammo [how much?]                                                                                                          |
+                                 - ammo [how much?]                                                                                                          |
+                                 + bombs [how much?]                                                                                                         |
+                                 - bombs [how much?]                                                                                                         |
+                                 + med_kits [how much?]                                                                                                      |
+                                 - med_kits [how much?]                                                                                                      |
+                                 + backpack [how much?]                                                                                                      |
+                                 - backpack [how much?]                                                                                                      |
+                                 + energy_drinks [how much?]                                                                                                 |
+                                 - energy_drinks [how much?]                                                                                                 |
+                                 + exp [how much?]                                                                                                           |
+                                 - exp [how much?]                                                                                                           |
+                                 + energy [how much?]                                                                                                        |
+                                 - energy [how much?]                                                                                                        |
+              [comes with user_name]                                                                                                                         |
+            - user_name: [user_name]  [comes with inventory_update or chat]                                                        [clients and server send] |
+            - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id                  [clients and server send] |
+            - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
+            - image: [the name of the file with the image of the player who moved] [comes with player_place]                       [clients and server send] |
+            - shot_place: ([the X coordinate],[the Y coordinate]) [when client sends comes with hit_hp]                            [clients and server send] |
+            - hit_id: [the ID of the hitted client] [comes with hit_hp and shooter_id]                                             [only server sends]       |
+            - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id and shooter_id]    [clients ans server send] |
+            - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
+            - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
+            - chat: [the info of the message]  [comes with user_name]                                                              [clients and server send] |
+------------------------------------------------------------------                                                                                           |
+=============================================================================================================================================================|
+"""
+
 
 import sqlite3
 import threading
 import socket
+import rsa
+from rsa.key import PublicKey, PrivateKey
 
-# ------------------------ socket binding
+
+# ------------------------ socket
 SERVER_UDP_PORT = 56789
 SERVER_IP = '0.0.0.0'
 DEFAULT_BUFFER_SIZE = 1024
@@ -77,15 +85,50 @@ DEFAULT_ENERGY = 0
 # ------------------------
 
 # ------------------------ SQLite DateBase objects
-DB_CONNECTION = None    # The connection with the SQLite RDB
-CURSOR = None   # Cursor object to execute SQL commends on the DB
+DB_CONNECTION = None  # The connection with the SQLite RDB
+CURSOR = None  # Cursor object to execute SQL commends on the DB
 # ------------------------
 
 # ------------------------ General
-THREAD_LIST = []  # list of threads
 CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
+# -------------------------
+
+# ------------------------- RSA deterministic asymmetric encryption
+"""
+The key generation proccess:
+    - generate two large prime numbers, known as the first and second prime factors.
+    - These prime factors are used to calculate the modulus, which is used in the modular arithmetic of RSA encryption.
+    - The public exponent is selected, which is usually 65537 in modern RSA implementations.
+    - The private exponent is calculated based on the public exponent and the totient of the modulus.
+      (totient is the number of positive integers less than or equal to a given integer,
+       in the RSA case it is calculated as (first prime factor - 1) * (second prime factor - 1)).
+
+* The key generation process is designed to ensure that it is computationally infeasible to determine the private key
+  from the public key, even if an attacker has access to both the public and private exponents.
+
+The encryption process works as follows:
+(using the public key - contains the modulus and the public exponent)
+    - A plaintext message is transformed into a numerical value.
+    - The numerical value is raised to the power of the public exponent (modulo the modulus) to produce the ciphertext
+      (ciphertext = plaintext ** public_exponent % modulus).
+
+The decryption process works as follows:
+(using the private key - contains the modulus, the private exponent and the two prime factors)
+    - A ciphertext is raised to the power of the private exponent (modulo the modulus) to produce the plaintext
+    (plaintext = ciphertext ** private_exponent % modulus).
+    - The recipient then obtains the original message by transforming the plaintext back to its original form.
+"""
+
+MODULUS = 7202380422720360875138943832989169827593337421340517606000697629974789073279088263129156773084889735203215777657443638346916570347919877966671239593821849  # (not secret)
+PUBLIC_EXPONENT = 65537  # (not secret)
+PRIVATE_EXPONENT = 2487759366909086609556743084782273179840859044614268230877791053141573463839494045756198356306801278556401491488506285362190686031132636395114287646477909  # (secret)
+FIRST_PRIME_FACTOR = 6722171653111129608666978173114450112621458860424439037672507726695639042339185147  # (secret)
+SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087853990359411067  # (secret)
+
+PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT,)  # (not secret)
+PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
 
 
@@ -100,7 +143,7 @@ def intialize_sqlite_rdb():
 
     DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
     CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
-    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"    # creating a table of clients data if not exists yet
+    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
                    " (user_name TEXT PRIMARY KEY,"
                    " password TEXT,"
                    " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
@@ -198,7 +241,7 @@ def create_new_id(client_ip_port: tuple) -> str:
         return '1'
 
     last_id = 0  # the last active id we know we have at the moment
-    found = False   # flag
+    found = False  # flag
     while found is False:  # Running till a free id found
         last_id += 1  # Checking the next id
 
@@ -268,17 +311,20 @@ def handle_register_request(user_name: str, password: str) -> str:
     return 'register_status: success\r\n'
 
 
-def handle_shot_place(shot_place: tuple, hp: str) -> str:
+def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     """
     Checking if the shot hit a client.
-    if no - building Rotshild headers to inform all clients about where the shot is.
+    if no - building Rotshild headers to inform all clients about where the shot is,
+            and who is the shooter (so he knows not to print the shot again).
     if yes - building Rotshild headers to inform all clients there was a hit (so they stop showing the shot),
-             the ID of the hitted one (so he knows to take down hp), and how much hp to take off.
+             the ID of the hitted one (so he knows to take down hp), how much hp to take off,
+             and the ID of the shooter (so he knows to increase exp).
     :param shot_place: <Tuple> the place of the shot as (X,Y).  [X and Y are str]
     :param hp: <String> the amount of heal point the shot takes down if hit.
+    :param shooter_id: <String> the ID of the shooter client.
     :return: <String> Rotshild headers to describe the shot status.
-             if not hit then just shot_place,
-             if hit then hit_id and hit_hp.
+             if not hit then shot_place and shooter_id.
+             if hit then hit_id and hit_hp and shooter_id.
     """
     global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
 
@@ -287,10 +333,10 @@ def handle_shot_place(shot_place: tuple, hp: str) -> str:
         # checking if current client was hitted
         if player_place[0] == shot_place[0] and player_place[1] == shot_place[1]:
             # if got here there was a hit.
-            return f'hit_id: {player_id}\r\nhit_hp: {hp}\r\n'
+            return f'hit_id: {player_id}\r\nhit_hp: {hp}\r\nshooter_id: {shooter_id}\r\n'
 
-    # if got here then no one got hit so sending to all the clients the shot place
-    return f'shot_place: {str(shot_place)}\r\n'
+    # if got here then no one got hit so sending to all the clients the shot place and the shooter ID
+    return f'shot_place: {str(shot_place)}\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str) -> str:
@@ -337,21 +383,21 @@ def handle_player_place(place: tuple, id: str, image: str) -> str:
     return 'player_place: {}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(str(place), id, image)
 
 
-def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str, server_socket: socket):
+def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_socket: socket):
     """
     Recognizing the different headers and calling the specific header handler for each one.
-    Then taking all the returned values from the handlers (it's header the reply should have) building a reply packet
-    and sending it to all clients.
+    Then taking all the returned values from the handlers (it's header the reply should have) building a reply,
+    encrypting it, and sending it to all clients.
     :param rotshild_raw_layer: <String> the Rotshild layer of the packet (5th layer).
     :param src_ip: <String> the IP of the client who sent the packet.
     :param src_port: <String> the PORT of the client who sent the packet.
     :param server_socket: <Socket> the server's socket object.
     """
 
-    global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
+    global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
-    individual_reply = False    # should the reply for that packet be for an individual client?
+    individual_reply = False  # should the reply for that packet be for an individual client?
 
     lines = rotshild_raw_layer.split('\r\n')
     for line in lines:
@@ -375,6 +421,7 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str, ser
         # --------------
 
         # --------------
+        # in this header clients should check the moved_player_id so they wont print their own movement twice.
         if line_parts[0] == 'player_place:':
             # looking for image header
             for l in lines:
@@ -386,13 +433,14 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str, ser
         # --------------
 
         # --------------
+        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
         elif line_parts[0] == 'shot_place:':
             # looking for the hit_hp header
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'hit_hp:':
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1])
+                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], lines[0].split()[1])
                     break
         # --------------
 
@@ -408,16 +456,45 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str, ser
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'user_name:':
                     handle_update_inventory(line[18::], l_parts[1])
+                    break
+        # --------------
+
+        # --------------
+        # clients will get chats of themselves too.
+        # so they should print only what comes from the server and don't print their own messages just after sending it.
+        elif line_parts[0] == 'chat:':
+            # looking for user_name
+            for l in lines:
+                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                if l_parts[0] == 'user_name:':
+                    reply_rotshild_layer += line + '\r\n' + l + '\r\n'
+                    break
         # --------------
 
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT:
-            server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
+            server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY),
+                                 (client[1], int(client[2])))
 
     else:
         # sending the reply to the specific client
-        server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
+        server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY), (src_ip, int(src_port)))
+
+
+def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
+    """
+    Checking if an ID matches to the IP and PORT addresses we have in our clients list - CLIENTS_ID_IP_PORT.
+    (in order to make sure only a client's message is coming from its actual machine and not an imposter)
+    :param src_id: <String> the ID specified in the packet.
+    :param src_ip: <String> the source IP, where the packet came from.
+    :param src_port: <String> the source PORT, where the packet came from.
+    :return: <Boolean> True - matches, False - doesn't match.
+    """
+
+    global CLIENTS_ID_IP_PORT
+
+    return (src_id, src_ip, src_port) in CLIENTS_ID_IP_PORT
 
 
 def rotshild_filter(payload: bytes) -> bool:
@@ -427,8 +504,10 @@ def rotshild_filter(payload: bytes) -> bool:
     :return: <Boolean> True - passed the filter, False - didn't pass the filter
     """
 
+    global PRIVATE_KEY
+
     expected = 'Rotshild'.encode('utf-8')
-    return payload[:len(expected)] == expected
+    return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
 
 
 def get_public_ip() -> str:
@@ -444,28 +523,26 @@ def get_public_ip() -> str:
     return public_ip
 
 
-def create_threads(packet):
-    parts = packet[Raw].decode('utf-8').split()
-    packet = parts[0]
-    threading.Thread(target=recognizing_headers, args=(packet,)).start()  # creating thread
-
-
 def main():
 
-    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE
+    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # setting an IPv4 UDP socket
     try:
         print(f'>> NOTE: The server requires your network to have port forwarding'
               f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
         intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
-        server_socket.bind((SERVER_IP, SERVER_UDP_PORT))      # binding the server socket
+        server_socket.bind((SERVER_IP, SERVER_UDP_PORT))  # binding the server socket
         public_ip = get_public_ip()
         print(f'>> Server is up and running on {public_ip}:{str(SERVER_UDP_PORT)}')
         while True:
-            data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)
-            if rotshild_filter(data):
-                recognizing_headers(data.decode('utf-8'), client_address[0], str(client_address[1]), server_socket)
+            data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
+            if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
+                plaintext = rsa.decrypt(data, PRIVATE_KEY).decode('utf-8')
+                if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                               client_address[0],
+                                               str(client_address[1])):  # verifies match of src IP-PORT-ID
+                    packet_handler(plaintext, client_address[0], str(client_address[1]), server_socket)  # handling it
 
     except Exception as ex:
         print(f'something went wrong... : {ex}\n')
