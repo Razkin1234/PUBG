@@ -61,6 +61,7 @@ Headers API:                                                                    
 
 
 import sqlite3
+import public_ip
 import threading
 import socket
 import rsa
@@ -510,19 +511,6 @@ def rotshild_filter(payload: bytes) -> bool:
     return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
 
 
-def get_public_ip() -> str:
-    """
-    Getting the public IP of the network.
-    :return: <String> the public IP of the network.
-    """
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    public_ip = s.getsockname()[0]
-    s.close()
-    return public_ip
-
-
 def main():
 
     global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY
@@ -533,8 +521,7 @@ def main():
               f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
         intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
         server_socket.bind((SERVER_IP, SERVER_UDP_PORT))  # binding the server socket
-        public_ip = get_public_ip()
-        print(f'>> Server is up and running on {public_ip}:{str(SERVER_UDP_PORT)}')
+        print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
         while True:
             data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
             if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
