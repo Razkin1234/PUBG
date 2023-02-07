@@ -531,8 +531,13 @@ def main():
                                                str(client_address[1])):  # verifies match of src IP-PORT-ID
                     packet_handler(plaintext, client_address[0], str(client_address[1]), server_socket)  # handling it
 
+    except OSError as ex:
+        if ex.errno == 98:
+            print(f">> [ERROR] Port {SERVER_UDP_PORT} is not available on your machine.\n"
+                  f"    Make sure the port is available and is not already in use by another service and run again.")
+
     except Exception as ex:
-        print(f'something went wrong... : {ex}\n')
+        print(f'>> [ERROR] Something went wrong... This is the error message: {ex}\n')
 
     finally:
         DB_CONNECTION.close()
