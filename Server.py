@@ -4,7 +4,7 @@
 #                                                                                                                                                |
 # * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                          |
 #                                                                                                                                                |
-# structure - 'Rotshild <ID>/r/n/r/n<headers>End'                                                                                                |
+# structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                |
 # [ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0]                           |
 # [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                    |
 #                                                                                                                                                |
@@ -57,9 +57,13 @@
 
 import sqlite3
 import threading
-from scapy.all import *
-from scapy.layers.inet import IP, UDP
+import socket
 
+# ------------------------ socket binding
+SERVER_UDP_PORT = 56789
+SERVER_IP = '0.0.0.0'
+DEFAULT_BUFFER_SIZE = 1024
+# ------------------------
 
 # ------------------------ Default DB values of a new client
 DEFAULT_WEAPONS = 'stick'
@@ -152,7 +156,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CURSOR
+    global CURSOR, CLIENTS_ID_IP_PORT
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -165,7 +169,14 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         return 'login_status: fail\r\n'
     elif result[1] == password:
         # user name exists in DB and matches the password
-        return 'login_status: ' + create_new_id((client_ip, client_port)) + '\r\n'
+        given_id = create_new_id((client_ip, client_port))
+        print(f'>> New client connected to the game server.\n'
+              f'   User Name - {user_name}'
+              f'   User game ID - {given_id}'
+              f'   User IPv4 addr - {client_ip}'
+              f'   User port number - {client_port}'
+              f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
+        return 'login_status: ' + given_id + '\r\n'
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
@@ -253,6 +264,7 @@ def handle_register_request(user_name: str, password: str) -> str:
                    " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
     DB_CONNECTION.commit()
 
+    print(f'>> New client registered to server. User Name: {user_name}.')
     return 'register_status: success\r\n'
 
 
@@ -301,6 +313,9 @@ def handle_dead(dead_id: str) -> str:
             break
 
     # returning a dead header
+    print(f'>> Client died and disconnected from game server.'
+          f'   Dead client ID - {dead_id}'
+          f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
     return 'dead: ' + dead_id + '\r\n'
 
 
@@ -322,7 +337,7 @@ def handle_player_place(place: tuple, id: str, image: str) -> str:
     return 'player_place: {}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(str(place), id, image)
 
 
-def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
+def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str, server_socket: socket):
     """
     Recognizing the different headers and calling the specific header handler for each one.
     Then taking all the returned values from the handlers (it's header the reply should have) building a reply packet
@@ -330,7 +345,9 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
     :param rotshild_raw_layer: <String> the Rotshild layer of the packet (5th layer).
     :param src_ip: <String> the IP of the client who sent the packet.
     :param src_port: <String> the PORT of the client who sent the packet.
+    :param server_socket: <Socket> the server's socket object.
     """
+
     global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
@@ -396,25 +413,35 @@ def recognizing_headers(rotshild_raw_layer: str, src_ip: str, src_port: str):
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT:
-            send(IP(dst=client[1]) / UDP(dport=client[2]) / Raw(reply_rotshild_layer.encode('utf-8')))
+            server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
 
     else:
         # sending the reply to the specific client
-        send(IP(dst=src_ip) / UDP(dport=src_port) / Raw(reply_rotshild_layer.encode('utf-8')))
+        server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
 
 
-def rotshild_filter(packet: Packet) -> bool:
+def rotshild_filter(payload: bytes) -> bool:
     """
-    Checking if a packet is of our 5th layer protocol - 'Rotshild'.
-    :param packet: <Packet> sniffed packet to check.
+    Checking if a payload received is of our 5th layer protocol - 'Rotshild'.
+    :param payload: <Bytes> payload to check.
     :return: <Boolean> True - passed the filter, False - didn't pass the filter
     """
 
-    if UDP not in packet or Raw not in packet:
-        return False
-    payload = packet[Raw].load
     expected = 'Rotshild'.encode('utf-8')
     return payload[:len(expected)] == expected
+
+
+def get_public_ip() -> str:
+    """
+    Getting the public IP of the network.
+    :return: <String> the public IP of the network.
+    """
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    public_ip = s.getsockname()[0]
+    s.close()
+    return public_ip
 
 
 def create_threads(packet):
@@ -424,18 +451,28 @@ def create_threads(packet):
 
 
 def main():
-    global CURSOR
-    try:
-        intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
 
+    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # setting an IPv4 UDP socket
+    try:
+        print(f'>> NOTE: The server requires your network to have port forwarding'
+              f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
+        intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
+        server_socket.bind((SERVER_IP, SERVER_UDP_PORT))      # binding the server socket
+        public_ip = get_public_ip()
+        print(f'>> Server is up and running on {public_ip}:{str(SERVER_UDP_PORT)}')
         while True:
-            packets = sniff(count=1, lfilter=rotshild_filter, prn=create_threads)
+            data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)
+            if rotshild_filter(data):
+                recognizing_headers(data.decode('utf-8'), client_address[0], str(client_address[1]), server_socket)
 
     except Exception as ex:
         print(f'something went wrong... : {ex}\n')
 
     finally:
-        DB_CONNECTION.close()   # NOTE: remember doing this in each place where the script might end!!!
+        DB_CONNECTION.close()
+        server_socket.close()
 
 
 # --------------------------- Main Guard
