@@ -128,7 +128,7 @@ PRIVATE_EXPONENT = 2487759366909086609556743084782273179840859044614268230877791
 FIRST_PRIME_FACTOR = 6722171653111129608666978173114450112621458860424439037672507726695639042339185147  # (secret)
 SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087853990359411067  # (secret)
 
-PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT,)  # (not secret)
+PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT)  # (not secret)
 PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
 
@@ -533,7 +533,7 @@ def main():
 
     except OSError as ex:
         if ex.errno == 98:
-            print(f">> [ERROR] Port {SERVER_UDP_PORT} is not available on your machine.\n"
+            print(f">> [ERROR] Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
                   f"    Make sure the port is available and is not already in use by another service and run again.")
 
     except Exception as ex:
