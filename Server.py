@@ -55,6 +55,7 @@ Headers API:                                                                    
             - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
             - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
             - chat: [the info of the message]  [comes with user_name]                                                              [clients and server send] |
+            - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -62,6 +63,7 @@ Headers API:                                                                    
 
 import sqlite3
 import public_ip
+import concurrent.futures
 import threading
 import socket
 import rsa
@@ -72,6 +74,10 @@ from rsa.key import PublicKey, PrivateKey
 SERVER_UDP_PORT = 56789
 SERVER_IP = '0.0.0.0'
 DEFAULT_BUFFER_SIZE = 1024
+SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
+# check the main loop trigger event sometimes.
+# The bigger you'll set this timeout - you will check the trigger event less often,
+# but your chances of losing packets are smaller.
 # ------------------------
 
 # ------------------------ Default DB values of a new client
@@ -91,6 +97,10 @@ CURSOR = None  # Cursor object to execute SQL commends on the DB
 # ------------------------
 
 # ------------------------ General
+SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
+MAX_WORKER_THREADS = 5  # The max amount of running worker threads.
+# (larger amount mean faster client handling and able to handle more clients,
+# but a big amount that is not match to your CPU will just waste important system resources and wont help)
 CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
@@ -215,10 +225,10 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port))
         print(f'>> New client connected to the game server.\n'
-              f'   User Name - {user_name}'
-              f'   User game ID - {given_id}'
-              f'   User IPv4 addr - {client_ip}'
-              f'   User port number - {client_port}'
+              f'   User Name - {user_name}\n'
+              f'   User game ID - {given_id}\n'
+              f'   User IPv4 addr - {client_ip}\n'
+              f'   User port number - {client_port}\n'
               f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
         return 'login_status: ' + given_id + '\r\n'
     else:
@@ -360,8 +370,8 @@ def handle_dead(dead_id: str) -> str:
             break
 
     # returning a dead header
-    print(f'>> Client died and disconnected from game server.'
-          f'   Dead client ID - {dead_id}'
+    print(f'>> Client died and disconnected from game server.\n'
+          f'   Dead client ID - {dead_id}\n'
           f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
     return 'dead: ' + dead_id + '\r\n'
 
@@ -511,25 +521,86 @@ def rotshild_filter(payload: bytes) -> bool:
     return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
 
 
+def infrom_active_clients_about_shutdown(server_socket: socket, reason: str):
+    """
+    Informing all active clients that the server is shutting down.
+    :param server_socket: <Socket> The server's socket object.
+    :param reason: <String> why doed it closed? (by_user or error)
+    """
+
+    global CLIENTS_ID_IP_PORT, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
+
+    for client in CLIENTS_ID_IP_PORT:
+        server_socket.sendto(
+            rsa.encrypt(ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n'.encode('utf-8'),
+                        PUBLIC_KEY), (client[1], int(client[2])))
+
+
+def check_server_shutdown_thread(server_socket: socket):
+    """
+    Waiting for the user to shutdown the server by enter 'shutdown' in terminal.
+    After getting the commend - informing all active clients about the server shutdown,
+    and setting the shutdown trigger event.
+    :param server_socket: <Socket> The socket object of the server.
+    """
+
+    global SHUTDOWN_TRIGGER_EVENT
+
+    while True:
+        if input().strip().lower() == 'shutdown':
+            print('>> Shutting down the server...')
+            print('   [informing all active clients about the shutdown]', end='')
+            infrom_active_clients_about_shutdown(server_socket, 'by_user')
+            print(' ---> completed')
+            # setting the shutdown trigger event.
+            SHUTDOWN_TRIGGER_EVENT.set()
+            return
+
+
 def main():
 
-    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY
+    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
+        SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # setting an IPv4 UDP socket
     try:
+        server_socket.settimeout(SERVER_SOCKET_TIMEOUT)  # set timeout to check loop trigger event and not block forever
         print(f'>> NOTE: The server requires your network to have port forwarding'
               f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
         intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
         server_socket.bind((SERVER_IP, SERVER_UDP_PORT))  # binding the server socket
         print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
-        while True:
-            data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
-            if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
-                plaintext = rsa.decrypt(data, PRIVATE_KEY).decode('utf-8')
-                if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                               client_address[0],
-                                               str(client_address[1])):  # verifies match of src IP-PORT-ID
-                    packet_handler(plaintext, client_address[0], str(client_address[1]), server_socket)  # handling it
+        print(f">> To shutdown the server - enter 'shutdown' in your terminal.")
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')\
+                as executor:
+            # setting a thread to shutdown the server according to used terminal commend 'shutdown'
+            executor.submit(check_server_shutdown_thread, server_socket)
+
+            # ------------------GAME LOOP-----------------------
+            while not SHUTDOWN_TRIGGER_EVENT.is_set():
+                try:
+                    data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
+                except socket.timeout:
+                    continue
+
+                if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
+                    plaintext = rsa.decrypt(data, PRIVATE_KEY).decode('utf-8')
+                    if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                   client_address[0],
+                                                   str(client_address[1])):  # verifies match of src IP-PORT-ID
+                        executor.submit(packet_handler,
+                                        plaintext,
+                                        client_address[0],
+                                        str(client_address[1]),
+                                        server_socket)  # handling it in a separate thread
+            # --------------------------------------------------
+
+            # the next commend waits for all running tasks to complete (blocking till then), shuts down the
+            # executor and frees up any resources used by it.
+            print('   [waiting for running threads to complete]', end='')
+            executor.shutdown(wait=True)
+            print(' -----------> completed')
 
     except OSError as ex:
         if ex.errno == 98:
@@ -537,11 +608,14 @@ def main():
                   f"    Make sure the port is available and is not already in use by another service and run again.")
 
     except Exception as ex:
-        print(f'>> [ERROR] Something went wrong... This is the error message: {ex}\n')
+        print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
 
     finally:
+        print('   [freeing up resources]', end='')
         DB_CONNECTION.close()
         server_socket.close()
+        print(' ------------------------------> completed')
+        print('>> Server is closed.')
 
 
 # --------------------------- Main Guard
