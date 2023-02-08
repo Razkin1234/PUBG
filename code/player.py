@@ -19,7 +19,6 @@ class Player(Entity):
         self.status = 'down'
 
         # movement
-        self.direction = pygame.math.Vector2()  # default: x=0 , y=0
         self.attacking = False
         self.attack_cooldown = 400
         self.attack_time = None
@@ -51,6 +50,12 @@ class Player(Entity):
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
         self.speed = self.stats['speed'] #the speed of the player
+
+        #damage timer
+        self.vulnerable =True
+        self.hurt_time =None
+        self.invulnerability_duration =500
+
 
 
     def import_player_assets(self):
@@ -228,6 +233,10 @@ class Player(Entity):
             if current_time - self.magic_switch_time >= self.switch_duration_cooldown:
                 self.can_switch_magic = True
 
+        if not self.vulnerable:
+          if current_time - self.hurt_time >= self.invulnerability_duration:
+              self.vulnerable = True
+
     def animate(self): #shows us the animations
         animation = self.animations[self.status]
 
@@ -240,9 +249,16 @@ class Player(Entity):
         self.image = animation[int(self.frame_index)]
         self.rect = self.image.get_rect(center=self.hitbox.center)
 
+        #flicker
+        if not self.vulnerable:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
+
     def get_full_weapon_damege(self):
         """
-
+        the damage the player do
         :return: base_damage + weapon_damage
         """
         base_damage = self.stats['attack']
@@ -250,6 +266,7 @@ class Player(Entity):
         return base_damage + weapon_damage
 
     def update(self):
+
         self.inputm() #checking the input diraction
         self.cooldowns()
         self.get_status()
