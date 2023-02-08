@@ -257,4 +257,3 @@ class Player(Entity):
         self.animate()
         self.move(self.speed)  # making the player move
         self.stop()
->>>>>>> 48c8e0dd190a305b0ccf34767036f7e6d7254801
