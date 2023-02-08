@@ -102,7 +102,7 @@ class Level:
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
     def run(self):  # update and draw the game
-        self.floor_sprites.floor_draw(self.player)
+        self.floor_sprites.custom_draw(self.player)
         self.floor_sprites.update()
         self.visble_sprites.custom_draw(self.player)
         self.visble_sprites.update()
