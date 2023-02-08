@@ -557,14 +557,13 @@ def check_server_shutdown_thread(server_socket: socket):
             return
 
 
-def verify_packet(payload: bytes, src_addr: tuple, server_socket: socket, executor):
+def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
     """
     Checking on encoded data if it's a Rotshild protocol packet. Then verifies match of src IP-PORT-ID.
-    If all good then handling the packet to a different thread.
+    If all good then handling the packet.
     :param payload: <Bytes> the payload received.
     :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
     :param server_socket: <Socket> the socket object of the server.
-    :param executor: the ThreadPoolExecutor object.
     """
 
     global PRIVATE_KEY
@@ -574,11 +573,7 @@ def verify_packet(payload: bytes, src_addr: tuple, server_socket: socket, execut
         if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
                                        src_addr[0],
                                        str(src_addr[1])):  # verifies match of src IP-PORT-ID
-            executor.submit(packet_handler,
-                            plaintext,
-                            src_addr[0],
-                            str(src_addr[1]),
-                            server_socket)  # handling it in a separate thread
+            packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
 
 def main():
@@ -609,7 +604,7 @@ def main():
                     continue
 
                 # verify the packet in a different thread and if all good then handling it in another thread
-                executor.submit(verify_packet, data, client_address, server_socket, executor)
+                executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket, executor)
             # --------------------------------------------------
 
             # the next commend waits for all running tasks to complete (blocking till then), shuts down the
