@@ -604,7 +604,7 @@ def main():
                     continue
 
                 # verify the packet in a different thread and if all good then handling it in another thread
-                executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket, executor)
+                executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
             # --------------------------------------------------
 
             # the next commend waits for all running tasks to complete (blocking till then), shuts down the
