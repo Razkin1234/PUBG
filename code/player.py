@@ -273,3 +273,4 @@ class Player(Entity):
         self.animate()
         self.move(self.speed)  # making the player move
         self.stop()
+
