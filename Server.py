@@ -98,7 +98,7 @@ CURSOR = None  # Cursor object to execute SQL commends on the DB
 
 # ------------------------ General
 SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
-MAX_WORKER_THREADS = 5  # The max amount of running worker threads.
+MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 # (larger amount mean faster client handling and able to handle more clients,
 # but a big amount that is not match to your CPU will just waste important system resources and wont help)
 CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
@@ -557,6 +557,30 @@ def check_server_shutdown_thread(server_socket: socket):
             return
 
 
+def verify_packet(payload: bytes, src_addr: tuple, server_socket: socket, executor):
+    """
+    Checking on encoded data if it's a Rotshild protocol packet. Then verifies match of src IP-PORT-ID.
+    If all good then handling the packet to a different thread.
+    :param payload: <Bytes> the payload received.
+    :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
+    :param server_socket: <Socket> the socket object of the server.
+    :param executor: the ThreadPoolExecutor object.
+    """
+
+    global PRIVATE_KEY
+
+    if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
+        plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
+        if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                       src_addr[0],
+                                       str(src_addr[1])):  # verifies match of src IP-PORT-ID
+            executor.submit(packet_handler,
+                            plaintext,
+                            src_addr[0],
+                            str(src_addr[1]),
+                            server_socket)  # handling it in a separate thread
+
+
 def main():
 
     global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
@@ -584,16 +608,8 @@ def main():
                 except socket.timeout:
                     continue
 
-                if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
-                    plaintext = rsa.decrypt(data, PRIVATE_KEY).decode('utf-8')
-                    if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                                   client_address[0],
-                                                   str(client_address[1])):  # verifies match of src IP-PORT-ID
-                        executor.submit(packet_handler,
-                                        plaintext,
-                                        client_address[0],
-                                        str(client_address[1]),
-                                        server_socket)  # handling it in a separate thread
+                # verify the packet in a different thread and if all good then handling it in another thread
+                executor.submit(verify_packet, data, client_address, server_socket, executor)
             # --------------------------------------------------
 
             # the next commend waits for all running tasks to complete (blocking till then), shuts down the
