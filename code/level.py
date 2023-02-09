@@ -8,6 +8,7 @@ from support import *
 from weapon import Weapon
 from ui import UI
 from enemy import Enemy
+from player import Player
 
 
 class Level:
@@ -34,9 +35,9 @@ class Level:
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
         layouts = {
-            'floor': import_csv_layout('../map/map_Floor.csv'),
-            'boundary': import_csv_layout('../map/map_FloorBlocks.csv'),
-            'entities': import_csv_layout('../map/map_Entities.csv')
+            'floor': get_csv_area('../map/map_Floor.csv',(33,22)),
+            'boundary': get_csv_area('../map/map_FloorBlocks.csv',(33,22)),
+            'entities': get_csv_area('../map/map_Entities.csv',(33,22))
         }
 
 
@@ -109,4 +110,6 @@ class Level:
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
+        debug(get_player_loc(self.player.rect))
+
 
