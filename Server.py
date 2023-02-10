@@ -40,6 +40,8 @@ Headers API:                                                                    
                                  - backpack [how much?]                                                                                                      |
                                  + energy_drinks [how much?]                                                                                                 |
                                  - energy_drinks [how much?]                                                                                                 |
+                                 + coins [how much?]                                                                                                         |
+                                 - coins [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
                                  + energy [how much?]                                                                                                        |
@@ -87,6 +89,7 @@ DEFAULT_BOMBS = 0
 DEFAULT_MED_KITS = 0
 DEFAULT_BACKPACK = 0
 DEFAULT_ENERGY_DRINKS = 0
+DEFAULT_COINS = 0
 DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
@@ -163,6 +166,7 @@ def intialize_sqlite_rdb():
                    " med_kits INTEGER,"
                    " backpack INTEGER,"
                    " energy_drinks INTEGER,"
+                   " coins INTEGER,"
                    " exp INTEGER,"
                    " energy INTEGER)")
 
@@ -521,7 +525,7 @@ def rotshild_filter(payload: bytes) -> bool:
     return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
 
 
-def infrom_active_clients_about_shutdown(server_socket: socket, reason: str):
+def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     """
     Informing all active clients that the server is shutting down.
     :param server_socket: <Socket> The server's socket object.
@@ -544,17 +548,19 @@ def check_server_shutdown_thread(server_socket: socket):
     :param server_socket: <Socket> The socket object of the server.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
     while True:
         if input().strip().lower() == 'shutdown':
-            print('>> Shutting down the server...')
+            print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
             print('   [informing all active clients about the shutdown]', end='')
-            infrom_active_clients_about_shutdown(server_socket, 'by_user')
+            inform_active_clients_about_shutdown(server_socket, 'by_user')
             print(' ---> completed')
             # setting the shutdown trigger event.
             SHUTDOWN_TRIGGER_EVENT.set()
             return
+        else:
+            print(">> Invalid input. (to shutdown the server enter 'shutdown')")
 
 
 def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
@@ -617,9 +623,19 @@ def main():
         if ex.errno == 98:
             print(f">> [ERROR] Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
                   f"    Make sure the port is available and is not already in use by another service and run again.")
+        else:
+            print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
+            print('>> Server crashed.')
+            print('   [informing all active clients about the shutdown]', end='')
+            inform_active_clients_about_shutdown(server_socket, 'error')
+            print(' ---> completed')
 
     except Exception as ex:
         print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
+        print('>> Server crashed.')
+        print('   [informing all active clients about the shutdown]', end='')
+        inform_active_clients_about_shutdown(server_socket, 'error')
+        print(' ---> completed')
 
     finally:
         print('   [freeing up resources]', end='')
