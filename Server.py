@@ -47,7 +47,7 @@ Headers API:                                                                    
                                  + energy [how much?]                                                                                                        |
                                  - energy [how much?]                                                                                                        |
               [comes with user_name]                                                                                                                         |
-            - user_name: [user_name]  [comes with inventory_update or chat]                                                        [clients and server send] |
+            - user_name: [user_name]  [comes with inventory_update or chat or dead]                                                [clients and server send] |
             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id                  [clients and server send] |
             - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
             - image: [the name of the file with the image of the player who moved] [comes with player_place]                       [clients and server send] |
@@ -55,7 +55,7 @@ Headers API:                                                                    
             - hit_id: [the ID of the hitted client] [comes with hit_hp and shooter_id]                                             [only server sends]       |
             - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id and shooter_id]    [clients ans server send] |
             - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
-            - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
+            - dead: [the ID of the dead client]  [comes with user_name]                                                            [clients ans server send] |
             - chat: [the info of the message]  [comes with user_name]                                                              [clients and server send] |
             - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
@@ -298,14 +298,15 @@ def handle_register_request(user_name: str, password: str) -> str:
         return 'register_status: taken\r\n'
 
     # user name is free. saving it to the DB
-    new_client = (f'{user_name}',
-                  f'{password}',
-                  f'{DEFAULT_WEAPONS}',
+    new_client = (f"'{user_name}'",
+                  f"'{password}'",
+                  f"'{DEFAULT_WEAPONS}'",
                   DEFAULT_AMMO,
                   DEFAULT_BOMBS,
                   DEFAULT_MED_KITS,
                   DEFAULT_BACKPACK,
                   DEFAULT_ENERGY_DRINKS,
+                  DEFAULT_COINS,
                   DEFAULT_EXP,
                   DEFAULT_ENERGY)
     CURSOR.execute("INSERT INTO clients_info"
@@ -317,9 +318,10 @@ def handle_register_request(user_name: str, password: str) -> str:
                    " med_kits,"
                    " backpack,"
                    " energy_drinks,"
+                   " coins,"
                    " exp,"
                    " energy)"
-                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
+                   " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
     DB_CONNECTION.commit()
 
     print(f'>> New client registered to server. User Name: {user_name}.')
@@ -354,14 +356,16 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     return f'shot_place: {str(shot_place)}\r\nshooter_id: {shooter_id}\r\n'
 
 
-def handle_dead(dead_id: str) -> str:
+def handle_dead(dead_id: str, user_name: str) -> str:
     """
-    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list.
+    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list,
+    and initializing the inventory (the DB values but for user_name, password and coins) to default.
     :param dead_id: <String> the ID of the dead client
+    :param user_name: <String> the uesr name of the dead client.
     :return: <String> dead header with the ID of the dead client.
     """
 
-    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID
+    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID, DB_CONNECTION, CURSOR
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -372,6 +376,27 @@ def handle_dead(dead_id: str) -> str:
         if client_addr[0] == dead_id:  # client_addr[0] is the ID of the client
             CLIENTS_ID_IP_PORT.remove(client_addr)
             break
+
+    # Initializing the inventory (the DB values but for user_name, password and coins) to default
+    client_update = (f"'{DEFAULT_WEAPONS}'",
+                     DEFAULT_AMMO,
+                     DEFAULT_BOMBS,
+                     DEFAULT_MED_KITS,
+                     DEFAULT_BACKPACK,
+                     DEFAULT_ENERGY_DRINKS,
+                     DEFAULT_EXP,
+                     DEFAULT_ENERGY)
+    CURSOR.execute("UPDATE clients_info"
+                   " SET weapons = ?,"
+                   " ammo = ?,"
+                   " bombs = ?,"
+                   " med_kits = ?,"
+                   " backpack = ?,"
+                   " energy_drinks = ?,"
+                   " exp = ?,"
+                   " energy = ?"
+                   " WHERE user_name = ?", client_update + (f"'{user_name}'",))
+    DB_CONNECTION.commit()
 
     # returning a dead header
     print(f'>> Client died and disconnected from game server.\n'
@@ -413,6 +438,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
     individual_reply = False  # should the reply for that packet be for an individual client?
+    user_name_cache = ''  # saving the user_name header info after found one (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
     for line in lines:
@@ -461,17 +487,30 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # --------------
         elif line_parts[0] == 'dead:':
-            reply_rotshild_layer += handle_dead(line_parts[1])
+            # looking for user_name
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        reply_rotshild_layer += handle_dead(line_parts[1], l_parts[1])
+                        break
+            else:
+                reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache)
         # --------------
 
         # --------------
         elif line_parts[0] == 'inventory_update:':
             # looking for user_name
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    handle_update_inventory(line[18::], l_parts[1])
-                    break
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        handle_update_inventory(line[18::], l_parts[1])
+                        break
+            else:
+                handle_update_inventory(line[18::], user_name_cache)
         # --------------
 
         # --------------
@@ -479,11 +518,15 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # so they should print only what comes from the server and don't print their own messages just after sending it.
         elif line_parts[0] == 'chat:':
             # looking for user_name
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    reply_rotshild_layer += line + '\r\n' + l + '\r\n'
-                    break
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        reply_rotshild_layer += line + '\r\n' + l + '\r\n'
+                        break
+            else:
+                reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
         # --------------
 
     if not individual_reply:
