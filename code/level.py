@@ -86,10 +86,12 @@ class Level:
         :return:
         """
         if style == 'heal':  # need to replace with 'shield'
-            self.player.can_shield = self.magic_player.heal(self.player,strength,cost,[self.visble_sprites],self.player.can_shield)
-            self.player.shield_timer = pygame.time.get_ticks()
+            self.magic_player.heal(self.player,strength,cost,[self.visble_sprites])
         if style == 'flame':  # the shots
             pass
+        if style == 'shield':
+            self.magic_player.shield(self.player, strength, cost, [self.visble_sprites])
+            self.player.shield_timer = pygame.time.get_ticks()
 
     def destroy_attack(self):
         if self.current_attack:

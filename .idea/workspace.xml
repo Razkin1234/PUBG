@@ -5,11 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/code/magic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/enemy.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/enemy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/magic.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/magic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -197,7 +196,14 @@
       <option name="project" value="LOCAL‎" />
       <updated>1676136069098</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL‎-00011" summary="still not dune the magic stuff what do you think im hogwortrs biatch ha ha">
+      <created>1676148526373</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL‎-00011" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676148526373</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -231,7 +237,8 @@
     <MESSAGE value="noting" />
     <MESSAGE value="interaction done" />
     <MESSAGE value="done the particles stuf biatch ha ha" />
-    <option name="LAST_COMMIT_MESSAGE" value="done the particles stuf biatch ha ha" />
+    <MESSAGE value="still not dune the magic stuff what do you think im hogwortrs biatch ha ha" />
+    <option name="LAST_COMMIT_MESSAGE" value="still not dune the magic stuff what do you think im hogwortrs biatch ha ha" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
