@@ -67,7 +67,7 @@ import sqlite3
 import public_ip
 import concurrent.futures
 import threading
-import socket
+from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 import rsa
 from rsa.key import PublicKey, PrivateKey
 
@@ -192,7 +192,7 @@ def handle_update_inventory(header_info: str, user_name: str):
             if operation == '+':
                 CURSOR.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
             else:
-                result = CURSOR.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
+                CURSOR.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
                 result = CURSOR.fetchone()
                 client_weapons = result[0].split(',')
                 updated_weapons = []
@@ -438,7 +438,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
     individual_reply = False  # should the reply for that packet be for an individual client?
-    user_name_cache = ''  # saving the user_name header info after found one (to prevent more scans to find it later)
+    user_name_cache = ''  # saving the user_name header info after found ones (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
     for line in lines:
@@ -630,7 +630,7 @@ def main():
     global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
         SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # setting an IPv4 UDP socket
+    server_socket = socket(AF_INET, SOCK_DGRAM)  # setting an IPv4 UDP socket
     try:
         server_socket.settimeout(SERVER_SOCKET_TIMEOUT)  # set timeout to check loop trigger event and not block forever
         print(f'>> NOTE: The server requires your network to have port forwarding'
@@ -649,7 +649,7 @@ def main():
             while not SHUTDOWN_TRIGGER_EVENT.is_set():
                 try:
                     data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
-                except socket.timeout:
+                except socket_timeout:
                     continue
 
                 # verify the packet in a different thread and if all good then handling it in another thread
