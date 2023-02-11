@@ -6,7 +6,7 @@
 * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
                                                                                                                                                              |
 structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                                 |
-[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0]                                         |
+[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register request there is no ID]     |
 [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
                                                                                                                                                              |
 ------------------------------------------------------------------                                                                                           |
@@ -259,13 +259,13 @@ def handle_register_request(user_name: str, password: str) -> str:
     """
 
     global DB_CONNECTION, CURSOR, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
-        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
+        DEFAULT_ENERGY_DRINKS, DEFAULT_COINS, DEFAULT_EXP, DEFAULT_ENERGY
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'register_status: invalid\r\n'
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
+    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name=?", (user_name,))
     result = CURSOR.fetchone()
 
     if result:
@@ -273,9 +273,9 @@ def handle_register_request(user_name: str, password: str) -> str:
         return 'register_status: taken\r\n'
 
     # user name is free. saving it to the DB
-    new_client = (f"'{user_name}'",
-                  f"'{password}'",
-                  f"'{DEFAULT_WEAPONS}'",
+    new_client = (user_name,
+                  password,
+                  DEFAULT_WEAPONS,
                   DEFAULT_AMMO,
                   DEFAULT_BOMBS,
                   DEFAULT_MED_KITS,
@@ -353,7 +353,7 @@ def handle_dead(dead_id: str, user_name: str) -> str:
             break
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
-    client_update = (f"'{DEFAULT_WEAPONS}'",
+    client_update = (DEFAULT_WEAPONS,
                      DEFAULT_AMMO,
                      DEFAULT_BOMBS,
                      DEFAULT_MED_KITS,
@@ -370,7 +370,7 @@ def handle_dead(dead_id: str, user_name: str) -> str:
                    " energy_drinks = ?,"
                    " exp = ?,"
                    " energy = ?"
-                   " WHERE user_name = ?", client_update + (f"'{user_name}'",))
+                   " WHERE user_name = ?", client_update + (user_name,))
     DB_CONNECTION.commit()
 
     # returning a dead header
@@ -412,16 +412,22 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
+    db_open = False  # does the DB connector and cursor open?
     individual_reply = False  # should the reply for that packet be for an individual client?
     user_name_cache = ''  # saving the user_name header info after found ones (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
+    lines.remove('')
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
         # Recognize and handle each header
         # -------------
         if line_parts[0] == 'login_request:':
+            # open db connector and cursor if not open already
+            if not db_open:
+                connect_to_db_and_build_cursor()
+                db_open = True
             user_name, password = line_parts[1].split(',')
             reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port)
             individual_reply = True
@@ -430,6 +436,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # -------------
         if line_parts[0] == 'register_request:':
+            # open db connector and cursor if not open already
+            if not db_open:
+                connect_to_db_and_build_cursor()
+                db_open = True
             user_name, password = line_parts[1].split(',')
             reply_rotshild_layer += handle_register_request(user_name, password)
             individual_reply = True
@@ -462,6 +472,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # --------------
         elif line_parts[0] == 'dead:':
+            # open db connector and cursor if not open already
+            if not db_open:
+                connect_to_db_and_build_cursor()
+                db_open = True
             # looking for user_name
             if user_name_cache == '':
                 for l in lines:
@@ -476,6 +490,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # --------------
         elif line_parts[0] == 'inventory_update:':
+            # open db connector and cursor if not open already
+            if not db_open:
+                connect_to_db_and_build_cursor()
+                db_open = True
             # looking for user_name
             if user_name_cache == '':
                 for l in lines:
@@ -514,6 +532,9 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # sending the reply to the specific client
         server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY), (src_ip, int(src_port)))
 
+    if db_open:
+        close_connection_to_db_and_cursor()
+
 
 def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
     """
@@ -540,12 +561,13 @@ def rotshild_filter(payload: bytes) -> bool:
     global PRIVATE_KEY
 
     expected = 'Rotshild'.encode('utf-8')
-    return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
+    return rsa.decrypt(payload, PRIVATE_KEY)[:len(expected)] == expected
 
 
 def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
     """
-    Checking on encoded data if it's a Rotshild protocol packet. Then verifies match of src IP-PORT-ID.
+    Checking on encoded data if it's a Rotshild protocol packet.
+    Then (if not register request) verifies match of src IP-PORT-ID.
     If all good then handling the packet.
     :param payload: <Bytes> the payload received.
     :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
@@ -556,9 +578,10 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
 
     if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
         plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
-        if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                       src_addr[0],
-                                       str(src_addr[1])):  # verifies match of src IP-PORT-ID
+        # handling packet if ID-IP-PORT matches or if register request
+        if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                               src_addr[0],
+                                                               str(src_addr[1])):
             packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
 
@@ -595,17 +618,38 @@ def check_server_shutdown_thread():
             print(">> Invalid input. (to shutdown the server enter 'shutdown')")
 
 
-def initialize_sqlite_rdb():
+def close_connection_to_db_and_cursor():
+    """
+    Closing the connection to the DB and the cursor object.
+    """
+
+    global DB_CONNECTION, CURSOR
+
+    CURSOR.close()
+    DB_CONNECTION.close()
+
+
+def connect_to_db_and_build_cursor():
     """
     Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
     Creating a cursor object for the DB to execute SQLite commends on it,
-    Creating a table of clients_info (if doesn't exist).
+    :return:
     """
 
     global DB_CONNECTION, CURSOR
 
     DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
     CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
+
+
+def initialize_sqlite_rdb():
+    """
+    Creating a table of clients_info (if doesn't exist). (also creating the DB file if not exists).
+    """
+
+    global DB_CONNECTION, CURSOR
+
+    connect_to_db_and_build_cursor()
     CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
                    " (user_name TEXT PRIMARY KEY,"
                    " password TEXT,"
@@ -618,6 +662,7 @@ def initialize_sqlite_rdb():
                    " coins INTEGER,"
                    " exp INTEGER,"
                    " energy INTEGER)")
+    close_connection_to_db_and_cursor()
 
 
 def set_socket() -> socket:
@@ -705,7 +750,6 @@ def main():
         print(' -----------> completed')
 
         print('   [freeing up last resources]', end='')
-        DB_CONNECTION.close()
         server_socket.close()
         print(' -------------------------> completed')
 
