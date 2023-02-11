@@ -8,7 +8,7 @@ from support import *
 from weapon import Weapon
 from ui import UI
 from enemy import Enemy
-
+from particles import AnimationPlayer
 
 class Level:
     def __init__(self):
@@ -29,6 +29,9 @@ class Level:
 
         # user interface
         self.ui = UI()
+
+        #particles
+        self.animation_player = AnimationPlayer()
 
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
@@ -66,7 +69,7 @@ class Level:
                                     monster_name,
                                     (x, y),
                                     [self.visble_sprites, self.attackable_sprites],
-                                    self.obstacle_sprites,self.damage_player)
+                                    self.obstacle_sprites,self.damage_player,self.trigger_death_particles)
 
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
@@ -81,15 +84,17 @@ class Level:
 
     def damage_player(self,amount,attack_type):
         """
-
+        if the enemy hits the player his health goes down
+        and show particals on screen
         :param amount:
         :param attack_type:
         :return:
         """
         if self.player.vulnerable:
-            self.player.health -=amount
+            self.player.health -= amount
             self.player.vulnerable = False
             self.player.hurt_time = pygame.time.get_ticks()
+            self.animation_player.create_particles(attack_type,self.player.rect.center,[self.visble_sprites])
 
     def player_attack_logic(self):
         """
@@ -104,6 +109,16 @@ class Level:
                     for target_sprite in collision_sprites:
                         if target_sprite.sprite_type == 'enemy':
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type)
+
+    def trigger_death_particles(self,pos,particles_type):
+        """
+
+        :param pos:
+        :param particles_type:
+        :return:
+        """
+        self.animation_player.create_particles(particles_type,pos,[self.visble_sprites])
+
 
     def run(self):  # update and draw the game
         self.visble_sprites.custom_draw(self.player)

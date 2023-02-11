@@ -4,7 +4,7 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
-    def __init__(self, monster_name, pos, groups, obstacle_sprites,damage_player):
+    def __init__(self, monster_name, pos, groups, obstacle_sprites,damage_player,trigger_death_particles):
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
@@ -36,6 +36,7 @@ class Enemy(Entity):
         self.attack_time = None
         self.attack_cooldown = 400
         self.damage_player = damage_player
+        self.trigger_death_particles = trigger_death_particles
 
         #invincibility timer
         self.vulnerable = True
@@ -129,11 +130,13 @@ class Enemy(Entity):
 
     def chack_death(self):
         """
-
+        check if the enemy lost all of his health and kill him if so
         :return:
         """
-        if self.health <=0:
+        if self.health <= 0:
             self.kill()
+            self.trigger_death_particles(self.rect.center,self.monster_name)
+
 
     def hit_reaction(self):
         """
