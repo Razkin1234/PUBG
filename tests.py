@@ -54,4 +54,4 @@ def test_register_request(user_name: str, password: str):
 
 
 
-test_register_request('test3', 'test1')
+test_register_request('test4', 'test1')

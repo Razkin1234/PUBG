@@ -70,7 +70,7 @@ import threading
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 import rsa
 from rsa.key import PublicKey, PrivateKey
-
+from prettytable import PrettyTable
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -600,22 +600,47 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
                         PUBLIC_KEY), (client[1], int(client[2])))
 
 
-def check_server_shutdown_thread():
+def check_user_input_thread():
     """
-    Waiting for the user to shutdown the server by enter 'shutdown' in terminal.
-    After getting the commend setting the shutdown trigger event.
+    Waiting for the user to enter a commend in terminal.
+    - 'shutdown' to shutdown the server. (will set the game loop trigger event)
+    - 'get clients' to prints all clients registered to this serve with their info.
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
     while True:
-        if input().strip().lower() == 'shutdown':
+        commend = input().lower()
+        if commend == 'shutdown':
             print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
             # setting the shutdown trigger event.
             SHUTDOWN_TRIGGER_EVENT.set()
             return
+
+        elif commend == 'get clients':
+            connector = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
+            cursor = connector.cursor()  # creating a cursor object to execute SQL commends
+
+            # selecting and fetching the entire table
+            cursor.execute("SELECT * FROM clients_info")
+            rows = cursor.fetchall()
+
+            if rows:
+                table = PrettyTable()
+                table.field_names = [i[0] for i in cursor.description]
+                for row in rows:
+                    table.add_row(row)
+                print(table)
+
+            else:
+                print('>> The server got no clients yet.')
+
+            cursor.close()
+            connector.close()
+
         else:
-            print(">> Invalid input. (to shutdown the server enter 'shutdown')")
+            print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
+                  "                  (to get server's clients info enter 'get clients')")
 
 
 def close_connection_to_db_and_cursor():
@@ -702,11 +727,12 @@ def main():
         executor = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')
         # --------------------------------------------------
 
-        # setting a thread to shutdown the server according to used terminal commend 'shutdown'
-        executor.submit(check_server_shutdown_thread)
+        # setting a thread to handle user's terminal commends
+        executor.submit(check_user_input_thread)
 
         print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
-        print(f">> To shutdown the server - enter 'shutdown' in your terminal.")
+        print(f">> To shutdown the server - enter 'shutdown' in your terminal.\n"
+              f"   To show all clients registered on this server and their info - enter 'get clients' in your terminal")
 
         # ------------------GAME LOOP-----------------------
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
