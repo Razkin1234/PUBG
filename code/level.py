@@ -1,7 +1,7 @@
+
 import pygame, sys
 from settings import *
 from tile import Tile
-from player import Player
 from debug import debug
 from YsortCameraGroup import *
 from support import *
@@ -18,6 +18,7 @@ class Level:
         # sprite groups setup
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = pygame.sprite.Group()
+        self.floor_sprites = YsortCameraGroup()
 
         # attack sprites
         self.current_attack = None
@@ -36,9 +37,12 @@ class Level:
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
         layouts = {
+            'floor': import_csv_layout('../map/map_Floor.csv'),
             'boundary': import_csv_layout('../map/map_FloorBlocks.csv'),
             'entities': import_csv_layout('../map/map_Entities.csv')
         }
+
+
         for style, layout in layouts.items():
             for row_index, row in enumerate(layout):
                 for col_index, col in enumerate(row):
@@ -47,6 +51,10 @@ class Level:
                         y = row_index * TILESIZE
                         if style == 'boundary':
                             Tile((x, y), self.obstacle_sprites, 'invisible')
+                        if style == 'floor':
+                            tile_path = f'../graphics/tilessyber/{col}.png'
+                            image_surf = pygame.image.load(tile_path).convert_alpha()
+                            Tile((x,y),[self.floor_sprites],'floor',image_surf)
                         if style == 'entities':
                             if col == '394':  # the player number on the map
                                 self.player = Player(  # creating the player
@@ -121,8 +129,11 @@ class Level:
 
 
     def run(self):  # update and draw the game
+        self.floor_sprites.custom_draw(self.player)
+        self.floor_sprites.update()
         self.visble_sprites.custom_draw(self.player)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
+

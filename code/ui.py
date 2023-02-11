@@ -86,7 +86,3 @@ class UI:
       self.show_exp(player.exp)
       self.weapon_overlay(player.weapon_index, not player.can_switch_weapon)
       self.magic_overlay(player.magic_index, not player.can_switch_magic)
-
-
-
-

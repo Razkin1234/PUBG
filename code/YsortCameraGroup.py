@@ -1,3 +1,4 @@
+
 import pygame , sys
 from settings import *
 from tile import Tile
@@ -14,18 +15,15 @@ class YsortCameraGroup(pygame.sprite.Group):
         self.offset = pygame.math.Vector2()
 
         # creating the floor
-        self.floor_surface = pygame.image.load('../graphics/tilemap/ground.png').convert()
+        self.floor_surface = pygame.display.get_surface() #the canvas
         self.floor_rect = self.floor_surface.get_rect(topleft = (0,0))
+
 
     def custom_draw(self, player):
 
         #getting the offset
         self.offset.x = player.rect.centerx - self.half_width
         self.offset.y = player.rect.centery - self.half_height
-
-        #floor drawing
-        floor_offset_pos = self.floor_rect.topleft - self.offset
-        self.display_surface.blit(self.floor_surface,floor_offset_pos)
 
         #for sprite in self.sprites():
         for sprite in sorted(self.sprites(),key= lambda sprite: sprite.rect.centery):
@@ -36,3 +34,5 @@ class YsortCameraGroup(pygame.sprite.Group):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
+
+

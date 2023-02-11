@@ -1,3 +1,4 @@
+
 import pygame
 from math import sin
 class Entity(pygame.sprite.Sprite):
@@ -45,3 +46,4 @@ class Entity(pygame.sprite.Sprite):
             return 255
         else:
             return  0
+

@@ -1,3 +1,4 @@
+
 import pygame
 from settings import *
 from support import import_folder
@@ -45,7 +46,7 @@ class Player(Entity):
 
 
         #stats
-        self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
+        self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
         self.health = self.stats['health'] #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
@@ -273,3 +274,4 @@ class Player(Entity):
         self.animate()
         self.move(self.speed)  # making the player move
         self.stop()
+
