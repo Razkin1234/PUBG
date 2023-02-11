@@ -9,6 +9,8 @@ from weapon import Weapon
 from ui import UI
 from enemy import Enemy
 from particles import AnimationPlayer
+from magic import MagicPlayer
+
 
 class Level:
     def __init__(self):
@@ -30,8 +32,9 @@ class Level:
         # user interface
         self.ui = UI()
 
-        #particles
+        # particles
         self.animation_player = AnimationPlayer()
+        self.magic_player = MagicPlayer(self.animation_player)
 
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
@@ -69,20 +72,31 @@ class Level:
                                     monster_name,
                                     (x, y),
                                     [self.visble_sprites, self.attackable_sprites],
-                                    self.obstacle_sprites,self.damage_player,self.trigger_death_particles)
+                                    self.obstacle_sprites, self.damage_player, self.trigger_death_particles)
 
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
 
     def create_magic(self, style, strength, cost):
-        pass
+        """
+
+        :param style:
+        :param strength:
+        :param cost:
+        :return:
+        """
+        if style == 'heal':  # need to replace with 'shield'
+            self.player.can_shield = self.magic_player.heal(self.player,strength,cost,[self.visble_sprites],self.player.can_shield)
+            self.player.shield_timer = pygame.time.get_ticks()
+        if style == 'flame':  # the shots
+            pass
 
     def destroy_attack(self):
         if self.current_attack:
             self.current_attack.kill()
         self.current_attack = None
 
-    def damage_player(self,amount,attack_type):
+    def damage_player(self, amount, attack_type):
         """
         if the enemy hits the player his health goes down
         and show particals on screen
@@ -90,11 +104,11 @@ class Level:
         :param attack_type:
         :return:
         """
-        if self.player.vulnerable:
+        if self.player.vulnerable and self.player.can_shield:
             self.player.health -= amount
             self.player.vulnerable = False
             self.player.hurt_time = pygame.time.get_ticks()
-            self.animation_player.create_particles(attack_type,self.player.rect.center,[self.visble_sprites])
+            self.animation_player.create_particles(attack_type, self.player.rect.center, [self.visble_sprites])
 
     def player_attack_logic(self):
         """
@@ -110,15 +124,14 @@ class Level:
                         if target_sprite.sprite_type == 'enemy':
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
-    def trigger_death_particles(self,pos,particles_type):
+    def trigger_death_particles(self, pos, particles_type):
         """
-
+        if the enemy dies it show on the screen animation
         :param pos:
         :param particles_type:
         :return:
         """
-        self.animation_player.create_particles(particles_type,pos,[self.visble_sprites])
-
+        self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
     def run(self):  # update and draw the game
         self.visble_sprites.custom_draw(self.player)

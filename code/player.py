@@ -41,6 +41,9 @@ class Player(Entity):
         self.magic = list(magic_data.keys())[self.magic_index] #the magic we are using
         self.can_switch_magic = True
         self.magic_switch_time = None
+        self.shield_timer = None
+        self.can_shield = True
+        self.shield_duration = 2000
 
 
 
@@ -48,7 +51,7 @@ class Player(Entity):
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
         self.health = self.stats['health'] #our current health
         self.energy = self.stats['energy'] #our current energy
-        self.exp = 100
+        self.exp = 30
         self.speed = self.stats['speed'] #the speed of the player
 
         #damage timer
@@ -111,7 +114,7 @@ class Player(Entity):
             self.attack_time = pygame.time.get_ticks()
             #the magic we will use:
             style = list(magic_data.keys())[self.magic_index]
-            strength =  list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
+            strength = list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
             cost = list(magic_data.values())[self.magic_index]['cost']
             self.create_magic(style,strength,cost)
 
@@ -224,18 +227,26 @@ class Player(Entity):
                 self.destroy_attack()
 
         # weapon switching cooldown
-        if not  self.can_switch_weapon:
+        if not self.can_switch_weapon:
             if current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
                 self.can_switch_weapon = True
 
         #magic switching cooldown
-        if not  self.can_switch_magic:
+        if not self.can_switch_magic:
             if current_time - self.magic_switch_time >= self.switch_duration_cooldown:
                 self.can_switch_magic = True
 
+        #hit cooldown
         if not self.vulnerable:
           if current_time - self.hurt_time >= self.invulnerability_duration:
               self.vulnerable = True
+
+        #shiled cooldown
+        if not self.can_shield:
+            if current_time - self.shield_timer >= self.shield_duration:
+                self.can_shield = True
+            else:
+                print('shield')
 
     def animate(self): #shows us the animations
         animation = self.animations[self.status]
@@ -264,6 +275,7 @@ class Player(Entity):
         base_damage = self.stats['attack']
         weapon_damage = weapon_data[self.weapon]['damage']
         return base_damage + weapon_damage
+
 
     def update(self):
 

@@ -119,7 +119,7 @@ class Enemy(Entity):
         :return:nothing
         """
         if self.vulnerable:
-            self.direction =self.get_player_distance_direction(player)[1]
+            self.direction = self.get_player_distance_direction(player)[1]
             if attack_type == 'weapon':
                 self.health -= player.get_full_weapon_damege()
             else:
