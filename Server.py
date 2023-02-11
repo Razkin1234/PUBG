@@ -65,7 +65,7 @@ Headers API:                                                                    
 
 import sqlite3
 import public_ip
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 import threading
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 import rsa
@@ -75,7 +75,7 @@ from rsa.key import PublicKey, PrivateKey
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
 SERVER_IP = '0.0.0.0'
-DEFAULT_BUFFER_SIZE = 1024
+SOCKET_BUFFER_SIZE = 1024
 SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
 # check the main loop trigger event sometimes.
 # The bigger you'll set this timeout - you will check the trigger event less often,
@@ -144,31 +144,6 @@ SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087
 PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT)  # (not secret)
 PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
-
-
-def intialize_sqlite_rdb():
-    """
-    Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
-    Creating a cursor object for the DB to execute SQLite commends on it,
-    Creating a table of clients_info (if doesn't exist).
-    """
-
-    global DB_CONNECTION, CURSOR
-
-    DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
-    CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
-    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
-                   " (user_name TEXT PRIMARY KEY,"
-                   " password TEXT,"
-                   " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
-                   " ammo INTEGER,"
-                   " bombs INTEGER,"
-                   " med_kits INTEGER,"
-                   " backpack INTEGER,"
-                   " energy_drinks INTEGER,"
-                   " coins INTEGER,"
-                   " exp INTEGER,"
-                   " energy INTEGER)")
 
 
 def handle_update_inventory(header_info: str, user_name: str):
@@ -568,44 +543,6 @@ def rotshild_filter(payload: bytes) -> bool:
     return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
 
 
-def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
-    """
-    Informing all active clients that the server is shutting down.
-    :param server_socket: <Socket> The server's socket object.
-    :param reason: <String> why doed it closed? (by_user or error)
-    """
-
-    global CLIENTS_ID_IP_PORT, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
-
-    for client in CLIENTS_ID_IP_PORT:
-        server_socket.sendto(
-            rsa.encrypt(ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n'.encode('utf-8'),
-                        PUBLIC_KEY), (client[1], int(client[2])))
-
-
-def check_server_shutdown_thread(server_socket: socket):
-    """
-    Waiting for the user to shutdown the server by enter 'shutdown' in terminal.
-    After getting the commend - informing all active clients about the server shutdown,
-    and setting the shutdown trigger event.
-    :param server_socket: <Socket> The socket object of the server.
-    """
-
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
-
-    while True:
-        if input().strip().lower() == 'shutdown':
-            print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
-            print('   [informing all active clients about the shutdown]', end='')
-            inform_active_clients_about_shutdown(server_socket, 'by_user')
-            print(' ---> completed')
-            # setting the shutdown trigger event.
-            SHUTDOWN_TRIGGER_EVENT.set()
-            return
-        else:
-            print(">> Invalid input. (to shutdown the server enter 'shutdown')")
-
-
 def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
     """
     Checking on encoded data if it's a Rotshild protocol packet. Then verifies match of src IP-PORT-ID.
@@ -625,42 +562,122 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
             packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
 
+def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
+    """
+    Informing all active clients that the server is shutting down.
+    :param server_socket: <Socket> The server's socket object.
+    :param reason: <String> why doed it closed? (by_user or error)
+    """
+
+    global CLIENTS_ID_IP_PORT, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
+
+    for client in CLIENTS_ID_IP_PORT:
+        server_socket.sendto(
+            rsa.encrypt(ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n'.encode('utf-8'),
+                        PUBLIC_KEY), (client[1], int(client[2])))
+
+
+def check_server_shutdown_thread():
+    """
+    Waiting for the user to shutdown the server by enter 'shutdown' in terminal.
+    After getting the commend setting the shutdown trigger event.
+    """
+
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
+
+    while True:
+        if input().strip().lower() == 'shutdown':
+            print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
+            # setting the shutdown trigger event.
+            SHUTDOWN_TRIGGER_EVENT.set()
+            return
+        else:
+            print(">> Invalid input. (to shutdown the server enter 'shutdown')")
+
+
+def initialize_sqlite_rdb():
+    """
+    Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
+    Creating a cursor object for the DB to execute SQLite commends on it,
+    Creating a table of clients_info (if doesn't exist).
+    """
+
+    global DB_CONNECTION, CURSOR
+
+    DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
+    CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
+    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
+                   " (user_name TEXT PRIMARY KEY,"
+                   " password TEXT,"
+                   " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
+                   " ammo INTEGER,"
+                   " bombs INTEGER,"
+                   " med_kits INTEGER,"
+                   " backpack INTEGER,"
+                   " energy_drinks INTEGER,"
+                   " coins INTEGER,"
+                   " exp INTEGER,"
+                   " energy INTEGER)")
+
+
+def set_socket() -> socket:
+    """
+    Setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
+    :return: <Socket> the socket object.
+    """
+
+    global SERVER_SOCKET_TIMEOUT
+
+    # setting an IPv4/UDP socket
+    server_socket = socket(AF_INET, SOCK_DGRAM)
+    # set timeout for the socket (in order to check the loop trigger event and not block forever if not receiving)
+    server_socket.settimeout(SERVER_SOCKET_TIMEOUT)
+    # binding the server socket
+    server_socket.bind((SERVER_IP, SERVER_UDP_PORT))
+    return server_socket
+
+
 def main():
 
-    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
+    global CURSOR, SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
         SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
-    server_socket = socket(AF_INET, SOCK_DGRAM)  # setting an IPv4 UDP socket
+    executor = None
+    server_socket = None
     try:
-        server_socket.settimeout(SERVER_SOCKET_TIMEOUT)  # set timeout to check loop trigger event and not block forever
         print(f'>> NOTE: The server requires your network to have port forwarding'
               f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
-        intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
-        server_socket.bind((SERVER_IP, SERVER_UDP_PORT))  # binding the server socket
+
+        # -------------------------------------------------- GETTING THINGS READY TO GO
+        # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
+        server_socket = set_socket()
+        # building connection and initialization of the SQL (SQLite) DataBase
+        initialize_sqlite_rdb()
+        # initializing a thread pool executor object
+        executor = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')
+        # --------------------------------------------------
+
+        # setting a thread to shutdown the server according to used terminal commend 'shutdown'
+        executor.submit(check_server_shutdown_thread)
+
         print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
         print(f">> To shutdown the server - enter 'shutdown' in your terminal.")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')\
-                as executor:
-            # setting a thread to shutdown the server according to used terminal commend 'shutdown'
-            executor.submit(check_server_shutdown_thread, server_socket)
+        # ------------------GAME LOOP-----------------------
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            try:
+                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets
+            except socket_timeout:
+                continue
 
-            # ------------------GAME LOOP-----------------------
-            while not SHUTDOWN_TRIGGER_EVENT.is_set():
-                try:
-                    data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
-                except socket_timeout:
-                    continue
+            # verify the packet in a different thread and if all good then handling it in another thread
+            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
+        # --------------------------------------------------
 
-                # verify the packet in a different thread and if all good then handling it in another thread
-                executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
-            # --------------------------------------------------
-
-            # the next commend waits for all running tasks to complete (blocking till then), shuts down the
-            # executor and frees up any resources used by it.
-            print('   [waiting for running threads to complete]', end='')
-            executor.shutdown(wait=True)
-            print(' -----------> completed')
+        # server is shutting down. informing all active clients
+        print('   [informing all active clients about the shutdown]', end='')
+        inform_active_clients_about_shutdown(server_socket, 'by_user')
+        print(' ---> completed')
 
     except OSError as ex:
         if ex.errno == 98:
@@ -681,10 +698,17 @@ def main():
         print(' ---> completed')
 
     finally:
-        print('   [freeing up resources]', end='')
+        print('   [waiting for running threads to complete]', end='')
+        # the next commend waits for all running tasks to complete (blocking till then), shuts down the
+        # tread pool executor and frees up any resources used by it.
+        executor.shutdown(wait=True)
+        print(' -----------> completed')
+
+        print('   [freeing up last resources]', end='')
         DB_CONNECTION.close()
         server_socket.close()
-        print(' ------------------------------> completed')
+        print(' -------------------------> completed')
+
         print('>> Server is closed.')
 
 
