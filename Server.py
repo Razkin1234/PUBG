@@ -104,11 +104,6 @@ DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
 # ------------------------
 
 
-# ------------------------ SQLite DateBase objects
-DB_CONNECTION = None  # The connection with the SQLite RDB
-CURSOR = None  # Cursor object to execute SQL commends on the DB
-# ------------------------
-
 # ------------------------ General
 SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
 MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
@@ -156,57 +151,58 @@ PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME
 # -------------------------
 
 
-def handle_update_inventory(header_info: str, user_name: str):
+def handle_update_inventory(header_info: str, user_name: str, connector, cursor):
     """
     updating the inventory of a client in the DB
     :param header_info: <String> all the raw info in the update_inventory header.
     :param user_name: <String> the user name of the client (get from the user_name header).
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     """
-
-    global DB_CONNECTION, CURSOR
 
     updates = header_info.split(',')
     # handle each inventory update
     for update in updates:
         operation, column, info = update.split()
         if column != 'weapons':
-            CURSOR.execute(f"UPDATE clients_info"
+            cursor.execute(f"UPDATE clients_info"
                            f" SET {column} = {column} {operation} {info}"
                            f" WHERE user_name = '{user_name}'")
         else:
             if operation == '+':
-                CURSOR.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
+                cursor.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
             else:
-                CURSOR.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
-                result = CURSOR.fetchone()
+                cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
+                result = cursor.fetchone()
                 client_weapons = result[0].split(',')
                 updated_weapons = []
                 for weapon in client_weapons:
                     if weapon != info:
                         updated_weapons.append(weapon)
                 updated_weapons = ','.join(updated_weapons)
-                CURSOR.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
-    DB_CONNECTION.commit()
+                cursor.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
+    connector.commit()
 
 
-def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str) -> str:
+def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str, cursor) -> str:
     """
     Checking if the user_name exists and matches its password in the DB. if yes giving ID.
     :param user_name: <Sting> the user name entered in the login request.
     :param password: <String> the password entered in the login request.
     :param client_ip: <String> the IP of the client.
     :param client_port <String> the port of the client.
+    :param cursor: the cursor object to the DB.
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CURSOR, CLIENTS_ID_IP_PORT
+    global CLIENTS_ID_IP_PORT
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'login_status: fail\r\n'
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
-    result = CURSOR.fetchone()
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
+    result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
         return 'login_status: fail\r\n'
@@ -260,23 +256,25 @@ def create_new_id(client_ip_port: tuple) -> str:
     return str(last_id)
 
 
-def handle_register_request(user_name: str, password: str) -> str:
+def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
     """
     Checking if user_name already taken. if not - adds it to the DB with his password and default values of player data.
     :param user_name: <String> the user name entered in the register request.
     :param password: <String> the password entered in the register request.
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DB_CONNECTION, CURSOR, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
         DEFAULT_ENERGY_DRINKS, DEFAULT_COINS, DEFAULT_EXP, DEFAULT_ENERGY
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'register_status: invalid\r\n'
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name=?", (user_name,))
-    result = CURSOR.fetchone()
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+    result = cursor.fetchone()
 
     if result:
         # user name is taken
@@ -294,7 +292,7 @@ def handle_register_request(user_name: str, password: str) -> str:
                   DEFAULT_COINS,
                   DEFAULT_EXP,
                   DEFAULT_ENERGY)
-    CURSOR.execute("INSERT INTO clients_info"
+    cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
                    " password,"
                    " weapons,"
@@ -307,7 +305,7 @@ def handle_register_request(user_name: str, password: str) -> str:
                    " exp,"
                    " energy)"
                    " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
-    DB_CONNECTION.commit()
+    connector.commit()
 
     print(f'>> New client registered to server. User Name: {user_name}.')
     return 'register_status: success\r\n'
@@ -341,16 +339,18 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     return f'shot_place: {str(shot_place)}\r\nshooter_id: {shooter_id}\r\n'
 
 
-def handle_dead(dead_id: str, user_name: str) -> str:
+def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
     Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list,
     and initializing the inventory (the DB values but for user_name, password and coins) to default.
     :param dead_id: <String> the ID of the dead client
     :param user_name: <String> the uesr name of the dead client.
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     :return: <String> dead header with the ID of the dead client.
     """
 
-    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID, DB_CONNECTION, CURSOR
+    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -371,7 +371,7 @@ def handle_dead(dead_id: str, user_name: str) -> str:
                      DEFAULT_ENERGY_DRINKS,
                      DEFAULT_EXP,
                      DEFAULT_ENERGY)
-    CURSOR.execute("UPDATE clients_info"
+    cursor.execute("UPDATE clients_info"
                    " SET weapons = ?,"
                    " ammo = ?,"
                    " bombs = ?,"
@@ -381,7 +381,7 @@ def handle_dead(dead_id: str, user_name: str) -> str:
                    " exp = ?,"
                    " energy = ?"
                    " WHERE user_name = ?", client_update + (user_name,))
-    DB_CONNECTION.commit()
+    connector.commit()
 
     # returning a dead header
     print(f'>> Client died and disconnected from game server.\n'
@@ -422,7 +422,8 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
-    db_open = False  # does the DB connector and cursor open?
+    connector = None  # connection object to DB
+    cursor = None  # cursor object to DB
     individual_reply = False  # should the reply for that packet be for an individual client?
     user_name_cache = ''  # saving the user_name header info after found ones (to prevent more scans to find it later)
 
@@ -435,11 +436,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # -------------
         if line_parts[0] == 'login_request:':
             # open db connector and cursor if not open already
-            if not db_open:
-                connect_to_db_and_build_cursor()
-                db_open = True
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port)
+            reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port, cursor)
             individual_reply = True
             break
         # -------------
@@ -447,11 +447,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # -------------
         if line_parts[0] == 'register_request:':
             # open db connector and cursor if not open already
-            if not db_open:
-                connect_to_db_and_build_cursor()
-                db_open = True
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_register_request(user_name, password)
+            reply_rotshild_layer += handle_register_request(user_name, password, connector, cursor)
             individual_reply = True
             break
         # --------------
@@ -483,37 +482,35 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
         elif line_parts[0] == 'dead:':
             # open db connector and cursor if not open already
-            if not db_open:
-                connect_to_db_and_build_cursor()
-                db_open = True
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             # looking for user_name
             if user_name_cache == '':
                 for l in lines:
                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                     if l_parts[0] == 'user_name:':
                         user_name_cache = l_parts[1]
-                        reply_rotshild_layer += handle_dead(line_parts[1], l_parts[1])
+                        reply_rotshild_layer += handle_dead(line_parts[1], l_parts[1], connector, cursor)
                         break
             else:
-                reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache)
+                reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
         elif line_parts[0] == 'inventory_update:':
             # open db connector and cursor if not open already
-            if not db_open:
-                connect_to_db_and_build_cursor()
-                db_open = True
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             # looking for user_name
             if user_name_cache == '':
                 for l in lines:
                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                     if l_parts[0] == 'user_name:':
                         user_name_cache = l_parts[1]
-                        handle_update_inventory(line[18::], l_parts[1])
+                        handle_update_inventory(line[18::], l_parts[1], connector, cursor)
                         break
             else:
-                handle_update_inventory(line[18::], user_name_cache)
+                handle_update_inventory(line[18::], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
@@ -542,8 +539,8 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # sending the reply to the specific client
         server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY), (src_ip, int(src_port)))
 
-    if db_open:
-        close_connection_to_db_and_cursor()
+    if connector or cursor:
+        close_connection_to_db_and_cursor(connector, cursor)
 
 
 def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
@@ -617,7 +614,7 @@ def check_user_input_thread():
     - 'get clients' to prints all clients registered to this serve with their info.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
     while True:
         commend = input().lower()
@@ -632,9 +629,7 @@ def check_user_input_thread():
 
         # -------------------
         elif commend == 'get clients':
-            connector = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
-            cursor = connector.cursor()  # creating a cursor object to execute SQL commends
-
+            connector, cursor = connect_to_db_and_build_cursor()
             # selecting and fetching the entire table
             cursor.execute("SELECT * FROM clients_info")
             rows = cursor.fetchall()
@@ -649,15 +644,12 @@ def check_user_input_thread():
             else:
                 print('>> The server got no clients yet.')
 
-            cursor.close()
-            connector.close()
+            close_connection_to_db_and_cursor(connector, cursor)
         # -------------------
 
         # -------------------
         elif commend.split()[0] == 'delete':
-            connector = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
-            cursor = connector.cursor()  # creating a cursor object to execute SQL commends
-
+            connector, cursor = connect_to_db_and_build_cursor()
             user_name = commend.split()[1]
 
             # selecting and fetching the user name line
@@ -673,8 +665,7 @@ def check_user_input_thread():
             else:
                 print(f">> Client {user_name} does'nt exist in the server.")
 
-            cursor.close()
-            connector.close()
+            close_connection_to_db_and_cursor(connector, cursor)
         # -------------------
 
         # -------------------
@@ -685,28 +676,30 @@ def check_user_input_thread():
         # -------------------
 
 
-def close_connection_to_db_and_cursor():
+def close_connection_to_db_and_cursor(connection, cursor):
     """
     Closing the connection to the DB and the cursor object.
+    :param connection: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     """
 
-    global DB_CONNECTION, CURSOR
-
-    CURSOR.close()
-    DB_CONNECTION.close()
+    cursor.close()
+    connection.close()
 
 
-def connect_to_db_and_build_cursor():
+def connect_to_db_and_build_cursor() -> tuple:
     """
     Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
     Creating a cursor object for the DB to execute SQLite commends on it,
-    :return:
+    :return: <Tuple> the Connection object of the DB and the Cursor object of it (by that order).
     """
 
-    global DB_CONNECTION, CURSOR, DB_PATH
+    global DB_PATH
 
-    DB_CONNECTION = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
-    CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
+    connection = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
+    cursor = connection.cursor()  # creating a cursor object to execute SQL commends
+
+    return connection, cursor
 
 
 def initialize_sqlite_rdb():
@@ -714,10 +707,8 @@ def initialize_sqlite_rdb():
     Creating a table of clients_info (if doesn't exist). (also creating the DB file if not exists).
     """
 
-    global DB_CONNECTION, CURSOR
-
-    connect_to_db_and_build_cursor()
-    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
+    connection, cursor = connect_to_db_and_build_cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
                    " (user_name TEXT PRIMARY KEY,"
                    " password TEXT,"
                    " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
@@ -729,7 +720,7 @@ def initialize_sqlite_rdb():
                    " coins INTEGER,"
                    " exp INTEGER,"
                    " energy INTEGER)")
-    close_connection_to_db_and_cursor()
+    close_connection_to_db_and_cursor(connection, cursor)
 
 
 def set_socket() -> socket:
@@ -751,7 +742,7 @@ def set_socket() -> socket:
 
 def main():
 
-    global CURSOR, SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
         SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
     executor = None

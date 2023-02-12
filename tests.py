@@ -131,9 +131,9 @@ def test_update_inventory(header_info: str, user_name: str):
 
     print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
 
-
-test_login_request('test', 'test')  # BUG: to check if user name already logging before logging in
-test_update_inventory('+ bomb 4', 'test')
+test_register_request('test5', 'test5')
+test_login_request('test5', 'test5')  # BUG: to check if user name already logging before logging in
+#test_update_inventory('+ bomb 4', 'test')
 test_dead('1', 'test')
 
 while True:
