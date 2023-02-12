@@ -63,6 +63,7 @@ Headers API:                                                                    
 """
 
 
+import os
 import sqlite3
 import public_ip
 from concurrent.futures import ThreadPoolExecutor
@@ -93,6 +94,15 @@ DEFAULT_COINS = 0
 DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
+
+
+# ------------------------ Files path
+SCRIPT_PATH = os.path.abspath(__file__)
+SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+DB_FILE = "Server_DB.db"
+DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
+# ------------------------
+
 
 # ------------------------ SQLite DateBase objects
 DB_CONNECTION = None  # The connection with the SQLite RDB
@@ -596,7 +606,7 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
 
     for client in CLIENTS_ID_IP_PORT:
         server_socket.sendto(
-            rsa.encrypt(ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n'.encode('utf-8'),
+            rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
                         PUBLIC_KEY), (client[1], int(client[2])))
 
 
@@ -607,18 +617,22 @@ def check_user_input_thread():
     - 'get clients' to prints all clients registered to this serve with their info.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH
 
     while True:
         commend = input().lower()
+
+        # -------------------
         if commend == 'shutdown':
             print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
             # setting the shutdown trigger event.
             SHUTDOWN_TRIGGER_EVENT.set()
             return
+        # -------------------
 
+        # -------------------
         elif commend == 'get clients':
-            connector = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
+            connector = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
             cursor = connector.cursor()  # creating a cursor object to execute SQL commends
 
             # selecting and fetching the entire table
@@ -637,10 +651,38 @@ def check_user_input_thread():
 
             cursor.close()
             connector.close()
+        # -------------------
 
+        # -------------------
+        elif commend.split()[0] == 'delete':
+            connector = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
+            cursor = connector.cursor()  # creating a cursor object to execute SQL commends
+
+            user_name = commend.split()[1]
+
+            # selecting and fetching the user name line
+            cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+            row = cursor.fetchone()
+
+            # if user name exists
+            if row:
+                cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name,))
+                print(f'>> Client {user_name} has been deleted from server.')
+                connector.commit()
+
+            else:
+                print(f">> Client {user_name} does'nt exist in the server.")
+
+            cursor.close()
+            connector.close()
+        # -------------------
+
+        # -------------------
         else:
             print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
-                  "                  (to get server's clients info enter 'get clients')")
+                  "                  (to get server's clients info enter 'get clients')\n"
+                  "                  (to delete a client from the server enter 'delete user_name')")
+        # -------------------
 
 
 def close_connection_to_db_and_cursor():
@@ -661,9 +703,9 @@ def connect_to_db_and_build_cursor():
     :return:
     """
 
-    global DB_CONNECTION, CURSOR
+    global DB_CONNECTION, CURSOR, DB_PATH
 
-    DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
+    DB_CONNECTION = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
     CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
 
 
@@ -730,9 +772,10 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread)
 
-        print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
+        # print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
         print(f">> To shutdown the server - enter 'shutdown' in your terminal.\n"
-              f"   To show all clients registered on this server and their info - enter 'get clients' in your terminal")
+              f"   To show all clients registered on this server and their info - enter 'get clients' in your terminal."
+              f"\n   To delete a client from the server enter 'delete user_name' in your terminal.")
 
         # ------------------GAME LOOP-----------------------
         while not SHUTDOWN_TRIGGER_EVENT.is_set():

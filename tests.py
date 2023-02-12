@@ -40,7 +40,7 @@ def test_register_request(user_name: str, password: str):
     except Exception as ex:
         print(f'ERROR: {ex}')
 
-    print(f'{str(payload_bytes)} bytes sent seccesfully')
+    print(f'{str(payload_bytes)} bytes of register_request sent successfully')
 
     print('waiting for reply...')
     ciphertext_reply = my_socket.recv(1024)
@@ -49,9 +49,99 @@ def test_register_request(user_name: str, password: str):
 
     plaintext_reply = encoded_reply.decode('utf-8')
 
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------')
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
 
 
+def test_login_request(user_name: str, password: str):
+    plaintext = 'Rotshild \r\n' \
+                '\r\n' \
+                f'login_request: {user_name},{password}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    ciphertext = rsa.encrypt(encoded, PUBLIC_KEY)
+
+    try:
+        payload_bytes = my_socket.send(ciphertext)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes of login_request sent successfully')
+
+    print('waiting for reply...')
+    ciphertext_reply = my_socket.recv(1024)
+
+    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
+
+    plaintext_reply = encoded_reply.decode('utf-8')
+
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
 
 
-test_register_request('test4', 'test1')
+def test_dead(id: str, user_name: str):
+    plaintext = 'Rotshild \r\n' \
+                '\r\n' \
+                f'dead: {id}\r\n' \
+                f'user_name: {user_name}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    ciphertext = rsa.encrypt(encoded, PUBLIC_KEY)
+
+    try:
+        payload_bytes = my_socket.send(ciphertext)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes od dead sent successfully')
+
+    print('waiting for reply...')
+    ciphertext_reply = my_socket.recv(1024)
+
+    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
+
+    plaintext_reply = encoded_reply.decode('utf-8')
+
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+
+
+def test_update_inventory(header_info: str, user_name: str):
+    plaintext = 'Rotshild \r\n' \
+                '\r\n' \
+                f'inventory_update: {header_info}\r\n' \
+                f'user_name: {user_name}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    ciphertext = rsa.encrypt(encoded, PUBLIC_KEY)
+
+    try:
+        payload_bytes = my_socket.send(ciphertext)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
+
+    print('waiting for reply...')
+    ciphertext_reply = my_socket.recv(1024)
+
+    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
+
+    plaintext_reply = encoded_reply.decode('utf-8')
+
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+
+
+test_login_request('test', 'test')  # BUG: to check if user name already logging before logging in
+test_update_inventory('+ bomb 4', 'test')
+test_dead('1', 'test')
+
+while True:
+    print('waiting for replies...')
+    ciphertext_reply = my_socket.recv(1024)
+
+    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
+
+    plaintext_reply = encoded_reply.decode('utf-8')
+
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
