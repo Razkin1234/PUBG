@@ -609,9 +609,10 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
 
 def check_user_input_thread():
     """
-    Waiting for the user to enter a commend in terminal.
+    Waiting for the user to enter a commend in terminal and execute it.
     - 'shutdown' to shutdown the server. (will set the game loop trigger event)
     - 'get clients' to prints all clients registered to this serve with their info.
+    - 'delete user_name' to delete a client from the server.
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
