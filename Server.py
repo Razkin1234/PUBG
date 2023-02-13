@@ -25,6 +25,7 @@ The full packet looks like this:                                                
 Headers API:                                                                                                                                                 |
             - login_request: [user_name],[password]                                                                                [only clients send]       |
             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him]               [only server sends]       |
+            - first_inventory: [the inventory] it will be organized like the header 'inventory_update without the - and +          [only server sends]       |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
@@ -215,7 +216,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
               f'   User IPv4 addr - {client_ip}\n'
               f'   User port number - {client_port}\n'
               f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
-        return 'login_status: ' + given_id + '\r\n'
+        return 'login_status: ' + given_id + '\r\n' + f'first_inventory: weapons {result[2]},ammo {result[3]},bombs {result[4]},med_kits {result[5]},backpack {result[6]},energy_drinks {result[7]},coins {result[8]},exp {result[9]},energy {result[10]}\r\n'
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
