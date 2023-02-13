@@ -30,7 +30,7 @@ def test_register_request(user_name: str, password: str):
     plaintext = 'Rotshild \r\n' \
                 '\r\n' \
                 f'register_request: {user_name},{password}\r\n'
-
+#d
     encoded = plaintext.encode('utf-8')
 
     ciphertext = rsa.encrypt(encoded, PUBLIC_KEY)
