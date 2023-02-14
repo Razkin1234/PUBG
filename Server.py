@@ -307,7 +307,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
     connector.commit()
 
-    print(f'>> New client registered to server. User Name: {user_name}.')
+    print(f'>> New client registered to server. [User Name: {user_name}]')
     return 'register_status: success\r\n'
 
 
@@ -612,10 +612,11 @@ def check_user_input_thread():
     Waiting for the user to enter a commend in terminal and execute it.
     - 'shutdown' to shutdown the server. (will set the game loop trigger event)
     - 'get clients' to prints all clients registered to this serve with their info.
-    - 'delete user_name' to delete a client from the server.
+    - 'delete <user_name>' to delete a client from the server.
+    - 'reset' to reset the server and terminate the existing users and data.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH
 
     while True:
         commend = input().lower()
@@ -634,14 +635,16 @@ def check_user_input_thread():
             # selecting and fetching the entire table
             cursor.execute("SELECT * FROM clients_info")
             rows = cursor.fetchall()
-
+            # if there are clients
             if rows:
+                # building the Prettytable table
                 table = PrettyTable()
                 table.field_names = [i[0] for i in cursor.description]
                 for row in rows:
                     table.add_row(row)
+                # printing the client table
                 print(table)
-
+            # if there are no clients
             else:
                 print('>> The server got no clients yet.')
 
@@ -663,6 +666,7 @@ def check_user_input_thread():
                 print(f'>> Client {user_name} has been deleted from server.')
                 connector.commit()
 
+            # if user name doesn't exist
             else:
                 print(f">> Client {user_name} does'nt exist in the server.")
 
@@ -670,10 +674,29 @@ def check_user_input_thread():
         # -------------------
 
         # -------------------
+        elif commend == 'reset':
+            print('>> Resetting the server (all clients and current data will be permanently terminated)...')
+            # if there is a DB (should be because we create it in the beginning... but just in case I check again)
+            if os.path.isfile(DB_PATH):
+                # delete the DB file
+                print("   [Deleting current DB ('Server_DB.db' file) from your system]", end='')
+                os.remove(DB_PATH)
+                print(' -------------------------> completed')
+
+                # creating a new empty DB
+                print("   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]", end='')
+                initialize_sqlite_rdb()
+                print(' ------> completed')
+
+                print('>> Your server have been successfully reset.')
+        # -------------------
+
+        # -------------------
         else:
             print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
                   "                  (to get server's clients info enter 'get clients')\n"
-                  "                  (to delete a client from the server enter 'delete user_name')")
+                  "                  (to delete a client from the server enter 'delete <user_name>')\n"
+                  "                  (to reset the server and terminate any existing users and data enter 'reset')")
         # -------------------
 
 
@@ -765,9 +788,12 @@ def main():
         executor.submit(check_user_input_thread)
 
         # print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
-        print(f">> To shutdown the server - enter 'shutdown' in your terminal.\n"
-              f"   To show all clients registered on this server and their info - enter 'get clients' in your terminal."
-              f"\n   To delete a client from the server enter 'delete user_name' in your terminal.")
+        print(">> ---------------------\n"
+              "   - To shutdown the server - enter 'shutdown' in your terminal\n"
+              "   - To show all clients registered on this server and their info - enter 'get clients' in your terminal"
+              "\n   - To delete a client from the server enter 'delete <user_name>' in your terminal"
+              "\n   - To reset the server and terminate any existing users and data enter 'reset' in your terminal"
+              "\n   ---------------------")
 
         # ------------------GAME LOOP-----------------------
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
