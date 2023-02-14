@@ -113,7 +113,7 @@ def test_update_inventory(header_info: str, user_name: str):
 
 
 #test_register_request('test1', 'test1')
-#test_login_request('test2', 'test2')  # BUG: to check if user name already logging before logging in
+test_login_request('test1', 'test1')  # BUG: to check if user name already logging before logging in
 #test_update_inventory('+ bomb 4', 'test')
 #test_dead('2', 'test2')  # BUG: to check if user name exists and active
 #wait_for_reply()

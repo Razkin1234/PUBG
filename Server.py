@@ -46,17 +46,16 @@ Headers API:                                                                    
                                  - exp [how much?]                                                                                                           |
                                  + energy [how much?]                                                                                                        |
                                  - energy [how much?]                                                                                                        |
-              [comes with user_name]                                                                                                                         |
-            - user_name: [user_name]  [comes with inventory_update or chat or dead]                                                [clients and server send] |
-            - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id                  [clients and server send] |
+            - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
+            - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id]                 [clients and server send] |
             - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
             - image: [the name of the file with the image of the player who moved] [comes with player_place]                       [clients and server send] |
             - shot_place: ([the X coordinate],[the Y coordinate]) [when client sends comes with hit_hp]                            [clients and server send] |
             - hit_id: [the ID of the hitted client] [comes with hit_hp and shooter_id]                                             [only server sends]       |
             - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id and shooter_id]    [clients ans server send] |
             - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
-            - dead: [the ID of the dead client]  [comes with user_name]                                                            [clients ans server send] |
-            - chat: [the info of the message]  [comes with user_name]                                                              [clients and server send] |
+            - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
+            - chat: [the info of the message]  [comes with user_name when server sends]                                            [clients and server send] |
             - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
@@ -113,7 +112,8 @@ MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 
 
 # ------------------------ General
-CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
+CLIENTS_ID_IP_PORT_NAME = []  # IPs, PORTs, IDs and user names of all clients
+# as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
 # -------------------------
@@ -199,7 +199,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CLIENTS_ID_IP_PORT
+    global CLIENTS_ID_IP_PORT_NAME
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -212,32 +212,33 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         return 'login_status: fail\r\n'
     elif result[1] == password:
         # user name exists in DB and matches the password
-        given_id = create_new_id((client_ip, client_port))
+        given_id = create_new_id((client_ip, client_port, user_name))
         print(f'>> New client connected to the game server.\n'
               f'   User Name - {user_name}\n'
               f'   User game ID - {given_id}\n'
               f'   User IPv4 addr - {client_ip}\n'
               f'   User port number - {client_port}\n'
-              f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
+              f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}')
         return 'login_status: ' + given_id + '\r\n'
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
 
 
-def create_new_id(client_ip_port: tuple) -> str:
+def create_new_id(client_ip_port_name: tuple) -> str:
     """
-    Creating a new ID for a client, saving it with its IP and PORT in the CLIENTS_ID_IP_PORT list, and returning it.
-    :param client_ip_port: <Tuple> the IP and PORT of the new client as (IP,PORT).   [IP and PORT are str]
+    Creating a new ID for a client, saving it with its IP and PORT in the CLIENTS_ID_IP_PORT_NAME list, and returning it
+    :param client_ip_port_name: <Tuple> the IP, PORT and user name of the new client as (IP, PORT, NAME).
+                                                                                        [IP, PORT and NAME are str]
     :return: <String> the ID given to the client.
     """
 
-    global CLIENTS_ID_IP_PORT
+    global CLIENTS_ID_IP_PORT_NAME
 
     # checking if the list is empty
-    if not CLIENTS_ID_IP_PORT:
+    if not CLIENTS_ID_IP_PORT_NAME:
         # giving ID = 1
-        CLIENTS_ID_IP_PORT.append(('1', client_ip_port[0], client_ip_port[1]))
+        CLIENTS_ID_IP_PORT_NAME.append(('1', client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
         return '1'
 
     last_id = 0  # the last active id we know we have at the moment
@@ -245,18 +246,18 @@ def create_new_id(client_ip_port: tuple) -> str:
     while found is False:  # Running till a free id found
         last_id += 1  # Checking the next id
 
-        for client in CLIENTS_ID_IP_PORT:  # Running for each client
+        for client in CLIENTS_ID_IP_PORT_NAME:  # Running for each client
             if client[0] == str(last_id):
                 # if got here then there is a client with the id in last_id
                 break
 
             # checking if we passed all active clients
-            elif client[0] == CLIENTS_ID_IP_PORT[len(CLIENTS_ID_IP_PORT) - 1][0]:
+            elif client[0] == CLIENTS_ID_IP_PORT_NAME[len(CLIENTS_ID_IP_PORT_NAME) - 1][0]:
                 # if got here then there is no client with the id in last_id
                 found = True
 
     # the smallest free ID is in last_id
-    CLIENTS_ID_IP_PORT.append((str(last_id), client_ip_port[0], client_ip_port[1]))
+    CLIENTS_ID_IP_PORT_NAME.append((str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
     return str(last_id)
 
 
@@ -330,7 +331,7 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
              if not hit then shot_place and shooter_id.
              if hit then hit_id and hit_hp and shooter_id.
     """
-    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS
+    global PLAYER_PLACES_BY_ID
 
     # checking if one of the players got hit
     for player_id, player_place in PLAYER_PLACES_BY_ID.items():
@@ -345,7 +346,7 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list,
+    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list,
     and initializing the inventory (the DB values but for user_name, password and coins) to default.
     :param dead_id: <String> the ID of the dead client
     :param user_name: <String> the uesr name of the dead client.
@@ -354,16 +355,16 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     :return: <String> dead header with the ID of the dead client.
     """
 
-    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID
+    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
         del PLAYER_PLACES_BY_ID[dead_id]
 
-    # Deleting the dead client from the CLIENTS_ID_IP_PORT list
-    for client_addr in CLIENTS_ID_IP_PORT:
+    # Deleting the dead client from the CLIENTS_ID_IP_PORT_NAME list
+    for client_addr in CLIENTS_ID_IP_PORT_NAME:
         if client_addr[0] == dead_id:  # client_addr[0] is the ID of the client
-            CLIENTS_ID_IP_PORT.remove(client_addr)
+            CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
@@ -390,7 +391,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     # returning a dead header
     print(f'>> Client died and disconnected from game server.\n'
           f'   Dead client ID - {dead_id}\n'
-          f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
+          f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}')
     return 'dead: ' + dead_id + '\r\n'
 
 
@@ -403,7 +404,7 @@ def handle_player_place(place: tuple, id: str, image: str) -> str:
     :return: <String> 3 headers - player_place, moved_player_id and image according to the moved player.
     """
 
-    global CLIENTS_ID_IP_PORT, PLAYER_PLACES_BY_ID
+    global PLAYER_PLACES_BY_ID
 
     # Updates the dict PLAYER_PLACES_BY_ID with the new place of the player
     PLAYER_PLACES_BY_ID[id] = place
@@ -423,20 +424,22 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     :param server_socket: <Socket> the server's socket object.
     """
 
-    global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
+    global CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
     connector = None  # connection object to DB
     cursor = None  # cursor object to DB
     individual_reply = False  # should the reply for that packet be for an individual client?
-    user_name_cache = ''  # saving the user_name header info after found ones (to prevent more scans to find it later)
+    user_name_cache = ''  # saving the user name of the src after found ones (to prevent more scans to find it later)
+    id_cache = ''  # saving the id of the src after found ones (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
     lines.remove('')
+
+    # Recognize and handle each header
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
-        # Recognize and handle each header
         # -------------
         if line_parts[0] == 'login_request:':
             # open db connector and cursor if not open already
@@ -466,8 +469,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'image:':
+                    if id_cache == '':
+                        id_cache = lines[0].split()[1]
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-                    reply_rotshild_layer += handle_player_place(tuple_place, lines[0].split()[1], l_parts[1])
+                    reply_rotshild_layer += handle_player_place(tuple_place, id_cache, l_parts[1])
                     break
         # --------------
 
@@ -478,8 +483,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'hit_hp:':
+                    if id_cache == '':
+                        id_cache = lines[0].split()[1]
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], lines[0].split()[1])
+                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], id_cache)
                     break
         # --------------
 
@@ -488,16 +495,15 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             # open db connector and cursor if not open already
             if not (connector and cursor):
                 connector, cursor = connect_to_db_and_build_cursor()
-            # looking for user_name
+
             if user_name_cache == '':
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'user_name:':
-                        user_name_cache = l_parts[1]
-                        reply_rotshild_layer += handle_dead(line_parts[1], l_parts[1], connector, cursor)
+                if id_cache == '':
+                    id_cache = lines[0].split()[1]
+                for client in CLIENTS_ID_IP_PORT_NAME:
+                    if client[0] == id_cache:
+                        user_name_cache = client[3]
                         break
-            else:
-                reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache, connector, cursor)
+            reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
@@ -505,37 +511,34 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             # open db connector and cursor if not open already
             if not (connector and cursor):
                 connector, cursor = connect_to_db_and_build_cursor()
-            # looking for user_name
+
             if user_name_cache == '':
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'user_name:':
-                        user_name_cache = l_parts[1]
-                        handle_update_inventory(line[18::], l_parts[1], connector, cursor)
+                if id_cache == '':
+                    id_cache = lines[0].split()[1]
+                for client in CLIENTS_ID_IP_PORT_NAME:
+                    if client[0] == id_cache:
+                        user_name_cache = client[3]
                         break
-            else:
-                handle_update_inventory(line[18::], user_name_cache, connector, cursor)
+            handle_update_inventory(line[18::], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
         # clients will get chats of themselves too.
         # so they should print only what comes from the server and don't print their own messages just after sending it.
         elif line_parts[0] == 'chat:':
-            # looking for user_name
             if user_name_cache == '':
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'user_name:':
-                        user_name_cache = l_parts[1]
-                        reply_rotshild_layer += line + '\r\n' + l + '\r\n'
+                if id_cache == '':
+                    id_cache = lines[0].split()[1]
+                for client in CLIENTS_ID_IP_PORT_NAME:
+                    if client[0] == id_cache:
+                        user_name_cache = client[3]
                         break
-            else:
-                reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
+            reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
         # --------------
 
     if not individual_reply:
         # sending the reply to all active clients
-        for client in CLIENTS_ID_IP_PORT:
+        for client in CLIENTS_ID_IP_PORT_NAME:
             server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY),
                                  (client[1], int(client[2])))
 
@@ -549,7 +552,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
 def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
     """
-    Checking if an ID matches to the IP and PORT addresses we have in our clients list - CLIENTS_ID_IP_PORT.
+    Checking if an ID matches to the IP and PORT addresses we have in our clients list - CLIENTS_ID_IP_PORT_NAME.
     (in order to make sure only a client's message is coming from its actual machine and not an imposter)
     :param src_id: <String> the ID specified in the packet.
     :param src_ip: <String> the source IP, where the packet came from.
@@ -557,9 +560,14 @@ def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool
     :return: <Boolean> True - matches, False - doesn't match.
     """
 
-    global CLIENTS_ID_IP_PORT
+    global CLIENTS_ID_IP_PORT_NAME
 
-    return (src_id, src_ip, src_port) in CLIENTS_ID_IP_PORT
+    for client in CLIENTS_ID_IP_PORT_NAME:
+        if src_id == CLIENTS_ID_IP_PORT_NAME[0]\
+                    and src_ip == CLIENTS_ID_IP_PORT_NAME[1]\
+                    and src_port == CLIENTS_ID_IP_PORT_NAME[2]:
+            return True
+    return False
 
 
 def rotshild_filter(payload: bytes) -> bool:
@@ -603,9 +611,9 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     :param reason: <String> why doed it closed? (by_user or error)
     """
 
-    global CLIENTS_ID_IP_PORT, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
+    global CLIENTS_ID_IP_PORT_NAME, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
 
-    for client in CLIENTS_ID_IP_PORT:
+    for client in CLIENTS_ID_IP_PORT_NAME:
         server_socket.sendto(
             rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
                         PUBLIC_KEY), (client[1], int(client[2])))
@@ -622,7 +630,7 @@ def check_user_input_thread():
     - 'reset' to reset the server and terminate the existing users and data.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME
 
     while True:
         commend = input().lower()
@@ -682,13 +690,13 @@ def check_user_input_thread():
         # -------------------
         elif commend == 'get active players':
             # if there are any active players
-            if CLIENTS_ID_IP_PORT:
-                print(f'>> Number of active players at the moment: {str(len(CLIENTS_ID_IP_PORT))}')
+            if CLIENTS_ID_IP_PORT_NAME:
+                print(f'>> Number of active players at the moment: {str(len(CLIENTS_ID_IP_PORT_NAME))}')
 
                 # building the Prettytable table
                 table = PrettyTable()
-                table.field_names = ('ID', 'IP', 'PORT')
-                for player in CLIENTS_ID_IP_PORT:
+                table.field_names = ('ID', 'IP', 'PORT', 'USER_NAME')
+                for player in CLIENTS_ID_IP_PORT_NAME:
                     table.add_row(player)
                 # printing the client table
                 print(table)
