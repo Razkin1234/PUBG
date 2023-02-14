@@ -104,11 +104,15 @@ DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
 # ------------------------
 
 
-# ------------------------ General
+# ------------------------ Multithreading
 SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
 MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 # (larger amount mean faster client handling and able to handle more clients,
 # but a big amount that is not match to your CPU will just waste important system resources and wont help)
+# ------------------------
+
+
+# ------------------------ General
 CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
@@ -611,12 +615,14 @@ def check_user_input_thread():
     """
     Waiting for the user to enter a commend in terminal and execute it.
     - 'shutdown' to shutdown the server. (will set the game loop trigger event)
-    - 'get clients' to prints all clients registered to this serve with their info.
+    - 'get clients' to print all clients registered to this serve with their info.
     - 'delete <user_name>' to delete a client from the server.
+    - 'get active players' to print all active clients at the moment (their user name, ID, IP and PORT) and the number
+       of active players.
     - 'reset' to reset the server and terminate the existing users and data.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT
 
     while True:
         commend = input().lower()
@@ -674,6 +680,25 @@ def check_user_input_thread():
         # -------------------
 
         # -------------------
+        elif commend == 'get active players':
+            # if there are any active players
+            if CLIENTS_ID_IP_PORT:
+                print(f'>> Number of active players at the moment: {str(len(CLIENTS_ID_IP_PORT))}')
+
+                # building the Prettytable table
+                table = PrettyTable()
+                table.field_names = ('ID', 'IP', 'PORT')
+                for player in CLIENTS_ID_IP_PORT:
+                    table.add_row(player)
+                # printing the client table
+                print(table)
+
+            # if there are no active players
+            else:
+                print('>> There are no active players on the server at the moment.')
+        # -------------------
+
+        # -------------------
         elif commend == 'reset':
             print('>> Resetting the server (all clients and current data will be permanently terminated)...')
             # if there is a DB (should be because we create it in the beginning... but just in case I check again)
@@ -696,6 +721,7 @@ def check_user_input_thread():
             print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
                   "                  (to get server's clients info enter 'get clients')\n"
                   "                  (to delete a client from the server enter 'delete <user_name>')\n"
+                  "                  (to print all active clients at the moment + info enter 'get active players')\n"
                   "                  (to reset the server and terminate any existing users and data enter 'reset')")
         # -------------------
 
@@ -792,6 +818,8 @@ def main():
               "   - To shutdown the server - enter 'shutdown' in your terminal\n"
               "   - To show all clients registered on this server and their info - enter 'get clients' in your terminal"
               "\n   - To delete a client from the server enter 'delete <user_name>' in your terminal"
+              "\n   - To print all active clients at the moment (their user name, ID, IP and PORT) and the number "
+              "\n     of active players at the moments enter 'get active players' in your terminal"
               "\n   - To reset the server and terminate any existing users and data enter 'reset' in your terminal"
               "\n   ---------------------")
 

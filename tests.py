@@ -26,6 +26,14 @@ my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.connect((SERVER_IP, SERVER_PORT))
 
 
+def wait_for_reply():
+    print('waiting for reply...')
+    ciphertext_reply = my_socket.recv(1024)
+    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
+    plaintext_reply = encoded_reply.decode('utf-8')
+    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+
+
 def test_register_request(user_name: str, password: str):
     plaintext = 'Rotshild \r\n' \
                 '\r\n' \
@@ -42,14 +50,7 @@ def test_register_request(user_name: str, password: str):
 
     print(f'{str(payload_bytes)} bytes of register_request sent successfully')
 
-    print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(1024)
-
-    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
-
-    plaintext_reply = encoded_reply.decode('utf-8')
-
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+    wait_for_reply()
 
 
 def test_login_request(user_name: str, password: str):
@@ -68,14 +69,7 @@ def test_login_request(user_name: str, password: str):
 
     print(f'{str(payload_bytes)} bytes of login_request sent successfully')
 
-    print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(1024)
-
-    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
-
-    plaintext_reply = encoded_reply.decode('utf-8')
-
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+    wait_for_reply()
 
 
 def test_dead(id: str, user_name: str):
@@ -95,14 +89,7 @@ def test_dead(id: str, user_name: str):
 
     print(f'{str(payload_bytes)} bytes od dead sent successfully')
 
-    print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(1024)
-
-    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
-
-    plaintext_reply = encoded_reply.decode('utf-8')
-
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+    wait_for_reply()
 
 
 def test_update_inventory(header_info: str, user_name: str):
@@ -122,26 +109,11 @@ def test_update_inventory(header_info: str, user_name: str):
 
     print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
 
-    print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(1024)
+    wait_for_reply()
 
-    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
 
-    plaintext_reply = encoded_reply.decode('utf-8')
-
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
-
-test_register_request('test1', 'test1')
-#test_login_request('test5', 'test5')  # BUG: to check if user name already logging before logging in
+#test_register_request('test1', 'test1')
+#test_login_request('test2', 'test2')  # BUG: to check if user name already logging before logging in
 #test_update_inventory('+ bomb 4', 'test')
-#test_dead('1', 'test')
-
-while True:
-    print('waiting for replies...')
-    ciphertext_reply = my_socket.recv(1024)
-
-    encoded_reply = rsa.decrypt(ciphertext_reply, PRIVATE_KEY)
-
-    plaintext_reply = encoded_reply.decode('utf-8')
-
-    print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
+#test_dead('2', 'test2')  # BUG: to check if user name exists and active
+#wait_for_reply()
