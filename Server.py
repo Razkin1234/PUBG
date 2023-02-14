@@ -24,7 +24,7 @@ The full packet looks like this:                                                
 ------------------------------------------------------------------                                                                                           |
 Headers API:                                                                                                                                                 |
             - login_request: [user_name],[password]                                                                                [only clients send]       |
-            - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him]               [only server sends]       |
+            - login_status: fail [if wrong user name or password] or [the ID given to him] or already_active                       [only server sends]       |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
@@ -204,6 +204,11 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'login_status: fail\r\n'
+
+    for client in CLIENTS_ID_IP_PORT_NAME:
+        if user_name == client[3]:
+            # user name already active in the game. can't login again.
+            return 'login_status: already_active\r\n'
 
     cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
     result = cursor.fetchone()
