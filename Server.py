@@ -65,6 +65,10 @@ Headers API:                                                                    
 import os
 import sqlite3
 import public_ip
+import requests
+import subprocess
+import re
+import platform
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
@@ -632,7 +636,8 @@ def check_user_input_thread():
     - 'delete <user_name>' to delete a client from the server.
     - 'get active players' to print all active clients at the moment (their user name, ID, IP and PORT) and the number
        of active players.
-    - 'reset' to reset the server and terminate the existing users and data.
+    - 'reset' to reset the server and terminate the existing users and data
+    - 'help' to print the optional commends API.
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME
@@ -730,12 +735,22 @@ def check_user_input_thread():
         # -------------------
 
         # -------------------
+        elif commend == 'help':
+            print(">> ---------------------\n"
+                  "   OPTIONAL COMMENDS API:\n"
+                  "   - 'shutdown': To shutdown the server.\n"
+                  "   - 'get clients': To show all clients registered on this server and their info.\n"
+                  "   - 'delete <user_name>': To delete a client from the server.\n"
+                  "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                  "      and the number of active players at the moments.\n"
+                  "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                  "   - 'help': To show optional commends API.\n"
+                  "   ---------------------")
+        # -------------------
+
+        # -------------------
         else:
-            print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
-                  "                  (to get server's clients info enter 'get clients')\n"
-                  "                  (to delete a client from the server enter 'delete <user_name>')\n"
-                  "                  (to print all active clients at the moment + info enter 'get active players')\n"
-                  "                  (to reset the server and terminate any existing users and data enter 'reset')")
+            print(">> Invalid input. Enter 'help' to see the commends you can use.")
         # -------------------
 
 
@@ -803,6 +818,97 @@ def set_socket() -> socket:
     return server_socket
 
 
+def get_public_ip() -> str:
+    """
+    Trying to get the public IP.
+    :return: <String> the public IP address.
+    """
+
+    # ----------------
+    # Try to get public IP address from multiple external APIs
+    api_urls = [
+        'https://ipinfo.io/ip',  # returns response as plaintext
+        'https://api.ipify.org?format=json',  # returns response as JSON object
+        'https://api.myip.com/',  # returns response as JSON object
+        'https://icanhazip.com/',  # returns response as plaintext
+        'https://ifconfig.me/',  # returns response as plaintext
+        'https://ip.seeip.org/',  # returns response as plaintext
+        'https://www.trackip.net/ip',  # returns response as plaintext
+    ]
+    methods = ['GET', 'HEAD']
+    for url in api_urls:
+        for method in methods:
+            try:
+                response = requests.request(method, url, timeout=3)
+                if response.status_code == 200:  # (200 is a success HTTP status code)
+                    if url in ['https://api.ipify.org?format=json', 'https://api.myip.com/']:
+                        # response is JSON object
+                        return response.json()['ip']
+                    # response is plaintext
+                    return response.text.strip()
+            except:
+                pass
+    # ----------------
+
+    # ----------------
+    # if external APIs fails. try to get public IP address from public_ip module (though it works very similar)
+    try:
+        return public_ip.get()
+    except:
+        pass
+    # ----------------
+
+    # If all methods fail
+    return "[Your public IP (our system couldn't find it, ask the NET Admin to find it)]"
+
+
+def get_private_ip() ->str:
+    """
+    Getting the private IP of the machine.
+    :return: <String> the private IP address.
+    """
+
+    # -------------------
+    # If its a Windows Operating System
+    try:
+        if platform.system() == 'Windows':
+            # Execute the 'ipconfig' command and get the output
+            output = subprocess.check_output(['ipconfig']).decode('cp850')
+
+            # Finding the active interface by detecting the paragraph with the default gateway
+            output = output.split('\r\n\r\n')
+
+            # Use a regular expression to parse the output and extract the active default gateway
+            gateway_pattern = r'Default Gateway.*: (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+            for interface in output:
+                match = re.search(gateway_pattern, interface)
+                if match is not None:
+                    active_interface = interface
+                    break
+
+            # Use a regular expression to parse the output and extract the IPv4
+            ip_pattern = r'IPv4 Address.*: (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+            match = re.search(ip_pattern, active_interface)
+            return match.group(1)
+    except:
+        pass
+    # -------------------
+
+    # -------------------
+    try:
+        temp_s = socket(AF_INET, SOCK_DGRAM)
+        temp_s.connect(('8.8.8.8', 80))  # Google's DNS server address
+        # *when connecting a socket to an external host the operating system automatically associate the local ip to it
+        private_ip = temp_s.getsockname()[0]
+        temp_s.close()
+        return private_ip
+    except:
+        pass
+    # -------------------
+
+    return "[Your private IP (our system couldn't find it, check for it yourself)]"
+
+
 def main():
 
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
@@ -811,8 +917,11 @@ def main():
     executor = None
     server_socket = None
     try:
-        print(f'>> NOTE: The server requires your network to have port forwarding'
-              f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
+        print('====================== GAME SERVER ======================\n'
+              '>> NOTE: The server requires your network to have port forwarding'
+              f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want it to be available for'
+              ' clients from WAN (outside your network).\n'
+              '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n')
 
         # -------------------------------------------------- GETTING THINGS READY TO GO
         # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
@@ -826,15 +935,25 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread)
 
-        # print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
+        print('>> ---------------------\n'
+              '   Server is up and running on:\n'
+              f'   For WAN clients - {get_public_ip()}:{str(SERVER_UDP_PORT)}\n'
+              f'   For LAN clients - {get_private_ip()}:{str(SERVER_UDP_PORT)}\n'
+              "   NOTE: It's important that clients on your network will enter the game by the private IP "
+              "(the one for LAN clients), and clients outside your network will enter by the public IP "
+              "(the one for WAN clients)\n" 
+              '   ---------------------')
+
         print(">> ---------------------\n"
-              "   - To shutdown the server - enter 'shutdown' in your terminal\n"
-              "   - To show all clients registered on this server and their info - enter 'get clients' in your terminal"
-              "\n   - To delete a client from the server enter 'delete <user_name>' in your terminal"
-              "\n   - To print all active clients at the moment (their user name, ID, IP and PORT) and the number "
-              "\n     of active players at the moments enter 'get active players' in your terminal"
-              "\n   - To reset the server and terminate any existing users and data enter 'reset' in your terminal"
-              "\n   ---------------------")
+              "   OPTIONAL COMMENDS API:\n"
+              "   - 'shutdown': To shutdown the server.\n"
+              "   - 'get clients': To show all clients registered on this server and their info.\n"
+              "   - 'delete <user_name>': To delete a client from the server.\n"
+              "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+              "      and the number of active players at the moments.\n"
+              "   - 'reset': To reset the server and terminate any existing users and data.\n"
+              "   - 'help': To show optional commends API.\n"
+              "   ---------------------")
 
         # ------------------GAME LOOP-----------------------
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
