@@ -5,7 +5,7 @@
                                                                                                                                                              |
 * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
                                                                                                                                                              |
-structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                                 |
+structure - 'Rotshild <ID>\r\n\r\n<headers>'                                                                                                                 |
 [ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register request there is no ID]     |
 [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
                                                                                                                                                              |
@@ -61,7 +61,6 @@ Headers API:                                                                    
 =============================================================================================================================================================|
 """
 
-
 import os
 import sqlite3
 import public_ip
@@ -69,12 +68,13 @@ import requests
 import subprocess
 import re
 import platform
-from concurrent.futures import ThreadPoolExecutor
 import threading
-from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 import rsa
 from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
+from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
+from concurrent.futures import ThreadPoolExecutor
+from hashlib import sha256
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -98,7 +98,6 @@ DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
 
-
 # ------------------------ Files path
 SCRIPT_PATH = os.path.abspath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
@@ -106,14 +105,12 @@ DB_FILE = "Server_DB.db"
 DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
 # ------------------------
 
-
 # ------------------------ Multithreading
 SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
 MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 # (larger amount mean faster client handling and able to handle more clients,
 # but a big amount that is not match to your CPU will just waste important system resources and wont help)
 # ------------------------
-
 
 # ------------------------ General
 CLIENTS_ID_IP_PORT_NAME = []  # IPs, PORTs, IDs and user names of all clients
@@ -214,12 +211,18 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             # user name already active in the game. can't login again.
             return 'login_status: already_active\r\n'
 
+    # hashing the password with SHA-256 (provide a 256 bit hashed value)
+    hash_object = sha256()
+    hash_object.update(password.encode())
+    # the next line gets the hashed value (called digest) of the password as a hexadecimal string
+    password_hex_digest = hash_object.hexdigest()
+
     cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
     result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
         return 'login_status: fail\r\n'
-    elif result[1] == password:
+    elif result[1] == password_hex_digest:
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port, user_name))
         print(f'>> New client connected to the game server.\n'
@@ -294,9 +297,15 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         # user name is taken
         return 'register_status: taken\r\n'
 
+    # hashing the password with SHA-256 (provide a 265 bit hashed value)
+    hash_object = sha256()
+    hash_object.update(password.encode())
+    # the next line gets the hashed value (called digest) of the password as a hexadecimal string
+    password_hex_digest = hash_object.hexdigest()
+
     # user name is free. saving it to the DB
     new_client = (user_name,
-                  password,
+                  password_hex_digest,
                   DEFAULT_WEAPONS,
                   DEFAULT_AMMO,
                   DEFAULT_BOMBS,
@@ -572,9 +581,7 @@ def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool
     global CLIENTS_ID_IP_PORT_NAME
 
     for client in CLIENTS_ID_IP_PORT_NAME:
-        if src_id == CLIENTS_ID_IP_PORT_NAME[0]\
-                    and src_ip == CLIENTS_ID_IP_PORT_NAME[1]\
-                    and src_port == CLIENTS_ID_IP_PORT_NAME[2]:
+        if src_id == client[0] and src_ip == client[1] and src_port == client[2]:
             return True
     return False
 
@@ -663,10 +670,18 @@ def check_user_input_thread():
             if rows:
                 # building the Prettytable table
                 table = PrettyTable()
-                table.field_names = [i[0] for i in cursor.description]
+                # setting field names
+                fields = []
+                for i in range(len(cursor.description)):
+                    if i != 1:
+                        fields.append(cursor.description[i][0].replace('_', ' ').title())
+                    else:
+                        fields.append('Hashed Password')
+                table.field_names = fields
+                # adding rows
                 for row in rows:
                     table.add_row(row)
-                # printing the client table
+                # printing the table
                 print(table)
             # if there are no clients
             else:
