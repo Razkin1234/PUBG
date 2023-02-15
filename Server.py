@@ -862,7 +862,7 @@ def get_public_ip() -> str:
     return "[Your public IP (our system couldn't find it, ask the NET Admin to find it)]"
 
 
-def get_private_ip() ->str:
+def get_private_ip() -> str:
     """
     Getting the private IP of the machine.
     :return: <String> the private IP address.
@@ -917,10 +917,13 @@ def main():
     executor = None
     server_socket = None
     try:
-        print('====================== GAME SERVER ======================\n'
-              '>> NOTE: The server requires your network to have port forwarding'
-              f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want it to be available for'
-              ' clients from WAN (outside your network).\n'
+        print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n'
+              '====================== GAME SERVER ======================'
+              '\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n'
+              '---------------------------------------------------------\n'
+              '>> NOTE: The server requires your network to have port forwarding\n'
+              f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP\n'
+              '         if you want it to be available for clients from WAN (outside your network).\n'
               '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n')
 
         # -------------------------------------------------- GETTING THINGS READY TO GO
@@ -935,25 +938,23 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread)
 
-        print('>> ---------------------\n'
-              '   Server is up and running on:\n'
-              f'   For WAN clients - {get_public_ip()}:{str(SERVER_UDP_PORT)}\n'
-              f'   For LAN clients - {get_private_ip()}:{str(SERVER_UDP_PORT)}\n'
-              "   NOTE: It's important that clients on your network will enter the game by the private IP "
-              "(the one for LAN clients), and clients outside your network will enter by the public IP "
-              "(the one for WAN clients)\n" 
-              '   ---------------------')
+        print('>> Server is up and running on:\n'
+              f'   - For WAN clients - {get_public_ip()}:{str(SERVER_UDP_PORT)}\n'
+              f'   - For LAN clients - {get_private_ip()}:{str(SERVER_UDP_PORT)}\n\n'
+              "   NOTE: It's important that clients on your network will enter the game by the private IP\n"
+              "         (the one for LAN clients), and clients outside your network will enter by the public IP\n"
+              "         (the one for WAN clients).\n"
+              "---------------------------------------------------------\n"
+              "\n>> All Set! ENJOY!!! (see below the commends you can use as the server manager...)\n")
 
-        print(">> ---------------------\n"
-              "   OPTIONAL COMMENDS API:\n"
+        print(">> OPTIONAL COMMENDS API:\n"
               "   - 'shutdown': To shutdown the server.\n"
               "   - 'get clients': To show all clients registered on this server and their info.\n"
               "   - 'delete <user_name>': To delete a client from the server.\n"
               "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
               "      and the number of active players at the moments.\n"
               "   - 'reset': To reset the server and terminate any existing users and data.\n"
-              "   - 'help': To show optional commends API.\n"
-              "   ---------------------")
+              "   - 'help': To show optional commends API.\n")
 
         # ------------------GAME LOOP-----------------------
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
