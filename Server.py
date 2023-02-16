@@ -40,8 +40,6 @@ Headers API:                                                                    
                                  - backpack [how much?]                                                                                                      |
                                  + energy_drinks [how much?]                                                                                                 |
                                  - energy_drinks [how much?]                                                                                                 |
-                                 + coins [how much?]                                                                                                         |
-                                 - coins [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
                                  + energy [how much?]                                                                                                        |
@@ -74,7 +72,7 @@ from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
-from hashlib import sha256
+from hashlib import sha512
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -156,6 +154,19 @@ PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME
 # -------------------------
 
 
+def sha512_hash(data: bytes) -> bytes:
+    """
+    Hashing the data with SHA-512.
+    :param data: <Bytes> the data to be hashed.
+    :return: <Bytes> the digest (hashed data) - 512 bit length.
+    """
+
+    # hashing the password with SHA-512 (provides a 512 bit hashed value)
+    hash_object = sha512()
+    hash_object.update(data)
+    return hash_object.digest()
+
+
 def handle_update_inventory(header_info: str, user_name: str, connector, cursor):
     """
     updating the inventory of a client in the DB
@@ -211,18 +222,14 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             # user name already active in the game. can't login again.
             return 'login_status: already_active\r\n'
 
-    # hashing the password with SHA-256 (provide a 256 bit hashed value)
-    hash_object = sha256()
-    hash_object.update(password.encode())
-    # the next line gets the hashed value (called digest) of the password as a hexadecimal string
-    password_hex_digest = hash_object.hexdigest()
+    hashed_password = sha512_hash(password.encode())
 
     cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
     result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
         return 'login_status: fail\r\n'
-    elif result[1] == password_hex_digest:
+    elif result[1] == hashed_password:
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port, user_name))
         print(f'>> New client connected to the game server.\n'
@@ -284,7 +291,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     """
 
     global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
-        DEFAULT_ENERGY_DRINKS, DEFAULT_COINS, DEFAULT_EXP, DEFAULT_ENERGY
+        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -297,37 +304,31 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         # user name is taken
         return 'register_status: taken\r\n'
 
-    # hashing the password with SHA-256 (provide a 265 bit hashed value)
-    hash_object = sha256()
-    hash_object.update(password.encode())
-    # the next line gets the hashed value (called digest) of the password as a hexadecimal string
-    password_hex_digest = hash_object.hexdigest()
+    hashed_password = sha512_hash(password.encode())
 
     # user name is free. saving it to the DB
     new_client = (user_name,
-                  password_hex_digest,
+                  hashed_password,
                   DEFAULT_WEAPONS,
                   DEFAULT_AMMO,
                   DEFAULT_BOMBS,
                   DEFAULT_MED_KITS,
                   DEFAULT_BACKPACK,
                   DEFAULT_ENERGY_DRINKS,
-                  DEFAULT_COINS,
                   DEFAULT_EXP,
                   DEFAULT_ENERGY)
     cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
-                   " password,"
+                   " hashed_password,"
                    " weapons,"
                    " ammo,"
                    " bombs,"
                    " med_kits,"
                    " backpack,"
                    " energy_drinks,"
-                   " coins,"
                    " exp,"
                    " energy)"
-                   " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
+                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
     connector.commit()
 
     print(f'>> New client registered to server. [User Name: {user_name}]')
@@ -676,10 +677,12 @@ def check_user_input_thread():
                     if i != 1:
                         fields.append(cursor.description[i][0].replace('_', ' ').title())
                     else:
-                        fields.append('Hashed Password')
+                        fields.append("Password (hashed binary data)")
                 table.field_names = fields
                 # adding rows
                 for row in rows:
+                    row = list(row)
+                    row[1] = '* * * * * * * * (hidden)'
                     table.add_row(row)
                 # printing the table
                 print(table)
@@ -803,14 +806,13 @@ def initialize_sqlite_rdb():
     connection, cursor = connect_to_db_and_build_cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
                    " (user_name TEXT PRIMARY KEY,"
-                   " password TEXT,"
+                   " hashed_password BLOB,"
                    " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
                    " ammo INTEGER,"
                    " bombs INTEGER,"
                    " med_kits INTEGER,"
                    " backpack INTEGER,"
                    " energy_drinks INTEGER,"
-                   " coins INTEGER,"
                    " exp INTEGER,"
                    " energy INTEGER)")
     close_connection_to_db_and_cursor(connection, cursor)
