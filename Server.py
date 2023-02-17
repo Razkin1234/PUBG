@@ -67,6 +67,7 @@ import subprocess
 import re
 import platform
 import threading
+import colorama
 import rsa
 from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
@@ -91,20 +92,22 @@ DEFAULT_BOMBS = 0
 DEFAULT_MED_KITS = 0
 DEFAULT_BACKPACK = 0
 DEFAULT_ENERGY_DRINKS = 0
-DEFAULT_COINS = 0
 DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
 
-# ------------------------ Files path
+# ------------------------ Files
 SCRIPT_PATH = os.path.abspath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 DB_FILE = "Server_DB.db"
 DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
+DB_ACCESS_PERMISSION = 0o600  # The access permission for the  DB file in both UNIX-like and Windows Operating Systems
+# (0o600 - means read and write access only for the owner)
 # ------------------------
 
 # ------------------------ Multithreading
 SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
+SHUTDOWN_INFORMING_EVENT = threading.Event()  # When set it means finished informing the clients about shutdown
 MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 # (larger amount mean faster client handling and able to handle more clients,
 # but a big amount that is not match to your CPU will just waste important system resources and wont help)
@@ -152,6 +155,99 @@ SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087
 PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT)  # (not secret)
 PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
+
+
+def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
+               underline: bool = False, new_line: bool = True):
+    """
+    Prints the text, with all the optional attributes args entered, using ANSI escape sequences.
+    :param text: <String> the text to print.
+    :param color: <String> the color of the text.
+           The options are: - red
+                            - green
+                            - yellow
+                            - blue
+                            - magenta
+                            - cyan
+                            - white
+    :param bold: <Boolean> bold attribute.
+    :param blink: <Boolean> blink attribute.
+    :param italic: <Boolean> italic attribute.
+    :param underline: <Boolean> underline attribute.
+    :param new_line: <Boolean> to print - '\n'?
+    """
+
+    try:
+        # Mostly ANSI escape sequences work on UNIX-like but not windows. that is what the colorama module used to solve
+
+        # the next method makes ANSI available for most windows terminals
+        # (if running on another OS or the terminal already supports ANSI then it does nothing)
+        # (it can run multiple times without a problem)
+        colorama.just_fix_windows_console()
+
+        # Check if its a 'dumb' UNIX-like system (then its most likely don't support ANSI)
+        if os.name != 'nt' and os.getenv('TERM') == 'dumb':
+            # The terminal might not support ANSI, so just printing normally
+            if new_line:
+                print(text)
+            else:
+                print(text, end='')
+            return
+
+        # Define the color codes dictionary
+        colors = {
+            'red': '31',
+            'green': '32',
+            'yellow': '33',
+            'blue': '34',
+            'magenta': '35',
+            'cyan': '36',
+            'white': '0'
+        }
+
+        # Define the attributes codes dictionary
+        attributes = {
+            'bold': '1',
+            'blink': '5',
+            'italic': '3',
+            'underline': '4'
+        }
+
+        # Start with the ESC character
+        escape = '\033['
+
+        # Set the color
+        if color in colors:
+            escape += colors[color] + ';'
+        else:
+            escape += '0;'
+
+        # Set the attributes
+        if bold:
+            escape += attributes['bold'] + ';'
+        if blink:
+            escape += attributes['blink'] + ';'
+        if italic:
+            escape += attributes['italic'] + ';'
+        if underline:
+            escape += attributes['underline'] + ';'
+
+        # Remove the trailing semicolon if present (should be)
+        if escape[-1] == ';':
+            escape = escape[:-1]
+
+        if new_line:
+            # Add the text and reset the formatting
+            print(escape + 'm' + text + '\033[0m')
+        else:
+            # Add the text and reset the formatting
+            print(escape + 'm' + text + '\033[0m', end='')
+
+    except:
+        if new_line:
+            print(text)
+        else:
+            print(text, end='')
 
 
 def sha512_hash(data: bytes) -> bytes:
@@ -232,12 +328,15 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     elif result[1] == hashed_password:
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port, user_name))
-        print(f'>> New client connected to the game server.\n'
-              f'   User Name - {user_name}\n'
-              f'   User game ID - {given_id}\n'
-              f'   User IPv4 addr - {client_ip}\n'
-              f'   User port number - {client_port}\n'
-              f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}')
+
+        print(">> ", end='')
+        print_ansi(text='New client connected to the game', color='green', bold=True, underline=True)
+        print_ansi(text=f'   User Name - {user_name}\n'
+                        f'   User game ID - {given_id}\n'
+                        f'   User IPv4 addr - {client_ip}\n'
+                        f'   User port number - {client_port}\n'
+                        f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
+
         return 'login_status: ' + given_id + '\r\n'
     else:
         # user name exists but password doesn't match
@@ -331,7 +430,10 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
     connector.commit()
 
-    print(f'>> New client registered to server. [User Name: {user_name}]')
+    print(">> ", end='')
+    print_ansi(text='New client registered to server', color='green', bold=True, underline=True)
+    print_ansi(text=f'   User Name: {user_name}\n', color='green')
+
     return 'register_status: success\r\n'
 
 
@@ -407,10 +509,12 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " WHERE user_name = ?", client_update + (user_name,))
     connector.commit()
 
+    print(">> ", end='')
+    print_ansi(text='Client died and disconnected from game server', color='red', bold=True, underline=True)
+    print_ansi(text=f'   Dead client ID - {dead_id}\n'
+                    f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='red')
+
     # returning a dead header
-    print(f'>> Client died and disconnected from game server.\n'
-          f'   Dead client ID - {dead_id}\n'
-          f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}')
     return 'dead: ' + dead_id + '\r\n'
 
 
@@ -453,7 +557,8 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     id_cache = ''  # saving the id of the src after found ones (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
-    lines.remove('')
+    while '' in lines:
+        lines.remove('')
 
     # Recognize and handle each header
     for line in lines:
@@ -612,13 +717,28 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
 
     global PRIVATE_KEY
 
-    if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
-        plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
-        # handling packet if ID-IP-PORT matches or if register request
-        if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                                               src_addr[0],
-                                                               str(src_addr[1])):
-            packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
+    # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
+    # not be cought in the main.
+    try:
+        if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
+            plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
+            # handling packet if ID-IP-PORT matches or if register request
+            if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                                   src_addr[0],
+                                                                   str(src_addr[1])):
+                packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
+
+    except Exception as ex:
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+        print_ansi(text=f"Something went wrong (on a packet thread)... This is the error message: {ex}", color='red')
+        print(">> ", end='')
+        print_ansi(text='Server crashed. closing it...', color='blue')
+
+        # setting the shutdown trigger event.
+        SHUTDOWN_TRIGGER_EVENT.set()
+
+        inform_active_clients_about_shutdown(server_socket, 'error')
 
 
 def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
@@ -628,15 +748,24 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     :param reason: <String> why doed it closed? (by_user or error)
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
+    global CLIENTS_ID_IP_PORT_NAME, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS, SHUTDOWN_INFORMING_EVENT
 
-    for client in CLIENTS_ID_IP_PORT_NAME:
-        server_socket.sendto(
-            rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
-                        PUBLIC_KEY), (client[1], int(client[2])))
+    print_ansi('   [informing all active clients about the shutdown]', color='cyan', new_line=False)
+    try:
+        for client in CLIENTS_ID_IP_PORT_NAME:
+            server_socket.sendto(
+                rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
+                            PUBLIC_KEY), (client[1], int(client[2])))
+        print_ansi(' ---> completed', color='green', italic=True)
+
+    except Exception as ex:
+        print_ansi(f' ---> failed  [{ex}]', color='red', italic=True)
+
+    finally:
+        SHUTDOWN_INFORMING_EVENT.set()
 
 
-def check_user_input_thread():
+def check_user_input_thread(server_socket: socket):
     """
     Waiting for the user to enter a commend in terminal and execute it.
     - 'shutdown' to shutdown the server. (will set the game loop trigger event)
@@ -645,131 +774,175 @@ def check_user_input_thread():
     - 'get active players' to print all active clients at the moment (their user name, ID, IP and PORT) and the number
        of active players.
     - 'reset' to reset the server and terminate the existing users and data
-    - 'help' to print the optional commends API.
+    - 'help' to print the optional UI commends.
+    :param server_socket: <Socket> the server socket object.
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME
 
-    while True:
-        commend = input().lower()
+    # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
+    # not be cought in the main.
+    try:
+        while True:
+            commend = input().lower().strip()
 
-        # -------------------
-        if commend == 'shutdown':
-            print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
-            # setting the shutdown trigger event.
-            SHUTDOWN_TRIGGER_EVENT.set()
-            return
-        # -------------------
+            # -------------------
+            if commend == 'shutdown':
+                print(">> ", end='')
+                print_ansi(text=f'Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                           color='blue')
 
-        # -------------------
-        elif commend == 'get clients':
-            connector, cursor = connect_to_db_and_build_cursor()
-            # selecting and fetching the entire table
-            cursor.execute("SELECT * FROM clients_info")
-            rows = cursor.fetchall()
-            # if there are clients
-            if rows:
-                # building the Prettytable table
-                table = PrettyTable()
-                # setting field names
-                fields = []
-                for i in range(len(cursor.description)):
-                    if i != 1:
-                        fields.append(cursor.description[i][0].replace('_', ' ').title())
-                    else:
-                        fields.append("Password (hashed binary data)")
-                table.field_names = fields
-                # adding rows
-                for row in rows:
-                    row = list(row)
-                    row[1] = '* * * * * * * * (hidden)'
-                    table.add_row(row)
-                # printing the table
-                print(table)
-            # if there are no clients
+                # setting the shutdown trigger event.
+                SHUTDOWN_TRIGGER_EVENT.set()
+
+                inform_active_clients_about_shutdown(server_socket, 'by_user')
+                return
+            # -------------------
+
+            # -------------------
+            elif commend == 'get clients':
+                connector, cursor = connect_to_db_and_build_cursor()
+                # selecting and fetching the entire table
+                cursor.execute("SELECT * FROM clients_info")
+                rows = cursor.fetchall()
+                # if there are clients
+                if rows:
+                    # building the Prettytable table
+                    table = PrettyTable()
+                    # setting field names
+                    fields = []
+                    for i in range(len(cursor.description)):
+                        if i != 1:
+                            fields.append(cursor.description[i][0].replace('_', ' ').title())
+                        else:
+                            fields.append("Password (hashed)")
+                    table.field_names = fields
+                    # adding rows
+                    for row in rows:
+                        row = list(row)
+                        row[1] = '* * * * * * * *'
+                        table.add_row(row)
+                    # printing the table
+                    print_ansi(text=str(table) + '\n', color='cyan', bold=True)
+                # if there are no clients
+                else:
+                    print(">> ", end='')
+                    print_ansi(text='The server got no clients yet.\n', color='blue')
+
+                close_connection_to_db_and_cursor(connector, cursor)
+            # -------------------
+
+            # -------------------
+            elif len(commend.split()) != 0 and commend.split()[0] == 'delete':
+                connector, cursor = connect_to_db_and_build_cursor()
+                user_name = commend.split()[1]
+
+                # selecting and fetching the user name line
+                cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+                row = cursor.fetchone()
+
+                # if user name exists
+                if row:
+                    cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name,))
+                    connector.commit()
+
+                    print(">> ", end='')
+                    print_ansi(text=f"Client '{user_name}' had been deleted from the server.\n", color='blue')
+
+                # if user name doesn't exist
+                else:
+                    print(">> ", end='')
+                    print_ansi(text=f"Client '{user_name}' does'nt exist in the server.\n", color='blue')
+
+                close_connection_to_db_and_cursor(connector, cursor)
+            # -------------------
+
+            # -------------------
+            elif commend == 'get active players':
+                # if there are any active players
+                if CLIENTS_ID_IP_PORT_NAME:
+                    print(">> ", end='')
+                    print_ansi(text=f'Number of active players at the moment: {str(len(CLIENTS_ID_IP_PORT_NAME))}',
+                               color='blue')
+
+                    # building the Prettytable table
+                    table = PrettyTable()
+                    table.field_names = ('ID', 'IP', 'PORT', 'USER_NAME')
+                    for player in CLIENTS_ID_IP_PORT_NAME:
+                        table.add_row(player)
+                    # printing the client table
+                    print_ansi(text=str(table) + '\n', color='cyan', bold=True)
+
+                # if there are no active players
+                else:
+                    print(">> ", end='')
+                    print_ansi(text='There are no active players on the server at the moment.\n', color='blue')
+            # -------------------
+
+            # -------------------
+            elif commend == 'reset':
+                print(">> ", end='')
+                print_ansi(text='Resetting the server (all clients and current data will be permanently terminated)...',
+                           color='blue')
+
+                # if there is a DB (should be because we create it in the beginning... but just in case I check again)
+                if os.path.isfile(DB_PATH):
+                    # delete the DB file
+                    print_ansi(text="   [Deleting current DB ('Server_DB.db' file) from your system]", new_line=False,
+                               color='cyan')
+                    try:
+                        os.remove(DB_PATH)
+                        print_ansi(text=' -------------------------> completed', color='green', italic=True)
+                    except Exception as ex:
+                        print_ansi(text=f' -------------------------> failed [{ex}]', color='red', italic=True)
+
+                    # creating a new empty DB
+                    print_ansi(text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
+                               new_line=False, color='cyan')
+                    initialize_sqlite_rdb()
+                    print_ansi(text=' ------> completed', color='green', italic=True)
+
+                    print_ansi(text='   Process completed (see above completed/failed in each field).\n', color='blue',
+                               italic=True)
+            # -------------------
+
+            # -------------------
+            elif commend == 'help':
+                print(">> ", end='')
+                print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
+                print_ansi(text="   - 'shutdown': To shutdown the server.\n"
+                                "   - 'get clients': To show all clients registered on this server and their info.\n"
+                                "   - 'delete <user_name>': To delete a client from the server.\n"
+                                "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                                "      and the number of active players at the moments.\n"
+                                "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                                "   - 'help': To show optional UI commends.\n",
+                           color='cyan')
+            # -------------------
+
+            # -------------------
+            elif commend.strip() == '':
+                pass
+            # -------------------
+
+            # -------------------
             else:
-                print('>> The server got no clients yet.')
+                print(">> ", end='')
+                print_ansi(text="Invalid input. Enter 'help' to see the commends you can use.\n", color='red')
+            # -------------------
 
-            close_connection_to_db_and_cursor(connector, cursor)
-        # -------------------
+    except Exception as ex:
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+        print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
+        print(">> ", end='')
+        print_ansi(text='Server crashed. closing it...', color='blue')
 
-        # -------------------
-        elif commend.split()[0] == 'delete':
-            connector, cursor = connect_to_db_and_build_cursor()
-            user_name = commend.split()[1]
+        # setting the shutdown trigger event.
+        SHUTDOWN_TRIGGER_EVENT.set()
 
-            # selecting and fetching the user name line
-            cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name,))
-            row = cursor.fetchone()
-
-            # if user name exists
-            if row:
-                cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name,))
-                print(f'>> Client {user_name} has been deleted from server.')
-                connector.commit()
-
-            # if user name doesn't exist
-            else:
-                print(f">> Client {user_name} does'nt exist in the server.")
-
-            close_connection_to_db_and_cursor(connector, cursor)
-        # -------------------
-
-        # -------------------
-        elif commend == 'get active players':
-            # if there are any active players
-            if CLIENTS_ID_IP_PORT_NAME:
-                print(f'>> Number of active players at the moment: {str(len(CLIENTS_ID_IP_PORT_NAME))}')
-
-                # building the Prettytable table
-                table = PrettyTable()
-                table.field_names = ('ID', 'IP', 'PORT', 'USER_NAME')
-                for player in CLIENTS_ID_IP_PORT_NAME:
-                    table.add_row(player)
-                # printing the client table
-                print(table)
-
-            # if there are no active players
-            else:
-                print('>> There are no active players on the server at the moment.')
-        # -------------------
-
-        # -------------------
-        elif commend == 'reset':
-            print('>> Resetting the server (all clients and current data will be permanently terminated)...')
-            # if there is a DB (should be because we create it in the beginning... but just in case I check again)
-            if os.path.isfile(DB_PATH):
-                # delete the DB file
-                print("   [Deleting current DB ('Server_DB.db' file) from your system]", end='')
-                os.remove(DB_PATH)
-                print(' -------------------------> completed')
-
-                # creating a new empty DB
-                print("   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]", end='')
-                initialize_sqlite_rdb()
-                print(' ------> completed')
-
-                print('>> Your server have been successfully reset.')
-        # -------------------
-
-        # -------------------
-        elif commend == 'help':
-            print(">> ---------------------\n"
-                  "   OPTIONAL COMMENDS API:\n"
-                  "   - 'shutdown': To shutdown the server.\n"
-                  "   - 'get clients': To show all clients registered on this server and their info.\n"
-                  "   - 'delete <user_name>': To delete a client from the server.\n"
-                  "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                  "      and the number of active players at the moments.\n"
-                  "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                  "   - 'help': To show optional commends API.\n"
-                  "   ---------------------")
-        # -------------------
-
-        # -------------------
-        else:
-            print(">> Invalid input. Enter 'help' to see the commends you can use.")
-        # -------------------
+        inform_active_clients_about_shutdown(server_socket, 'error')
+        return
 
 
 def close_connection_to_db_and_cursor(connection, cursor):
@@ -779,8 +952,21 @@ def close_connection_to_db_and_cursor(connection, cursor):
     :param cursor: the cursor object to the DB.
     """
 
-    cursor.close()
-    connection.close()
+    try:
+        cursor.close()
+        connection.close()
+    except NameError as ex:
+        # can be raised if cursor or connection has not been defined
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', bold=True, blink=True, new_line=False)
+        print_ansi(text=f"NameError: {ex}\n   (Possibly connection or cursor object of SQLite3 is trying to get "
+                        "closed but had not been defined)", color='red')
+    except AttributeError as ex:
+        # can be raised if cursor or connection has already been closed
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', bold=True, blink=True, new_line=False)
+        print_ansi(text=f"AttributeError: {ex}\n   (Possibly connection or cursor object of SQLite3 is trying to get "
+                        "closed but had already been closed)", color='red')
 
 
 def connect_to_db_and_build_cursor() -> tuple:
@@ -796,6 +982,31 @@ def connect_to_db_and_build_cursor() -> tuple:
     cursor = connection.cursor()  # creating a cursor object to execute SQL commends
 
     return connection, cursor
+
+
+def set_db_read_write_permissions_to_only_owner():
+    """
+    Setting the DataBase file permissions to allow only the owner user account (the creator) to read and write.
+    """
+
+    global DB_ACCESS_PERMISSION, DB_PATH
+
+    try:
+        if os.name == "posix" or os.name == 'nt':
+            # UNIX or Windows Operating System
+            os.chmod(DB_PATH, DB_ACCESS_PERMISSION)
+        else:
+            # Handle other operating systems as needed
+            print(">> ", end='')
+            print_ansi(text='[WARNING] ', color='yellow', blink=True, new_line=False)
+            print_ansi(text="The program doesn't support setting only-owner read-write permissions\n"
+                            f"   for DataBase file on {os.name} Operating System like yours.\n"
+                            "   (This will not interfere with the normal running of the program).\n", color='yellow')
+    except:
+        print(">> ", end='')
+        print_ansi(text='[WARNING] ', color='yellow', blink=True, new_line=False)
+        print_ansi(text='Failed to set only-owner read-write permissions for DataBase file.\n'
+                        '   (This will not interfere with the normal running of the program).\n', color='yellow')
 
 
 def initialize_sqlite_rdb():
@@ -816,6 +1027,7 @@ def initialize_sqlite_rdb():
                    " exp INTEGER,"
                    " energy INTEGER)")
     close_connection_to_db_and_cursor(connection, cursor)
+    set_db_read_write_permissions_to_only_owner()
 
 
 def set_socket() -> socket:
@@ -929,19 +1141,22 @@ def get_private_ip() -> str:
 def main():
 
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
-        SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
+        SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, SHUTDOWN_INFORMING_EVENT
 
     executor = None
     server_socket = None
     try:
-        print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n'
-              '====================== GAME SERVER ======================'
-              '\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n'
-              '---------------------------------------------------------\n'
-              '>> NOTE: The server requires your network to have port forwarding\n'
-              f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP\n'
-              '         if you want it to be available for clients from WAN (outside your network).\n'
-              '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n')
+        # -------------------------------------------------- Printing title
+        print_ansi(text='\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++',
+                   color='blue', bold=True, blink=True, italic=True)
+        print_ansi(text='====================== GAME SERVER ======================',
+                   color='cyan', bold=True, blink=True, italic=True)
+        print_ansi(text='+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n',
+                   color='blue', bold=True, blink=True, italic=True)
+        # --------------------------------------------------
+
+        print(">> ", end='')
+        print_ansi(text='Loading...\n', color='blue', bold=True, italic=True)
 
         # -------------------------------------------------- GETTING THINGS READY TO GO
         # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
@@ -953,27 +1168,54 @@ def main():
         # --------------------------------------------------
 
         # setting a thread to handle user's terminal commends
-        executor.submit(check_user_input_thread)
+        executor.submit(check_user_input_thread, server_socket)
 
-        print('>> Server is up and running on:\n'
-              f'   - For WAN clients - {get_public_ip()}:{str(SERVER_UDP_PORT)}\n'
-              f'   - For LAN clients - {get_private_ip()}:{str(SERVER_UDP_PORT)}\n\n'
-              "   NOTE: It's important that clients on your network will enter the game by the private IP\n"
-              "         (the one for LAN clients), and clients outside your network will enter by the public IP\n"
-              "         (the one for WAN clients).\n"
-              "---------------------------------------------------------\n"
-              "\n>> All Set! ENJOY!!! (see below the commends you can use as the server manager...)\n")
+        my_public_ip = get_public_ip()
+        my_private_ip = get_private_ip()
 
-        print(">> OPTIONAL COMMENDS API:\n"
-              "   - 'shutdown': To shutdown the server.\n"
-              "   - 'get clients': To show all clients registered on this server and their info.\n"
-              "   - 'delete <user_name>': To delete a client from the server.\n"
-              "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-              "      and the number of active players at the moments.\n"
-              "   - 'reset': To reset the server and terminate any existing users and data.\n"
-              "   - 'help': To show optional commends API.\n")
+        # -------------------------------------------------- Printing start info and running status
+        print_ansi(text='---------------------------------------------------------',
+                   color='magenta', italic=True, bold=True)
+        print(">> ", end='')
+        print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
+        print_ansi(text='The server requires your network to have port forwarding\n'
+                   f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want\n'
+                   '         it to be available for clients from WAN (outside your network).\n'
+                   '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n'
+                   , color='magenta', italic=True)
+        print(">> ", end='')
+        print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
+        print_ansi(text=f'   - For WAN clients - {my_public_ip}:{str(SERVER_UDP_PORT)}\n'
+                   f'   - For LAN clients - {my_private_ip}:{str(SERVER_UDP_PORT)}\n',
+                   color='magenta', italic=True)
+        print('    ', end='')
+        print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
+        print_ansi(text=" It's important that clients on your network will enter the game by the private IP\n"
+                   "         (the one for LAN clients), and clients outside your network will enter by the public IP\n"
+                   "         (the one for WAN clients).", color='magenta', italic=True)
+        print_ansi(text="---------------------------------------------------------\n",
+                   color='magenta', italic=True, bold=True)
+        # --------------------------------------------------
 
-        # ------------------GAME LOOP-----------------------
+        print("\n>> ", end='')
+        print_ansi(text='All Set! ENJOY!!!\n   (see below the commends you can use as the server manager...)\n',
+                   color='green', bold=True)
+
+        # -------------------------------------------------- Printing the UI optional commends
+        print(">> ", end='')
+        print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
+        print_ansi(text="   - 'shutdown': To shutdown the server.\n"
+                   "   - 'get clients': To show all clients registered on this server and their info.\n"
+                   "   - 'delete <user_name>': To delete a client from the server.\n"
+                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                   "      and the number of active players at the moments.\n"
+                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                   "   - 'help': To show optional UI commends.\n",
+                   color='cyan')
+        # --------------------------------------------------
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # =================| GAME LOOP |==================
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
             try:
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets
@@ -982,43 +1224,50 @@ def main():
 
             # verify the packet in a different thread and if all good then handling it in another thread
             executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
-        # --------------------------------------------------
-
-        # server is shutting down. informing all active clients
-        print('   [informing all active clients about the shutdown]', end='')
-        inform_active_clients_about_shutdown(server_socket, 'by_user')
-        print(' ---> completed')
+        # ==================================================
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     except OSError as ex:
         if ex.errno == 98:
-            print(f">> [ERROR] Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                  f"    Make sure the port is available and is not already in use by another service and run again.")
+            print(">> ", end='')
+            print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+            print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
+                       "    Make sure the port is available and is not already in use by another service and run again.",
+                       color='red')
+            print(">> ", end='')
+            print_ansi(text='Server is shutting down...', color='blue')
         else:
-            print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
-            print('>> Server crashed.')
-            print('   [informing all active clients about the shutdown]', end='')
+            print(">> ", end='')
+            print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+            print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+            print(">> ", end='')
+            print_ansi(text='Server crashed. closing it...', color='blue')
             inform_active_clients_about_shutdown(server_socket, 'error')
-            print(' ---> completed')
 
     except Exception as ex:
-        print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
-        print('>> Server crashed.')
-        print('   [informing all active clients about the shutdown]', end='')
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+        print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+        print(">> ", end='')
+        print_ansi(text='Server crashed. closing it...', color='blue')
         inform_active_clients_about_shutdown(server_socket, 'error')
-        print(' ---> completed')
 
     finally:
-        print('   [waiting for running threads to complete]', end='')
+        SHUTDOWN_INFORMING_EVENT.wait()  # wait for informing to complete
+
+        print_ansi(text='   [waiting for running threads to complete]', new_line=False, color='cyan')
         # the next commend waits for all running tasks to complete (blocking till then), shuts down the
         # tread pool executor and frees up any resources used by it.
         executor.shutdown(wait=True)
-        print(' -----------> completed')
+        print_ansi(text=' -----------> completed', color='green', italic=True)
 
-        print('   [freeing up last resources]', end='')
+        print_ansi(text='   [freeing up last resources]', new_line=False, color='cyan')
         server_socket.close()
-        print(' -------------------------> completed')
+        colorama.deinit()  # stop using colorama. restore stduot and stderr to original values (terminal)
+        print_ansi(text=' -------------------------> completed', color='green', italic=True)
 
-        print('>> Server is closed.')
+        print(">> ", end='')
+        print_ansi(text='Server is closed.', color='green', italic=True)
 
 
 # --------------------------- Main Guard

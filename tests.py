@@ -75,8 +75,7 @@ def test_login_request(user_name: str, password: str):
 def test_dead(id: str, user_name: str):
     plaintext = f'Rotshild {id}\r\n' \
                 '\r\n' \
-                f'dead: {id}\r\n' \
-                f'user_name: {user_name}\r\n'
+                f'dead: {id}\r\n'
 
     encoded = plaintext.encode('utf-8')
 
@@ -112,7 +111,7 @@ def test_update_inventory(header_info: str, user_name: str):
     wait_for_reply()
 
 
-#test_register_request('user1', 'password1')
+#test_register_request('user6', 'password6')
 #test_login_request('user1', 'password1')  # BUG: to check if user name already logging before logging in
 #test_update_inventory('+ bomb 4', 'test')
 #test_dead('1', 'user1')  # BUG: to check if user name exists and active
