@@ -68,12 +68,14 @@ import re
 import platform
 import threading
 import colorama
+import keyring
 import rsa
 from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
+from cryptography.fernet import Fernet
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -111,6 +113,31 @@ SHUTDOWN_INFORMING_EVENT = threading.Event()  # When set it means finished infor
 MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 # (larger amount mean faster client handling and able to handle more clients,
 # but a big amount that is not match to your CPU will just waste important system resources and wont help)
+# ------------------------
+
+# ------------------------ Fernet encryption
+# Fernet is a high-level implementation of the Advanced Encryption Standard (AES) algorithm.
+# It uses AES in CBC (Cipher Block Chaining) mode with 128-bit key and PKCS7 padding to encrypt and decrypt data.
+FERNET_ENCRYPTION = None  # Will store the Fernet object (contains the key) to encrypt and decrypt data.
+# ------------------------
+
+# ------------------------ Keyring keys identifiers
+"""
+Keyring is a library provides a way to store and retrieve secret encryption keys in the keyring of your local machine.
+The keyring is typically protected by a master password or passphrase,
+so the encryption key is stored securely and can only be accessed by authorized users.
+
+Keyring library identifies encryption keys based on a combination of service_name, username, and password parameters.
+those are passed to the set_password() and get_password() functions.
+When you call get_password('my_app', 'encryption_key_name') fo example, the keyring library searches for a password
+that has the matching service_name and username values, and returns the corresponding password (or encryption key).
+"""
+
+# The service name (a label that helps to identify the purpose of the password being stored in the keyring. which app?)
+SERVICE_NAME = 'Local_Private_Game_Server'
+
+# The username (helps to identify the specific password being stored in the keyring. which key?)
+FERNET_KEY_USERNAME = 'fernet_key'
 # ------------------------
 
 # ------------------------ General
@@ -272,27 +299,51 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
     :param cursor: the cursor object to the DB.
     """
 
+    global FERNET_ENCRYPTION
+
+    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
+
     updates = header_info.split(',')
     # handle each inventory update
     for update in updates:
         operation, column, info = update.split()
         if column != 'weapons':
-            cursor.execute(f"UPDATE clients_info"
-                           f" SET {column} = {column} {operation} {info}"
-                           f" WHERE user_name = '{user_name}'")
-        else:
+            # getting the old value (will be an encrypted bytes object)
+            cursor.execute(f"SELECT {column} FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+            value = cursor.fetchone()
+            # changing it to the real int value of it
+            value = int(FERNET_ENCRYPTION.decrypt(value[0]).decode())
+            # making the operation
             if operation == '+':
-                cursor.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
+                value += int(info)
+            elif operation == '-':
+                value -= int(info)
+            # updating the value
+            cursor.execute(f"UPDATE clients_info"
+                           f" SET {column} = ?"
+                           f" WHERE user_name=?", (FERNET_ENCRYPTION.encrypt(str(value).encode()), encrypted_user_name))
+        else:
+            # getting the old value (will be an encrypted bytes object)
+            cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+            value = cursor.fetchone()
+            # changing it to the real int value of it
+            value = FERNET_ENCRYPTION.decrypt(value[0]).decode()
+            # making the operation
+            if operation == '+':
+                if value == '':
+                    value = info
+                else:
+                    value += ',' + info
             else:
-                cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
-                result = cursor.fetchone()
-                client_weapons = result[0].split(',')
+                client_weapons = value.split(',')
                 updated_weapons = []
                 for weapon in client_weapons:
                     if weapon != info:
                         updated_weapons.append(weapon)
-                updated_weapons = ','.join(updated_weapons)
-                cursor.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
+                value = ','.join(updated_weapons)
+            cursor.execute("UPDATE clients_info"
+                           " SET weapons = ?"
+                           " WHERE user_name = ?", (FERNET_ENCRYPTION.encrypt(value.encode()), encrypted_user_name))
     connector.commit()
 
 
@@ -307,7 +358,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CLIENTS_ID_IP_PORT_NAME
+    global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -319,8 +370,9 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             return 'login_status: already_active\r\n'
 
     hashed_password = sha512_hash(password.encode())
+    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
 
-    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
     result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
@@ -390,32 +442,43 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     """
 
     global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
-        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
+        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'register_status: invalid\r\n'
 
-    cursor.execute(f"SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
+
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
     result = cursor.fetchone()
 
     if result:
         # user name is taken
         return 'register_status: taken\r\n'
 
+    # encrypting the data to be saved (and hashing the password)
     hashed_password = sha512_hash(password.encode())
+    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode())
+    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode())
+    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode())
+    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode())
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode())
+    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode())
+    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode())
+    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
 
     # user name is free. saving it to the DB
-    new_client = (user_name,
+    new_client = (encrypted_user_name,
                   hashed_password,
-                  DEFAULT_WEAPONS,
-                  DEFAULT_AMMO,
-                  DEFAULT_BOMBS,
-                  DEFAULT_MED_KITS,
-                  DEFAULT_BACKPACK,
-                  DEFAULT_ENERGY_DRINKS,
-                  DEFAULT_EXP,
-                  DEFAULT_ENERGY)
+                  encrypted_default_weapons,
+                  encrypted_default_ammo,
+                  encrypted_default_bombs,
+                  encrypted_default_med_kits,
+                  encrypted_default_backpack,
+                  encrypted_default_energy_drinks,
+                  encrypted_default_exp,
+                  encrypted_default_energy)
     cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
                    " hashed_password,"
@@ -476,7 +539,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     :return: <String> dead header with the ID of the dead client.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID
+    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS,\
+        DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY, FERNET_ENCRYPTION
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -488,15 +552,27 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
 
+    # encrypting the data to be saved (and hashing the password)
+    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode())
+    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode())
+    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode())
+    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode())
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode())
+    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode())
+    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode())
+    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
+
+    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
+
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
-    client_update = (DEFAULT_WEAPONS,
-                     DEFAULT_AMMO,
-                     DEFAULT_BOMBS,
-                     DEFAULT_MED_KITS,
-                     DEFAULT_BACKPACK,
-                     DEFAULT_ENERGY_DRINKS,
-                     DEFAULT_EXP,
-                     DEFAULT_ENERGY)
+    client_update = (encrypted_default_weapons,
+                     encrypted_default_ammo,
+                     encrypted_default_bombs,
+                     encrypted_default_med_kits,
+                     encrypted_default_backpack,
+                     encrypted_default_energy_drinks,
+                     encrypted_default_exp,
+                     encrypted_default_energy)
     cursor.execute("UPDATE clients_info"
                    " SET weapons = ?,"
                    " ammo = ?,"
@@ -506,7 +582,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " energy_drinks = ?,"
                    " exp = ?,"
                    " energy = ?"
-                   " WHERE user_name = ?", client_update + (user_name,))
+                   " WHERE user_name = ?", client_update + (encrypted_user_name,))
     connector.commit()
 
     print(">> ", end='')
@@ -778,7 +854,7 @@ def check_user_input_thread(server_socket: socket):
     :param server_socket: <Socket> the server socket object.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -820,6 +896,9 @@ def check_user_input_thread(server_socket: socket):
                     # adding rows
                     for row in rows:
                         row = list(row)
+                        for i in range(len(row)):
+                            if i != 1:
+                                row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode()
                         row[1] = '* * * * * * * *'
                         table.add_row(row)
                     # printing the table
@@ -837,13 +916,15 @@ def check_user_input_thread(server_socket: socket):
                 connector, cursor = connect_to_db_and_build_cursor()
                 user_name = commend.split()[1]
 
+                encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
+
                 # selecting and fetching the user name line
-                cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+                cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (encrypted_user_name,))
                 row = cursor.fetchone()
 
                 # if user name exists
                 if row:
-                    cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name,))
+                    cursor.execute("DELETE FROM clients_info WHERE user_name=?", (encrypted_user_name,))
                     connector.commit()
 
                     print(">> ", end='')
@@ -1009,6 +1090,24 @@ def set_db_read_write_permissions_to_only_owner():
                         '   (This will not interfere with the normal running of the program).\n', color='yellow')
 
 
+def retrieve_fernet_key_from_keyring():
+    """
+    Retrieves the Fernet encryption key from the keyring and setting a Fernet object with it.
+    If doesn't exits in the keyring, generating a new key.
+    """
+
+    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, SERVICE_NAME
+
+    key = keyring.get_password(SERVICE_NAME, FERNET_KEY_USERNAME)
+    if key is None:
+        # Generating a new encryption key and store it in the keyring
+        key = Fernet.generate_key().decode()
+        keyring.set_password(SERVICE_NAME, FERNET_KEY_USERNAME, key)
+
+    # Now we have the encryption key in 'key' for sure. setting the Fernet object
+    FERNET_ENCRYPTION = Fernet(key.encode())
+
+
 def initialize_sqlite_rdb():
     """
     Creating a table of clients_info (if doesn't exist). (also creating the DB file if not exists).
@@ -1016,16 +1115,16 @@ def initialize_sqlite_rdb():
 
     connection, cursor = connect_to_db_and_build_cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
-                   " (user_name TEXT PRIMARY KEY,"
+                   " (user_name BLOB PRIMARY KEY,"
                    " hashed_password BLOB,"
-                   " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
-                   " ammo INTEGER,"
-                   " bombs INTEGER,"
-                   " med_kits INTEGER,"
-                   " backpack INTEGER,"
-                   " energy_drinks INTEGER,"
-                   " exp INTEGER,"
-                   " energy INTEGER)")
+                   " weapons BLOB,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
+                   " ammo BLOB,"
+                   " bombs BLOB,"
+                   " med_kits BLOB,"
+                   " backpack BLOB,"
+                   " energy_drinks BLOB,"
+                   " exp BLOB,"
+                   " energy BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
     set_db_read_write_permissions_to_only_owner()
 
@@ -1159,10 +1258,12 @@ def main():
         print_ansi(text='Loading...\n', color='blue', bold=True, italic=True)
 
         # -------------------------------------------------- GETTING THINGS READY TO GO
-        # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
+        # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT
         server_socket = set_socket()
-        # building connection and initialization of the SQL (SQLite) DataBase
+        # initializing the SQL (SQLite) DataBase
         initialize_sqlite_rdb()
+        # retrieving the Fernet encryption key (for the DB) from the keyring and setting a Fernet object with it
+        retrieve_fernet_key_from_keyring()
         # initializing a thread pool executor object
         executor = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')
         # --------------------------------------------------
