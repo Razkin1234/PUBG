@@ -36,7 +36,12 @@ weapon_data = {
 magic_data = {
 	'flame': {'strength': 5,'cost': 20,'graphic':'../graphics/particles/flame/fire.png'},
 	'heal': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/heal/heal.png'},
-	'shield': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/heal/heal.png'}}
+	'shield': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/shield/shield.png'}}
+
+#skill_data ={'speed' : {'cost'}}
+objects_on = {'sword': {'cooldown': 100, 'damage': 15,'graphic':'../graphics/weapons/sword/full.png'}
+
+}
 
 #enemy
 monster_data = {

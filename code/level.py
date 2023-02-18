@@ -88,10 +88,9 @@ class Level:
         if style == 'heal':  # need to replace with 'shield'
             self.magic_player.heal(self.player,strength,cost,[self.visble_sprites])
         if style == 'flame':  # the shots
-            pass
+            self.magic_player.highspeed(self.player,cost)
         if style == 'shield':
             self.magic_player.shield(self.player, strength, cost, [self.visble_sprites])
-            self.player.shield_timer = pygame.time.get_ticks()
 
     def destroy_attack(self):
         if self.current_attack:
@@ -106,7 +105,7 @@ class Level:
         :param attack_type:
         :return:
         """
-        if self.player.vulnerable and self.player.can_shield:
+        if self.player.vulnerable and self.player.can_shield:# chack if the player has shield on
             self.player.health -= amount
             self.player.vulnerable = False
             self.player.hurt_time = pygame.time.get_ticks()
@@ -136,6 +135,7 @@ class Level:
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
     def run(self):  # update and draw the game
+
         self.visble_sprites.custom_draw(self.player)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)

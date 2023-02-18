@@ -11,7 +11,6 @@ class Entity(pygame.sprite.Sprite):
     def move(self, speed):  # moves the player around
         if self.direction.magnitude() != 0:
             self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
-
         self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
         self.collision('horizontal')
         self.hitbox.y += self.direction.y * speed  # making the player move verticaly

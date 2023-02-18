@@ -28,7 +28,7 @@ class Player(Entity):
         #weapon
         self.create_attack = create_attack
         self.weapon_index = 0 #the offset of the weapons
-        self.weapon = list(weapon_data.keys())[self.weapon_index] #the weapon we are using
+        self.weapon = list(objects_on.keys())[self.weapon_index] #the weapon we are using
         self.destroy_attack = destroy_attack #the function that unprinting the weapon
 
         self.can_switch_weapon = True #that we will switch only one weapon every time we press {
@@ -44,14 +44,17 @@ class Player(Entity):
         self.shield_timer = None
         self.can_shield = True
         self.shield_duration = 2000
+        self.run_timer = None
+        self.can_run = True
+        self.run_duration = 2000
 
-
+        self.objects_on ={}
 
         #stats
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
         self.health = self.stats['health'] #our current health
         self.energy = self.stats['energy'] #our current energy
-        self.exp = 30
+        self.exp = 100
         self.speed = self.stats['speed'] #the speed of the player
 
         #damage timer
@@ -110,8 +113,6 @@ class Player(Entity):
 
         #magic input
         if keys[pygame.K_LCTRL] and not self.attacking:
-            self.attacking = True
-            self.attack_time = pygame.time.get_ticks()
             #the magic we will use:
             style = list(magic_data.keys())[self.magic_index]
             strength = list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
@@ -123,11 +124,11 @@ class Player(Entity):
             self.can_switch_weapon = False
             self.weapon_switch_time = pygame.time.get_ticks()
 
-            if self.weapon_index < len(list(weapon_data.keys())) - 1:
+            if self.weapon_index < len(list(objects_on.keys())) - 1:
                 self.weapon_index += 1 #new weapon
             else:
                 self.weapon_index = 0
-            self.weapon = list(weapon_data.keys())[self.weapon_index]  # the weapon we are using
+            self.weapon = list(objects_on.keys())[self.weapon_index]  # the weapon we are using
 
 
 
@@ -245,8 +246,15 @@ class Player(Entity):
         if not self.can_shield:
             if current_time - self.shield_timer >= self.shield_duration:
                 self.can_shield = True
+
+        if not self.can_run:
+            if current_time - self.run_timer >= self.run_duration:
+                self.can_run = True
+                self.speed = 5
             else:
-                print('shield')
+                self.speed = 10
+                print('sprrd')
+
 
     def animate(self): #shows us the animations
         animation = self.animations[self.status]
@@ -266,6 +274,8 @@ class Player(Entity):
             self.image.set_alpha(alpha)
         else:
             self.image.set_alpha(255)
+
+
 
     def get_full_weapon_damege(self):
         """
