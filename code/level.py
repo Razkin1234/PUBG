@@ -9,12 +9,14 @@ from weapon import Weapon
 from ui import UI
 from enemy import Enemy
 from player import Player
+from typing import Dict
 
 
 class Level:
     def __init__(self):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
+        self.camera = pygame.math.Vector2()
 
         # sprite groups setup
         self.visble_sprites = YsortCameraGroup()
@@ -32,50 +34,60 @@ class Level:
         # user interface
         self.ui = UI()
 
-    # here we will print every detail on the map (obstacles, players...)
-    def create_map(self):
-        layouts = {
-            'floor': get_csv_area('../map/map_Floor.csv',(33,22)),
-            'boundary': get_csv_area('../map/map_FloorBlocks.csv',(33,22)),
-            'entities': get_csv_area('../map/map_Entities.csv',(33,22))
+        #floor updating
+        self.can_update_floor = False
+        self.update_floor_cooldown = 1000
+        self.floor_update_time = 0
+        self.player_first_location = (22*TILESIZE,33*TILESIZE)
+        self.layout :dict[str: list[list[int]]]={
+            'floor': import_csv_layout('../map/map_Floor.csv'),
+            'boundary': import_csv_layout('../map/map_FloorBlocks.csv'),
+            'entities': import_csv_layout('../map/map_Entities.csv')
+        }
+        self.graphics: dict[str: dict[int: pygame.Surface]] = {
+            'floor': import_folder('../graphics/tilessyber')
         }
 
 
-        for style, layout in layouts.items():
-            for row_index, row in enumerate(layout):
-                for col_index, col in enumerate(row):
-                    if col != '-1':
-                        x = col_index * TILESIZE  # checks the location
-                        y = row_index * TILESIZE
-                        if style == 'boundary':
-                            Tile((x, y), self.obstacle_sprites, 'invisible')
-                        if style == 'floor':
-                            tile_path = f'../graphics/tilessyber/{col}.png'
-                            image_surf = pygame.image.load(tile_path).convert_alpha()
-                            Tile((x,y),[self.floor_sprites],'floor',image_surf)
-                        if style == 'entities':
-                            if col == '394':  # the player number on the map
-                                self.player = Player(  # creating the player
-                                    (x, y),
-                                    [self.visble_sprites],
-                                    self.obstacle_sprites,
-                                    self.create_attack,
-                                    self.destroy_attack,
-                                    self.create_magic)
-                            else:
-                                if col == '390':
-                                    monster_name = 'bamboo'
-                                elif col == '391':
-                                    monster_name = 'spirit'
-                                elif col == '392':
-                                    monster_name = 'raccoon'
-                                else:
-                                    monster_name = 'squid'
-                                Enemy(
-                                    monster_name,
-                                    (x, y),
-                                    [self.visble_sprites, self.attackable_sprites],
-                                    self.obstacle_sprites)
+
+    def cooldown(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.floor_update_time >= self.update_floor_cooldown:
+            self.floor_update_time = pygame.time.get_ticks()
+            self.floor_update()
+    def floor_update(self):
+        for style_index, (style, layout) in enumerate(self.layout.items()):
+            for row_index in range(int(self.player.rect[1] - ROW_LOAD_TILE_DISTANCE),
+                                   int(self.player.rect[1] + ROW_LOAD_TILE_DISTANCE)):
+                if 0 <= row_index < ROW_TILES:
+                    row = layout[row_index]
+                    for col_index in range(int(self.player.rect[0] - COL_LOAD_TILE_DISTANCE),
+                                           int(self.player.rect[0] + COL_LOAD_TILE_DISTANCE)):
+                        if 0 <= col_index < COL_TILES:
+                            col = row[col_index]
+                            if col != '-1':  # -1 in csv means no tile, don't need to recreate the tile if it already exists
+                                x: int = col_index * TILESIZE
+                                y: int = row_index * TILESIZE
+
+                                if style == 'floor':
+                                    surface: pygame.Surface = f''
+                                    Tile((x, y), [self.visible_sprites], 'floor')
+                                elif style == 'boundary':
+                                    Tile((x, y), [self.obstacle_sprites], 'barrier')
+
+    # here we will print every detail on the map (obstacles, players...)
+    def create_map(self):
+        """
+        Place movable tiles on the map
+        :return: None
+        """
+        # Create player with starting position
+        self.player = Player((22*64, 33*64), self.visble_sprites,
+                             self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
+
+        # Center camera
+        self.camera.x = self.player.rect.centerx
+        self.camera.y = self.player.rect.centery
 
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
@@ -103,13 +115,18 @@ class Level:
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
     def run(self):  # update and draw the game
-        self.floor_sprites.custom_draw(self.player)
+        #self.cooldown()
+        self.camera.x = self.player.rect.centerx#updating the camera location
+        self.camera.y = self.player.rect.centery
+
+        self.floor_update()
+        self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
-        self.visble_sprites.custom_draw(self.player)
+        self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
-        debug(get_player_loc(self.player.rect))
+        debug(get_player_loc(self.player.rect[0:2]))
 
 

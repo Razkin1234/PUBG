@@ -18,17 +18,18 @@ class YsortCameraGroup(pygame.sprite.Group):
         self.floor_surface = pygame.display.get_surface() #the canvas
         self.floor_rect = self.floor_surface.get_rect(topleft = (0,0))
 
+        self.screen_center: pygame.math.Vector2 = pygame.math.Vector2(self.half_width,self.half_height)#the center of the screen
 
-    def custom_draw(self, player):
 
-        #getting the offset
-        self.offset.x = player.rect.centerx - self.half_width
-        self.offset.y = player.rect.centery - self.half_height
-
-        #for sprite in self.sprites():
-        for sprite in sorted(self.sprites(),key= lambda sprite: sprite.rect.centery):
-            offset_position = sprite.rect.topleft - self.offset
-            self.display_surface.blit(sprite.image,offset_position)
+    def custom_draw(self, camera):
+        """
+       Draws the sprites on screen according to the screen height, and then according to the position of the camera
+       :return: None
+       """
+        # For every visible sprite, from top to bottom
+        for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
+            # Display the sprite on screen, moving it by the calculated offset
+            self.display_surface.blit(sprite.image, sprite.rect.topleft - camera + self.screen_center)
 
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
