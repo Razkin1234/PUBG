@@ -70,8 +70,9 @@ class Level:
                                 y: int = row_index * TILESIZE
 
                                 if style == 'floor':
-                                    surface: pygame.Surface = f''
-                                    Tile((x, y), [self.visible_sprites], 'floor')
+                                    tile_path = f'../graphics/tilessyber/{col}.png'
+                                    image_surf = pygame.image.load(tile_path).convert_alpha()
+                                    Tile((x, y), [self.visible_sprites], image_surf , 'floor')
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
 
