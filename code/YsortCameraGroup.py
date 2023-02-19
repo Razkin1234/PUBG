@@ -29,7 +29,8 @@ class YsortCameraGroup(pygame.sprite.Group):
         # For every visible sprite, from top to bottom
         for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
             # Display the sprite on screen, moving it by the calculated offset
-            self.display_surface.blit(sprite.image, sprite.rect.topleft - camera + self.screen_center)
+            offset_position = sprite.rect.topleft - camera + self.screen_center
+            self.display_surface.blit(sprite.image, offset_position)
 
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']

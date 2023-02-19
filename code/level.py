@@ -56,13 +56,14 @@ class Level:
             self.floor_update_time = pygame.time.get_ticks()
             self.floor_update()
     def floor_update(self):
+        player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),int(self.player.rect.y / TILESIZE) )
         for style_index, (style, layout) in enumerate(self.layout.items()):
-            for row_index in range(int(self.player.rect[1] - ROW_LOAD_TILE_DISTANCE),
-                                   int(self.player.rect[1] + ROW_LOAD_TILE_DISTANCE)):
+            for row_index in range(int(player_tile.y - ROW_LOAD_TILE_DISTANCE),
+                                   int(player_tile.y + ROW_LOAD_TILE_DISTANCE)):
                 if 0 <= row_index < ROW_TILES:
                     row = layout[row_index]
-                    for col_index in range(int(self.player.rect[0] - COL_LOAD_TILE_DISTANCE),
-                                           int(self.player.rect[0] + COL_LOAD_TILE_DISTANCE)):
+                    for col_index in range(int(player_tile.x - COL_LOAD_TILE_DISTANCE),
+                                           int(player_tile.x + COL_LOAD_TILE_DISTANCE)):
                         if 0 <= col_index < COL_TILES:
                             col = row[col_index]
                             if col != '-1':  # -1 in csv means no tile, don't need to recreate the tile if it already exists
@@ -72,7 +73,7 @@ class Level:
                                 if style == 'floor':
                                     tile_path = f'../graphics/tilessyber/{col}.png'
                                     image_surf = pygame.image.load(tile_path).convert_alpha()
-                                    Tile((x, y), [self.visible_sprites], image_surf , 'floor')
+                                    Tile((x, y), [self.floor_sprites], 'floor', image_surf)
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
 
@@ -83,7 +84,7 @@ class Level:
         :return: None
         """
         # Create player with starting position
-        self.player = Player((22*64, 33*64), self.visble_sprites,
+        self.player = Player((700, 1000), self.visble_sprites,
                              self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
 
         # Center camera
@@ -123,11 +124,14 @@ class Level:
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
+
+
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
+        self.floor_sprites.empty()
         debug(get_player_loc(self.player.rect[0:2]))
 
 
