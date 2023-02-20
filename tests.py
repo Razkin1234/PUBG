@@ -111,7 +111,7 @@ def test_update_inventory(header_info: str, user_name: str):
     wait_for_reply()
 
 
-#test_register_request('user6', 'password6')
+#test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')  # BUG: to check if user name already logging before logging in
 #test_update_inventory('+ bomb 4', 'test')
 #test_dead('1', 'user1')  # BUG: to check if user name exists and active

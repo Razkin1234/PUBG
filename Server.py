@@ -301,15 +301,13 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
 
     global FERNET_ENCRYPTION
 
-    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
-
     updates = header_info.split(',')
     # handle each inventory update
     for update in updates:
         operation, column, info = update.split()
         if column != 'weapons':
             # getting the old value (will be an encrypted bytes object)
-            cursor.execute(f"SELECT {column} FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+            cursor.execute(f"SELECT {column} FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
             value = cursor.fetchone()
             # changing it to the real int value of it
             value = int(FERNET_ENCRYPTION.decrypt(value[0]).decode())
@@ -321,10 +319,11 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             # updating the value
             cursor.execute(f"UPDATE clients_info"
                            f" SET {column} = ?"
-                           f" WHERE user_name=?", (FERNET_ENCRYPTION.encrypt(str(value).encode()), encrypted_user_name))
+                           f" WHERE user_name=?",
+                           (FERNET_ENCRYPTION.encrypt(str(value).encode()), user_name.encode('utf-8')))
         else:
             # getting the old value (will be an encrypted bytes object)
-            cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+            cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
             value = cursor.fetchone()
             # changing it to the real int value of it
             value = FERNET_ENCRYPTION.decrypt(value[0]).decode()
@@ -343,7 +342,8 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
                 value = ','.join(updated_weapons)
             cursor.execute("UPDATE clients_info"
                            " SET weapons = ?"
-                           " WHERE user_name = ?", (FERNET_ENCRYPTION.encrypt(value.encode()), encrypted_user_name))
+                           " WHERE user_name = ?",
+                           (FERNET_ENCRYPTION.encrypt(value.encode()), user_name.encode('utf-8')))
     connector.commit()
 
 
@@ -358,7 +358,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
+    global CLIENTS_ID_IP_PORT_NAME
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -370,9 +370,8 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             return 'login_status: already_active\r\n'
 
     hashed_password = sha512_hash(password.encode())
-    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
 
-    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
     result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
@@ -448,9 +447,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         # user name and password can not contain spaces
         return 'register_status: invalid\r\n'
 
-    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
-
-    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (encrypted_user_name,))
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
     result = cursor.fetchone()
 
     if result:
@@ -469,7 +466,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
 
     # user name is free. saving it to the DB
-    new_client = (encrypted_user_name,
+    new_client = (user_name.encode('utf-8'),
                   hashed_password,
                   encrypted_default_weapons,
                   encrypted_default_ammo,
@@ -562,8 +559,6 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode())
     encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
 
-    encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
-
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
     client_update = (encrypted_default_weapons,
                      encrypted_default_ammo,
@@ -582,7 +577,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " energy_drinks = ?,"
                    " exp = ?,"
                    " energy = ?"
-                   " WHERE user_name = ?", client_update + (encrypted_user_name,))
+                   " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
     connector.commit()
 
     print(">> ", end='')
@@ -897,8 +892,9 @@ def check_user_input_thread(server_socket: socket):
                     for row in rows:
                         row = list(row)
                         for i in range(len(row)):
-                            if i != 1:
+                            if i != 0 and i != 1:
                                 row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode()
+                        row[0] = row[0].decode('utf-8')
                         row[1] = '* * * * * * * *'
                         table.add_row(row)
                     # printing the table
@@ -916,15 +912,13 @@ def check_user_input_thread(server_socket: socket):
                 connector, cursor = connect_to_db_and_build_cursor()
                 user_name = commend.split()[1]
 
-                encrypted_user_name = FERNET_ENCRYPTION.encrypt(user_name.encode())
-
                 # selecting and fetching the user name line
-                cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (encrypted_user_name,))
+                cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name.encode('utf-8'),))
                 row = cursor.fetchone()
 
                 # if user name exists
                 if row:
-                    cursor.execute("DELETE FROM clients_info WHERE user_name=?", (encrypted_user_name,))
+                    cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name.encode('utf-8'),))
                     connector.commit()
 
                     print(">> ", end='')
@@ -1329,7 +1323,10 @@ def main():
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     except OSError as ex:
-        if ex.errno == 98:
+        if ex.errno == 98 or ex.errno == 10048:
+            # In UNIX-like operating systems error number 98 is what in windows specifies by error number 10048.
+            # (in windows its Error-'WSAEADDRINUSE' and in UNIX-like - 'EADDRINUSE')
+            # (it means address is in use by another process and not free to bind)
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
@@ -1337,6 +1334,8 @@ def main():
                        color='red')
             print(">> ", end='')
             print_ansi(text='Server is shutting down...', color='blue')
+            # don't have clients to inform so setting the event
+            SHUTDOWN_INFORMING_EVENT.set()
         else:
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
@@ -1357,13 +1356,15 @@ def main():
         SHUTDOWN_INFORMING_EVENT.wait()  # wait for informing to complete
 
         print_ansi(text='   [waiting for running threads to complete]', new_line=False, color='cyan')
-        # the next commend waits for all running tasks to complete (blocking till then), shuts down the
-        # tread pool executor and frees up any resources used by it.
-        executor.shutdown(wait=True)
+        if executor:  # if there is an executor up
+            # the next commend waits for all running tasks to complete (blocking till then), shuts down the
+            # tread pool executor and frees up any resources used by it.
+            executor.shutdown(wait=True)
         print_ansi(text=' -----------> completed', color='green', italic=True)
 
         print_ansi(text='   [freeing up last resources]', new_line=False, color='cyan')
-        server_socket.close()
+        if server_socket:  # if there is a socket up
+            server_socket.close()
         colorama.deinit()  # stop using colorama. restore stduot and stderr to original values (terminal)
         print_ansi(text=' -------------------------> completed', color='green', italic=True)
 
