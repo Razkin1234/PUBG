@@ -40,9 +40,9 @@ class Level:
         self.floor_update_time = 0
         self.player_first_location = (22*TILESIZE,33*TILESIZE)
         self.layout :dict[str: list[list[int]]]={
-            'floor': import_csv_layout('../map/map_Floor.csv'),
-            'boundary': import_csv_layout('../map/map_FloorBlocks.csv'),
-            'entities': import_csv_layout('../map/map_Entities.csv')
+            'floor': import_csv_layout('../map/map_Floor2.csv'),
+            'boundary': import_csv_layout('../map/map_FloorBlocks2.csv')
+            #,'entities': import_csv_layout('../map/map_Entities.csv')
         }
         self.graphics: dict[str: dict[int: pygame.Surface]] = {
             'floor': import_folder('../graphics/tilessyber')
@@ -132,6 +132,7 @@ class Level:
         self.player_attack_logic()
         self.ui.display(self.player)
         self.floor_sprites.empty()
+        self.obstacle_sprites.empty()
         debug(get_player_loc(self.player.rect[0:2]))
 
 
