@@ -1179,16 +1179,8 @@ def get_public_ip() -> str:
                 pass
     # ----------------
 
-    # ----------------
-    # if external APIs fails. try to get public IP address from public_ip module (though it works very similar)
-    try:
-        return public_ip.get()
-    except:
-        pass
-    # ----------------
-
-    # If all methods fail
-    return "[Your public IP (our system couldn't find it, ask the NET Admin to find it)]"
+    # If all failed
+    return "[Your public IP (our system couldn't find it)]"
 
 
 def get_private_ip() -> str:
@@ -1235,7 +1227,77 @@ def get_private_ip() -> str:
         pass
     # -------------------
 
-    return "[Your private IP (our system couldn't find it, check for it yourself)]"
+    return "[Your private IP (our system couldn't find it)]"
+
+
+def print_start_info_and_runnig_status():
+    """
+    Printing start info and running status
+    """
+
+    # -------------------------------------------------- trying to get the runner machine's IP addresses
+    my_public_ip = get_public_ip()
+    my_private_ip = get_private_ip()
+    # --------------------------------------------------
+
+    # -------------------------------------------------- Printing start info and running status
+    print_ansi(text='---------------------------------------------------------',
+               color='magenta', italic=True, bold=True)
+    print(">> ", end='')
+    print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
+    print_ansi(text='The server requires your network to have port forwarding\n'
+                    f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want\n'
+                    '         it to be available for clients from WAN (outside your network).\n'
+                    '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n'
+               , color='magenta', italic=True)
+    print(">> ", end='')
+    print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
+    if my_public_ip == "[Your public IP (our system couldn't find it)]":
+        # explanation for this if is in the next if (a few lines down)
+        print_ansi(text=f'   - For WAN clients - ', new_line=False, color='magenta', italic=True)
+        print_ansi(text=f'{my_public_ip}', new_line=False, color='red', italic=True, bold=True)
+        print_ansi(text=f':{str(SERVER_UDP_PORT)}\n   - For LAN clients - ',
+                   new_line=False, color='magenta', italic=True)
+        print_ansi(text=f'{my_private_ip}', new_line=False, color='yellow', italic=True)
+        print_ansi(text=f':{str(SERVER_UDP_PORT)}\n', color='magenta', italic=True)
+    else:
+        print_ansi(text=f'   - For WAN clients - ', new_line=False, color='magenta', italic=True)
+        print_ansi(text=f'{my_public_ip}', new_line=False, color='green', italic=True)
+        print_ansi(text=f':{str(SERVER_UDP_PORT)}\n   - For LAN clients - ',
+                   new_line=False, color='magenta', italic=True)
+        print_ansi(text=f'{my_private_ip}', new_line=False, color='green', italic=True)
+        print_ansi(text=f':{str(SERVER_UDP_PORT)}\n', color='magenta', italic=True)
+    print('    ', end='')
+    print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
+    print_ansi(text=" It's important that clients on your network will enter the game by the private IP\n"
+                    "         (the one for LAN clients), and clients outside your network will enter by the public IP\n"
+                    "         (the one for WAN clients).", color='magenta', italic=True)
+
+    if not my_private_ip == "[Your private IP (our system couldn't find it)]" \
+            and my_public_ip == "[Your public IP (our system couldn't find it)]":
+        # If got here, there is no connection to WAN but there is a private IP.
+        # probably in that case there is also no Networks connection (LAN) at all (in most cases...).
+        # Sometimes even if you are not connected to the internet or a local network, your system may still have a
+        # network interface configured with a private IP address. This could happen if your system was previously
+        # connected to a network and the IP address was not released when the network connection was terminated.
+        # In this case, you may be able to bind a private IP address to a socket, but you will not be able to
+        # communicate with other devices over the network.
+        # So I'm printing a warning that the private IP might not be True and clients might not be able to connect.
+
+        print("\n>> ", end='')
+        print_ansi(text='[WARNING] ', color='yellow', blink=True, new_line=False)
+        print_ansi(text='There might be a problem with your internet network connection.\n'
+                        '   Seems like you got a private IP but not a public one.\n'
+                        "   Usually cases like this are a result of a previous connection that the operating system"
+                        " didn't realesed its IP when the connection terminated.\n   ",
+                   color='yellow', new_line=False)
+        print_ansi(text='In that case clients will not be able to connect to you.',
+                   color='yellow', underline=True, new_line=False)
+        print_ansi(text=' You might want to check your network connection...', color='yellow')
+
+    print_ansi(text="---------------------------------------------------------\n",
+               color='magenta', italic=True, bold=True)
+    # --------------------------------------------------
 
 
 def main():
@@ -1272,32 +1334,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
 
-        my_public_ip = get_public_ip()
-        my_private_ip = get_private_ip()
-
-        # -------------------------------------------------- Printing start info and running status
-        print_ansi(text='---------------------------------------------------------',
-                   color='magenta', italic=True, bold=True)
-        print(">> ", end='')
-        print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
-        print_ansi(text='The server requires your network to have port forwarding\n'
-                   f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want\n'
-                   '         it to be available for clients from WAN (outside your network).\n'
-                   '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n'
-                   , color='magenta', italic=True)
-        print(">> ", end='')
-        print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
-        print_ansi(text=f'   - For WAN clients - {my_public_ip}:{str(SERVER_UDP_PORT)}\n'
-                   f'   - For LAN clients - {my_private_ip}:{str(SERVER_UDP_PORT)}\n',
-                   color='magenta', italic=True)
-        print('    ', end='')
-        print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
-        print_ansi(text=" It's important that clients on your network will enter the game by the private IP\n"
-                   "         (the one for LAN clients), and clients outside your network will enter by the public IP\n"
-                   "         (the one for WAN clients).", color='magenta', italic=True)
-        print_ansi(text="---------------------------------------------------------\n",
-                   color='magenta', italic=True, bold=True)
-        # --------------------------------------------------
+        print_start_info_and_runnig_status()
 
         print("\n>> ", end='')
         print_ansi(text='All Set! ENJOY!!!\n   (see below the commends you can use as the server manager...)\n',
@@ -1316,18 +1353,18 @@ def main():
                    color='cyan')
         # --------------------------------------------------
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # =================| GAME LOOP |==================
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():
-            try:
-                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets
-            except socket_timeout:
-                continue
-
-            # verify the packet in a different thread and if all good then handling it in another thread
-            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
-        # ==================================================
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # ==============================================| GAME LOOP |=============================================# !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
+            try:                                                                                                  # !!
+                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
+            except socket_timeout:                                                                                # !!
+                continue                                                                                          # !!
+                                                                                                                  # !!
+            # verify the packet in a different thread and if all good then handling it in another thread          # !!
+            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)                 # !!
+        # ========================================================================================================# !!
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     except OSError as ex:
         if ex.errno == 98 or ex.errno == 10048:
