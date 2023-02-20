@@ -68,7 +68,7 @@ import re
 import platform
 import threading
 import colorama
-import keyring
+import MyKeyring  # my module (not the external library)
 import rsa
 from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
@@ -76,6 +76,7 @@ from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
 from cryptography.fernet import Fernet
+from random import randint
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -121,23 +122,17 @@ MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
 FERNET_ENCRYPTION = None  # Will store the Fernet object (contains the key) to encrypt and decrypt data.
 # ------------------------
 
-# ------------------------ Keyring keys identifiers
-"""
-Keyring is a library provides a way to store and retrieve secret encryption keys in the keyring of your local machine.
-The keyring is typically protected by a master password or passphrase,
-so the encryption key is stored securely and can only be accessed by authorized users.
-
-Keyring library identifies encryption keys based on a combination of service_name, username, and password parameters.
-those are passed to the set_password() and get_password() functions.
-When you call get_password('my_app', 'encryption_key_name') fo example, the keyring library searches for a password
-that has the matching service_name and username values, and returns the corresponding password (or encryption key).
-"""
-
+# ------------------------ Keyring identifiers (I use my own keyring on a JSON file. not using the library)
 # The service name (a label that helps to identify the purpose of the password being stored in the keyring. which app?)
 SERVICE_NAME = 'Local_Private_Game_Server'
 
 # The username (helps to identify the specific password being stored in the keyring. which key?)
-FERNET_KEY_USERNAME = 'fernet_key'
+FERNET_KEY_USERNAME = 'fernet_key'  # the real Fernet key
+FAKE_FERNET_KEY_1 = 'fake_fernet_1'  # a fake Fernet key
+FAKE_FERNET_KEY_2 = 'fake_fernet_2'  # a fake Fernet key
+FAKE_FERNET_KEY_3 = 'fake_fernet_3'  # a fake Fernet key
+FAKE_FERNET_KEY_4 = 'fake_fernet_4'  # a fake Fernet key
+FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ General
@@ -1086,20 +1081,32 @@ def set_db_read_write_permissions_to_only_owner():
 
 def retrieve_fernet_key_from_keyring():
     """
-    Retrieves the Fernet encryption key from the keyring and setting a Fernet object with it.
-    If doesn't exits in the keyring, generating a new key.
+    Searches in the for a password (or key) that has the matching service_name and username values as the args,
+    and setting a Fernet object with the corresponding encryption key.
+    If there is no match it create a new random key with these identifiers and saving it with 5 more fake ones.
     """
 
-    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, SERVICE_NAME
+    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3,\
+        FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5, SERVICE_NAME
+
+    keyring = MyKeyring.MyKeyring()  # initializing a MyKeyring object in th same directory as the script
 
     key = keyring.get_password(SERVICE_NAME, FERNET_KEY_USERNAME)
     if key is None:
-        # Generating a new encryption key and store it in the keyring
-        key = Fernet.generate_key().decode()
-        keyring.set_password(SERVICE_NAME, FERNET_KEY_USERNAME, key)
-
-    # Now we have the encryption key in 'key' for sure. setting the Fernet object
-    FERNET_ENCRYPTION = Fernet(key.encode())
+        # Generating a new encryption key and 5 fake ones and store them in the keyring in random order
+        user_names = [FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3,
+                      FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5]
+        for _ in range(len(user_names)):
+            index = randint(0, len(user_names)-1)
+            key = Fernet.generate_key().decode()
+            keyring.set_password(SERVICE_NAME, user_names[index], key)
+            if index == 0:
+                # setting a Fernet object with the real key
+                FERNET_ENCRYPTION = Fernet(key.encode())
+            del user_names[index]
+    else:
+        # setting a Fernet object with the real key
+        FERNET_ENCRYPTION = Fernet(key.encode())
 
 
 def initialize_sqlite_rdb():
