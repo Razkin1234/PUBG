@@ -305,7 +305,7 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             cursor.execute(f"SELECT {column} FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
             value = cursor.fetchone()
             # changing it to the real int value of it
-            value = int(FERNET_ENCRYPTION.decrypt(value[0]).decode())
+            value = int(FERNET_ENCRYPTION.decrypt(value[0]).decode('utf-8'))
             # making the operation
             if operation == '+':
                 value += int(info)
@@ -315,13 +315,13 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             cursor.execute(f"UPDATE clients_info"
                            f" SET {column} = ?"
                            f" WHERE user_name=?",
-                           (FERNET_ENCRYPTION.encrypt(str(value).encode()), user_name.encode('utf-8')))
+                           (FERNET_ENCRYPTION.encrypt(str(value).encode('utf-8')), user_name.encode('utf-8')))
         else:
             # getting the old value (will be an encrypted bytes object)
             cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
             value = cursor.fetchone()
             # changing it to the real int value of it
-            value = FERNET_ENCRYPTION.decrypt(value[0]).decode()
+            value = FERNET_ENCRYPTION.decrypt(value[0]).decode('utf-8')
             # making the operation
             if operation == '+':
                 if value == '':
@@ -338,7 +338,7 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             cursor.execute("UPDATE clients_info"
                            " SET weapons = ?"
                            " WHERE user_name = ?",
-                           (FERNET_ENCRYPTION.encrypt(value.encode()), user_name.encode('utf-8')))
+                           (FERNET_ENCRYPTION.encrypt(value.encode('utf-8')), user_name.encode('utf-8')))
     connector.commit()
 
 
@@ -364,7 +364,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             # user name already active in the game. can't login again.
             return 'login_status: already_active\r\n'
 
-    hashed_password = sha512_hash(password.encode())
+    hashed_password = sha512_hash(password.encode('utf-8'))
 
     cursor.execute(f"SELECT * FROM clients_info WHERE user_name = ?", (user_name.encode('utf-8'),))
     result = cursor.fetchone()
@@ -450,15 +450,15 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         return 'register_status: taken\r\n'
 
     # encrypting the data to be saved (and hashing the password)
-    hashed_password = sha512_hash(password.encode())
-    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode())
-    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode())
-    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode())
-    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode())
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode())
-    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode())
-    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode())
-    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
+    hashed_password = sha512_hash(password.encode('utf-8'))
+    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
+    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
+    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode('utf-8'))
+    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
+    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
+    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
+    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
 
     # user name is free. saving it to the DB
     new_client = (user_name.encode('utf-8'),
@@ -545,14 +545,14 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             break
 
     # encrypting the data to be saved (and hashing the password)
-    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode())
-    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode())
-    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode())
-    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode())
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode())
-    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode())
-    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode())
-    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode())
+    encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
+    encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
+    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode('utf-8'))
+    encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
+    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
+    encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
+    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
     client_update = (encrypted_default_weapons,
@@ -888,7 +888,7 @@ def check_user_input_thread(server_socket: socket):
                         row = list(row)
                         for i in range(len(row)):
                             if i != 0 and i != 1:
-                                row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode()
+                                row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode('utf-8')
                         row[0] = row[0].decode('utf-8')
                         row[1] = '* * * * * * * *'
                         table.add_row(row)
@@ -1098,15 +1098,15 @@ def retrieve_fernet_key_from_keyring():
                       FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5]
         for _ in range(len(user_names)):
             index = randint(0, len(user_names)-1)
-            key = Fernet.generate_key().decode()
+            key = Fernet.generate_key().decode('utf-8')
             keyring.set_password(SERVICE_NAME, user_names[index], key)
             if index == 0:
                 # setting a Fernet object with the real key
-                FERNET_ENCRYPTION = Fernet(key.encode())
+                FERNET_ENCRYPTION = Fernet(key.encode('utf-8'))
             del user_names[index]
     else:
         # setting a Fernet object with the real key
-        FERNET_ENCRYPTION = Fernet(key.encode())
+        FERNET_ENCRYPTION = Fernet(key.encode('utf-8'))
 
 
 def initialize_sqlite_rdb():
