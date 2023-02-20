@@ -28,15 +28,8 @@ class Level:
         self.attack_sprites = pygame.sprite.Group()
         self.attackable_sprites = pygame.sprite.Group()
 
-        # sprite setup
-        self.create_map()
-
         # user interface
         self.ui = UI()
-
-        #floor updating
-        self.player_move = [0, 0]
-        self.player_prev_location = self.player.rect[0:2]
 
         self.can_update_floor = False
         self.update_floor_cooldown = 1000
@@ -51,6 +44,13 @@ class Level:
             'floor': import_folder('../graphics/tilessyber')
         }
 
+        # sprite setup
+        self.create_map()
+
+        # floor updating
+        self.player_move = [0, 0]
+        self.player_prev_location = self.player.rect[0:2]
+
 
 
 
@@ -61,7 +61,7 @@ class Level:
             self.floor_update_time = pygame.time.get_ticks()
             self.floor_update()
 
-    def floor_gupdate(self):
+    def floor_update(self):
 
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
                                                                int(self.player.rect.y / TILESIZE))
@@ -70,11 +70,11 @@ class Level:
 
         if self.player_move[1] !=0:
             if self.player_move[1] > 0:
-                row_index_add = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE))
-                row_index_remove = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE+1))
+                row_index_add = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE-1))
+                row_index_remove = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE))
             else:
-                row_index_add = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE))
-                row_index_remove = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE+1))
+                row_index_add = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE-1))
+                row_index_remove = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE))
             self.floor_sprites.remove_sprites_in_rect((row_index_remove * TILESIZE), 1)
             self.obstacle_sprites.remove_sprites_in_rect((row_index_remove * TILESIZE) , 1)
 
@@ -103,13 +103,14 @@ class Level:
 
         if self.player_move[0] !=0:
             if self.player_move[0] > 0:
-                col_index_add = int(player_tile.x + (COL_LOAD_TILE_DISTANCE))
-                col_index_remove = int(player_tile.x - (COL_LOAD_TILE_DISTANCE + 1))
+                col_index_add = int(player_tile.x + (COL_LOAD_TILE_DISTANCE-1))
+                col_index_remove = int(player_tile.x - (COL_LOAD_TILE_DISTANCE ))
             else:
-                col_index_add = int(player_tile.x - (COL_LOAD_TILE_DISTANCE))
-                col_index_remove = int(player_tile.x + (COL_LOAD_TILE_DISTANCE + 1))
+                col_index_add = int(player_tile.x - (COL_LOAD_TILE_DISTANCE-1))
+                col_index_remove = int(player_tile.x + (COL_LOAD_TILE_DISTANCE))
             self.floor_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
             self.obstacle_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
+
 
             for style_index, (style, layout) in enumerate(self.layout.items()):
                 for row_index in range(int(player_tile.y - ROW_LOAD_TILE_DISTANCE),
@@ -134,12 +135,27 @@ class Level:
 
 
 
-    def floor_update(self):
-        #empting the sprite groups
-        self.floor_sprites.empty()
-        self.obstacle_sprites.empty()
 
-        player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),int(self.player.rect.y / TILESIZE) )
+    # here we will print every detail on the map (obstacles, players...)
+    def create_map(self):
+        """
+        Place movable tiles on the map
+        :return: None
+        """
+
+        # Create player with starting position
+        self.player = Player((700, 1000), self.visble_sprites,
+                             self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
+        self.player_prev_location = self.player.rect[0:2]
+        # Center camera
+        self.camera.x = self.player.rect.centerx
+        self.camera.y = self.player.rect.centery
+
+
+
+        #printing the area around the player:
+        player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
+                                                               int(self.player.rect.y / TILESIZE))
         for style_index, (style, layout) in enumerate(self.layout.items()):
             for row_index in range(int(player_tile.y - ROW_LOAD_TILE_DISTANCE),
                                    int(player_tile.y + ROW_LOAD_TILE_DISTANCE)):
@@ -159,21 +175,6 @@ class Level:
                                     Tile((x, y), [self.floor_sprites], 'floor', image_surf)
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
-        self.floor_sprites.remove_sprites_in_rect(1024, 0)
-
-    # here we will print every detail on the map (obstacles, players...)
-    def create_map(self):
-        """
-        Place movable tiles on the map
-        :return: None
-        """
-        # Create player with starting position
-        self.player = Player((700, 1000), self.visble_sprites,
-                             self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
-        self.player_prev_location = self.player.rect[0:2]
-        # Center camera
-        self.camera.x = self.player.rect.centerx
-        self.camera.y = self.player.rect.centery
 
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
@@ -205,7 +206,7 @@ class Level:
         self.camera.x = self.player.rect.centerx#updating the camera location
         self.camera.y = self.player.rect.centery
 
-        self.floor_gupdate()
+        self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
 
