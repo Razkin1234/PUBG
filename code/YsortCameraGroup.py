@@ -32,6 +32,14 @@ class YsortCameraGroup(pygame.sprite.Group):
             offset_position = sprite.rect.topleft - camera + self.screen_center
             self.display_surface.blit(sprite.image, offset_position)
 
+    """""""""
+    getting a rectangle and a axis (0 or 1), making the sprite group lusing all the items with the rect 
+    we got
+    """""
+    def remove_sprites_in_rect(self, rect, axis):
+        for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
+            if sprite.rect.topleft[axis] == rect:
+                sprite.kill()
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
