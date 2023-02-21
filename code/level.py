@@ -206,6 +206,11 @@ class Level:
         self.camera.x = self.player.rect.centerx#updating the camera location
         self.camera.y = self.player.rect.centery
 
+        #for cleaning the exeptions of the tiles that have not bean earased
+        self.visble_sprites.earase_non_relevant_sprites(self.player)
+        self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+
+
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
@@ -216,6 +221,5 @@ class Level:
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
-        debug(get_player_loc(self.player.rect[0:2]))
 
 

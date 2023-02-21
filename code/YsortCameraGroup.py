@@ -40,6 +40,15 @@ class YsortCameraGroup(pygame.sprite.Group):
         for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
             if sprite.rect.topleft[axis] == rect:
                 sprite.kill()
+
+    def earase_non_relevant_sprites(self,player):
+        for sprite in self.sprites():
+            if player.rect[0]-(COL_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[0] or sprite.rect[0] > player.rect[0]+(COL_LOAD_TILE_DISTANCE*TILESIZE):
+                sprite.kill()
+            if player.rect[1]-(ROW_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[1] or sprite.rect[1] > player.rect[1]+(ROW_LOAD_TILE_DISTANCE*TILESIZE):
+                sprite.kill()
+
+
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
