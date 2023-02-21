@@ -28,7 +28,7 @@ class Player(Entity):
         #weapon
         self.create_attack = create_attack
         self.weapon_index = 0 #the offset of the weapons
-        self.weapon = list(objects_on.keys())[self.weapon_index] #the weapon we are using
+        self.weapon = list(self.objects_on.keys())[self.weapon_index] #the weapon we are using
         self.destroy_attack = destroy_attack #the function that unprinting the weapon
 
         self.can_switch_weapon = True #that we will switch only one weapon every time we press {
