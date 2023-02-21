@@ -35,6 +35,7 @@ class Player(Entity):
         self.weapon_switch_time = None
         self.switch_duration_cooldown = 200 #}
 
+        self.objects_on = {'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png'}}
         #magic
         self.create_magic = create_magic
         self.magic_index = 0 #the magic index we will use
@@ -47,8 +48,8 @@ class Player(Entity):
         self.run_timer = None
         self.can_run = True
         self.run_duration = 2000
+        self.can_teleport = False
 
-        self.objects_on ={}
 
         #stats
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
@@ -82,26 +83,36 @@ class Player(Entity):
 
     def inputm(self):  # checks the input from the player, mouse
 
+        if pygame.mouse.get_pressed()[2]:
+            print("aaaaa")
+
+
         if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
             self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
-
-            # chack where the player prassed in relation to the middle of the screen
-            if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
-                self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
-                self.status = 'left'
+            if self.can_teleport == True: #teleport
+                self.can_teleport = False
+                self.hitbox.x -= (MIDDLE_SCREEN[0] - self.place_to_go[0])
+                self.hitbox.y -=(MIDDLE_SCREEN[1] - self.place_to_go[1])
+                self.direction.x=0
+                self.direction.y =0
             else:
-                self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
-                self.status = 'right'
-            x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
+                # chack where the player prassed in relation to the middle of the screen
+                if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
+                    self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
+                    self.status = 'left'
+                else:
+                    self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
+                    self.status = 'right'
+                x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
 
-            if MIDDLE_SCREEN[1] >= self.place_to_go[
-                1]:  # chack if it's higher than the middle or else its lower than the middle
-                self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
-            else:
-                self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
-            y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
+                if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
+                    # chack if it's higher than the middle or else its lower than the middle
+                    self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
+                else:
+                    self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
+                y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
-            self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
+                self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
         #debug(self.place_to_go)
         #debug2(self.hitbox.center)
         keys = pygame.key.get_pressed()
@@ -124,11 +135,11 @@ class Player(Entity):
             self.can_switch_weapon = False
             self.weapon_switch_time = pygame.time.get_ticks()
 
-            if self.weapon_index < len(list(objects_on.keys())) - 1:
+            if self.weapon_index < len(list(self.objects_on.keys())) - 1:
                 self.weapon_index += 1 #new weapon
             else:
                 self.weapon_index = 0
-            self.weapon = list(objects_on.keys())[self.weapon_index]  # the weapon we are using
+            self.weapon = list(self.objects_on.keys())[self.weapon_index]  # the weapon we are using
 
 
 

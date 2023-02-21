@@ -4,20 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="still not done the magic stuff what do you think im hogwortrs biatch ha ha">
-      <change afterPath="$PROJECT_DIR$/code/button.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/code/item_effects.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/code/server_responsebilty.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="done the main menu biatch ha ha">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/entity.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/entity.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/magic.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/magic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/ui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/weapon.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/weapon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -242,7 +237,14 @@
       <option name="project" value="LOCAL‎" />
       <updated>1676149102548</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL‎-00013" summary="done the main menu biatch ha ha">
+      <created>1676748730854</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL‎-00013" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676748730854</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -278,7 +280,8 @@
     <MESSAGE value="done the particles stuf biatch ha ha" />
     <MESSAGE value="still not dune the magic stuff what do you think im hogwortrs biatch ha ha" />
     <MESSAGE value="still not done the magic stuff what do you think im hogwortrs biatch ha ha" />
-    <option name="LAST_COMMIT_MESSAGE" value="still not done the magic stuff what do you think im hogwortrs biatch ha ha" />
+    <MESSAGE value="done the main menu biatch ha ha" />
+    <option name="LAST_COMMIT_MESSAGE" value="done the main menu biatch ha ha" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -292,6 +295,11 @@
           <url>file://$PROJECT_DIR$/code/level.py</url>
           <line>89</line>
           <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/main.py</url>
+          <line>51</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

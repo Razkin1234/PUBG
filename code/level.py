@@ -85,12 +85,12 @@ class Level:
         :param cost:
         :return:
         """
-        if style == 'heal':  # need to replace with 'shield'
-            self.magic_player.heal(self.player,strength,cost,[self.visble_sprites])
-        if style == 'flame':  # the shots
+        if style == 'heal':  # need to replace with 'teleport'
+            self.magic_player.teleport(self.player,cost)
+        if style == 'flame':  #highspeed
             self.magic_player.highspeed(self.player,cost)
-        if style == 'shield':
-            self.magic_player.shield(self.player, strength, cost, [self.visble_sprites])
+        if style == 'shield': #shield
+            self.magic_player.shield(self.player, cost, [self.visble_sprites])
 
     def destroy_attack(self):
         if self.current_attack:
