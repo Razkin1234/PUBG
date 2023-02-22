@@ -128,6 +128,7 @@ class Game:
 					pygame.quit()
 					sys.exit()
 
+
 			self.level.run(self.server_id,self.user_text,self.passward)
 			pygame.display.update()
 			self.clock.tick(FPS)

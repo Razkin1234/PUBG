@@ -18,6 +18,3 @@ class Weapon(pygame.sprite.Sprite):
             self.rect = self.image.get_rect(midtop = player.rect.midbottom + pygame.math.Vector2(-10,0))
         else: #for up status
             self.rect = self.image.get_rect(midbottom = player.rect.midtop + pygame.math.Vector2(-18,0))
-
-
-

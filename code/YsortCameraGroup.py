@@ -14,23 +14,39 @@ class YsortCameraGroup(pygame.sprite.Group):
         self.offset = pygame.math.Vector2()
 
         # creating the floor
-        self.floor_surface = pygame.image.load('../graphics/tilemap/ground.png').convert()
+        self.floor_surface = pygame.display.get_surface() #the canvas
         self.floor_rect = self.floor_surface.get_rect(topleft = (0,0))
 
-    def custom_draw(self, player):
+        self.screen_center: pygame.math.Vector2 = pygame.math.Vector2(self.half_width,self.half_height)#the center of the screen
 
-        #getting the offset
-        self.offset.x = player.rect.centerx - self.half_width
-        self.offset.y = player.rect.centery - self.half_height
 
-        #floor drawing
-        floor_offset_pos = self.floor_rect.topleft - self.offset
-        self.display_surface.blit(self.floor_surface,floor_offset_pos)
+    def custom_draw(self, camera):
+        """
+       Draws the sprites on screen according to the screen height, and then according to the position of the camera
+       :return: None
+       """
+        # For every visible sprite, from top to bottom
+        for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
+            # Display the sprite on screen, moving it by the calculated offset
+            offset_position = sprite.rect.topleft - camera + self.screen_center
+            self.display_surface.blit(sprite.image, offset_position)
 
-        #for sprite in self.sprites():
-        for sprite in sorted(self.sprites(),key= lambda sprite: sprite.rect.centery):
-            offset_position = sprite.rect.topleft - self.offset
-            self.display_surface.blit(sprite.image,offset_position)
+    """""""""
+    getting a rectangle and a axis (0 or 1), making the sprite group lusing all the items with the rect 
+    we got
+    """""
+    def remove_sprites_in_rect(self, rect, axis):
+        for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
+            if sprite.rect.topleft[axis] == rect:
+                sprite.kill()
+
+    def earase_non_relevant_sprites(self,player):
+        for sprite in self.sprites():
+            if player.rect[0]-(COL_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[0] or sprite.rect[0] > player.rect[0]+(COL_LOAD_TILE_DISTANCE*TILESIZE):
+                sprite.kill()
+            if player.rect[1]-(ROW_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[1] or sprite.rect[1] > player.rect[1]+(ROW_LOAD_TILE_DISTANCE*TILESIZE):
+                sprite.kill()
+
 
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']

@@ -52,7 +52,7 @@ class Player(Entity):
 
 
         #stats
-        self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 5}  #ma health , max energy
+        self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
         self.health = self.stats['health'] #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
