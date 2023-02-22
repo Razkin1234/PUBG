@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="">
+    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="Merge branch 'master' of https://github.com/Razkin1234/PUBG&#10;&#10;# Conflicts:&#10;#&#9;.idea/workspace.xml&#10;#&#9;code/YsortCameraGroup.py&#10;#&#9;code/__pycache__/YsortCameraGroup.cpython-38.pyc&#10;#&#9;code/__pycache__/enemy.cpython-38.pyc&#10;#&#9;code/__pycache__/entity.cpython-38.pyc&#10;#&#9;code/__pycache__/level.cpython-38.pyc&#10;#&#9;code/__pycache__/player.cpython-38.pyc&#10;#&#9;code/__pycache__/settings.cpython-38.pyc&#10;#&#9;code/__pycache__/support.cpython-38.pyc&#10;#&#9;code/__pycache__/tile.cpython-38.pyc&#10;#&#9;code/__pycache__/ui.cpython-38.pyc&#10;#&#9;code/__pycache__/weapon.cpython-38.pyc&#10;#&#9;code/level.py&#10;#&#9;code/tile.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,6 +52,7 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -75,14 +75,14 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Networks/pubg&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Networks/pubg"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Networks\pubg\test" />
@@ -90,7 +90,7 @@
   </component>
   <component name="RunManager" selected="Python.main">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="pubg" />
+      <module name="work" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -271,7 +271,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="gamemaking" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
