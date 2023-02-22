@@ -10,10 +10,10 @@ from ui import UI
 from enemy import Enemy
 from particles import AnimationPlayer
 from magic import MagicPlayer
-
+import socket
 
 class Level:
-    def __init__(self):
+    def __init__(self,server_ip,user_name,passward):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
 
@@ -35,6 +35,11 @@ class Level:
         # particles
         self.animation_player = AnimationPlayer()
         self.magic_player = MagicPlayer(self.animation_player)
+
+        #server conection
+        self.user_name = user_name
+        self.passward = passward
+        self.server_ip = server_ip
 
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
@@ -136,6 +141,13 @@ class Level:
 
     def run(self):  # update and draw the game
 
+        # ------------------- Socket
+        my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # -------------------
+
+        my_socket.connect((self.server_ip, SERVER_PORT))
+        server_reply = my_socket.recv(1024)
+        packet =
         self.visble_sprites.custom_draw(self.player)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
