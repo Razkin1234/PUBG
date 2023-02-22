@@ -147,7 +147,7 @@ class Level:
 
         my_socket.connect((self.server_ip, SERVER_PORT))
         server_reply = my_socket.recv(1024)
-        packet =
+        packet = 
         self.visble_sprites.custom_draw(self.player)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
