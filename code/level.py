@@ -10,7 +10,8 @@ from ui import UI
 from enemy import Enemy
 from player import Player
 from typing import Dict
-
+from particles import AnimationPlayer
+from magic import MagicPlayer
 
 class Level:
     def __init__(self):
@@ -43,6 +44,10 @@ class Level:
         self.graphics: dict[str: dict[int: pygame.Surface]] = {
             'floor': import_folder('../graphics/tilessyber')
         }
+
+        #particals
+        self.animation_player = AnimationPlayer()
+        self.magic_player = MagicPlayer(self.animation_player)
 
         # sprite setup
         self.create_map()
@@ -176,16 +181,43 @@ class Level:
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
 
+
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
 
     def create_magic(self, style, strength, cost):
-        pass
+        """
+
+        :param style:
+        :param strength:
+        :param cost:
+        :return:
+        """
+        if style == 'heal':  # need to replace with 'teleport'
+            self.magic_player.teleport(self.player,cost)
+        if style == 'flame':  #highspeed
+            self.magic_player.highspeed(self.player,cost)
+        if style == 'shield': #shield
+            self.magic_player.shield(self.player, cost, [self.visble_sprites])
 
     def destroy_attack(self):
         if self.current_attack:
             self.current_attack.kill()
         self.current_attack = None
+
+    def damage_player(self, amount, attack_type):
+        """
+        if the enemy hits the player his health goes down
+        and show particals on screen
+        :param amount:
+        :param attack_type:
+        :return:
+        """
+        if self.player.vulnerable and self.player.can_shield:# chack if the player has shield on
+            self.player.health -= amount
+            self.player.vulnerable = False
+            self.player.hurt_time = pygame.time.get_ticks()
+            self.animation_player.create_particles(attack_type, self.player.rect.center, [self.visble_sprites])
 
     def player_attack_logic(self):
         """
@@ -201,7 +233,17 @@ class Level:
                         if target_sprite.sprite_type == 'enemy':
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
+    def trigger_death_particles(self, pos, particles_type):
+        """
+        if the enemy dies it show on the screen animation
+        :param pos:
+        :param particles_type:
+        :return:
+        """
+        self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
+
     def run(self):  # update and draw the game
+
         #self.cooldown()
         self.camera.x = self.player.rect.centerx#updating the camera location
         self.camera.y = self.player.rect.centery
