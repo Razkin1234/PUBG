@@ -36,7 +36,9 @@ class Player(Entity):
         self.weapon_switch_time = None
         self.switch_duration_cooldown = 200 #}
 
-        self.objects_on = {'sword': {'ui': 1, 'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png'}}#max valeus = 6
+        self.objects_on = {
+            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1}
+        }#max valeus = 6
         self.items_on = {} #for all of the items we will have
 
         #magic
@@ -66,7 +68,12 @@ class Player(Entity):
         self.hurt_time =None
         self.invulnerability_duration =500
 
+        #ui button cooldown + is pressed
+        self.can_press_i = True  # that we will switch only one weapon every time we press {
+        self.i_pressed_time = None
+        self.i_pressed_cooldown = 100  # }
         self.i_pressed = False
+
 
 
     def import_player_assets(self):
@@ -86,10 +93,6 @@ class Player(Entity):
                 self.status = 'down'
 
     def inputm(self):  # checks the input from the player, mouse
-
-        if pygame.mouse.get_pressed()[2]:
-            print("aaaaa")
-
 
         if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
             self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
@@ -147,9 +150,11 @@ class Player(Entity):
 
         #for the ui screen
         if keys[pygame.K_i]:
-            self.i_pressed = True
-        else: self.i_pressed =False
-
+            if self.can_press_i:
+                self.i_pressed_time = pygame.time.get_ticks()
+                self.can_press_i = False
+                if self.i_pressed: self.i_pressed =False
+                else: self.i_pressed = True
 
         if keys[pygame.K_e] and self.can_switch_magic:
             self.can_switch_magic = False
@@ -274,6 +279,10 @@ class Player(Entity):
                 self.speed = 10
                 print('sprrd')
 
+        #ui screen
+        if not self.can_press_i:
+            if current_time - self.i_pressed_time >= self.i_pressed_cooldown:
+                self.can_press_i = True
 
     def animate(self): #shows us the animations
         animation = self.animations[self.status]

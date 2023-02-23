@@ -148,7 +148,7 @@ class Level:
         """
 
         # Create player with starting position
-        self.player = Player((700, 1000), self.visble_sprites,
+        self.player = Player((1000, 1000), self.visble_sprites,
                              self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
@@ -264,6 +264,6 @@ class Level:
         self.ui.display(self.player)
 
         if self.player.i_pressed:
-            self.ui.ui_screen()
+            self.ui.ui_screen(self.player)
 
 

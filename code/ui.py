@@ -8,8 +8,7 @@ class UI:
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
 
-        self.objects_on = objects_on
-        self.items_on = items_on
+        self.objects_on = dict(objects_on)
 
         #bar setup
         self.health_bar_rect = pygame.Rect(10,10,HEALTH_BAR_WIDTH,BAR_HEIGHT)
@@ -30,37 +29,38 @@ class UI:
             self.magic_graphics.append(magic)  # }
 
 
-    def ui_screen(self):
+    def ui_screen(self,player):
         self.items_weapons_box()
         #weapons:
-        self.selection_box(1190, 45, False, True)  # box 1
+        self.selection_box(1190, 45, False, True)  # box 3
         self.selection_box(1105, 45, False, True)  # box 2
-        self.selection_box(1020, 45, False, True)  # box 3
+        self.selection_box(1020, 45, False, True)  # box 1
 
-        self.selection_box(1190, 130, False, True)  # box 4
+        self.selection_box(1190, 130, False, True)  # box 6
         self.selection_box(1105, 130, False, True)  # box 5
-        self.selection_box(1020, 130, False, True)  # box 6
+        self.selection_box(1020, 130, False, True)  # box 4
 
         #items:
-        self.selection_box(1190, 260, False, True)  # box 1
+        self.selection_box(1190, 260, False, True)  # box 3
         self.selection_box(1105, 260, False, True)  # box 2
-        self.selection_box(1020, 260, False, True)  # box 3
+        self.selection_box(1020, 260, False, True)  # box 1
 
-        self.selection_box(1190, 345, False, True)  # box 4
+        self.selection_box(1190, 345, False, True)  # box 6
         self.selection_box(1105, 345, False, True)  # box 5
-        self.selection_box(1020, 345, False, True)  # box 6
+        self.selection_box(1020, 345, False, True)  # box 4
 
-        self.selection_box(1190, 430, False, True)  # box 7
+        self.selection_box(1190, 430, False, True)  # box 9
         self.selection_box(1105, 430, False, True)  # box 8
-        self.selection_box(1020, 430, False, True)  # box 9
+        self.selection_box(1020, 430, False, True)  # box 7
 
-        # for weapon in self.objects_on:
-        #     weapon_ui_number = weapon[0]
-        #     if weapon_ui_number == 1:
-        #         bg_rect = pygame.Rect(1190,45,ITEM_BOX_SIZE,ITEM_BOX_SIZE)
-        #         weapon_surf = self.weapon_graphics[0]
-        #         weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
-        #         self.display_surface.blit(weapon_surf, weapon_rect)
+        if 'sword' in self.objects_on:
+            if self.objects_on['sword']['ui'] == 1:
+                bg_rect = pygame.Rect(1020, 45, ITEM_BOX_SIZE, ITEM_BOX_SIZE)
+                weapon_surf = self.weapon_graphics[0]
+                weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
+                if player.weapon == 'sword':
+                    self.selection_box(1020, 45, True, True)  # box 1
+                self.display_surface.blit(weapon_surf, weapon_rect)
 
     def items_weapons_box(self):
         #the weapon box
