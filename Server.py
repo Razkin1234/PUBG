@@ -60,8 +60,8 @@ Headers API:                                                                    
 """
 
 import os
+import sys
 import sqlite3
-import public_ip
 import requests
 import subprocess
 import re
@@ -108,12 +108,11 @@ DB_ACCESS_PERMISSION = 0o600  # The access permission for the  DB file in both U
 # (0o600 - means read and write access only for the owner)
 # ------------------------
 
-# ------------------------ Multithreading
-SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
+# ------------------------ Events
+SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server (to exit the game loop)
 SHUTDOWN_INFORMING_EVENT = threading.Event()  # When set it means finished informing the clients about shutdown
-MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
-# (larger amount mean faster client handling and able to handle more clients,
-# but a big amount that is not match to your CPU will just waste important system resources and wont help)
+CLOSING_THREADS_EVENT = threading.Event()  # when set it means the server is closing its worker threads
+# (the purpose of this is to inform the user input thread to terminate at a crash situation)
 # ------------------------
 
 # ------------------------ Fernet encryption
@@ -781,7 +780,7 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
     :param server_socket: <Socket> the socket object of the server.
     """
 
-    global PRIVATE_KEY
+    global PRIVATE_KEY, SERVER_SOCKET_TIMEOUT
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -795,11 +794,13 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
                 packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
     except Exception as ex:
+        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
         print_ansi(text=f"Something went wrong (on a packet thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
-        print_ansi(text='Server crashed. closing it...', color='blue')
+        print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                   color='blue')
 
         # setting the shutdown trigger event.
         SHUTDOWN_TRIGGER_EVENT.set()
@@ -817,6 +818,7 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     global CLIENTS_ID_IP_PORT_NAME, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS, SHUTDOWN_INFORMING_EVENT
 
     print_ansi('   [informing all active clients about the shutdown]', color='cyan', new_line=False)
+    sys.stdout.flush()  # force flushing the buffer to the terminal
     try:
         for client in CLIENTS_ID_IP_PORT_NAME:
             server_socket.sendto(
@@ -844,13 +846,80 @@ def check_user_input_thread(server_socket: socket):
     :param server_socket: <Socket> the server socket object.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION,\
+        CLOSING_THREADS_EVENT
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
     try:
-        while True:
-            commend = input().lower().strip()
+        def get_input_win(timeout: float = None) -> tuple:
+            """
+            Getting a timed out input for Windows platforms.
+            :param timeout: <Float> the timeout to wait for input. (by default blocking forever)
+            :return: <Tuple> the input and a boolean to represent if its a full finished line or not.
+            """
+            input_string = ''  # Create an empty string to hold the input characters
+            start_time = time.time()  # Record the start time of the input loop
+            while True:  # Loop until input is received or the timeout expires
+                if msvcrt.kbhit():  # Check if there is keyboard input waiting to be read
+                    char = msvcrt.getche()  # Read a single character from the keyboard buffer (and removing it)
+                    if char == b'\r':  # If Enter key is pressed
+                        print()
+                        return input_string, True  # Return the input string and flag indicating that input is complete
+                    elif char == b'\x03':  # If Ctrl+C is pressed (it means terminate program)
+                        raise KeyboardInterrupt  # Raise a KeyboardInterrupt exception
+                    else:
+                        input_string += char.decode('utf-8')  # Add the character to the input string
+                # If timeout is set and the timeout period has elapsed
+                elif timeout is not None and (time.time() - start_time) > timeout:
+                    return input_string, False  # Return the input string and a flag indicating that input is incomplete
+                time.sleep(0.1)  # to prevent waisting CPU cycles
+
+        def get_input_unix(timeout: float = None) -> tuple:
+            """
+            Getting a timed out input for UNIX-like platforms.
+            :param timeout: <Float> the timeout to wait for input. (by default blocking forever)
+            :return: <Tuple> the input and a boolean to represent if its a full finished line or not.
+            """
+            # Getting lists of file descriptors to monitor for read, write and execute events. (SYS CALL)
+            # in our case we will get just the stdin file descriptor, when it is ready to read a full line from.
+            # all in all in this line we wait 'timeout' seconds for input. it will exit before then if entered '\n'
+            rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+            if rlist[0]:
+                # there is input available in the stdin buffer
+                # reading the input (not removing from the buffer)
+                input_string = sys.stdin.read()
+                # checking if there was a full finished line
+                if '\n' in input_string:
+                    print()
+                    termios.tcflush(sys.stdin, termios.TCIFLUSH)  # flushing the input buffer
+                    # [:-1] will remove the newline character.
+                    return input_string[:-1], True
+                termios.tcflush(sys.stdin, termios.TCIFLUSH)  # flushing the input buffer
+                return input_string, False
+            return '', True
+
+        unfinished_buffer = ''  # will save the unfinished messages
+        platform = os.name  # DO IT GLOBAL AND CHANGE IN ALL OTHER PLACES TOO!!!
+
+        # wrapper to get the right method
+        if platform == 'posix':
+            import termios
+            import select
+            get_input = get_input_unix
+        elif platform == 'nt':
+            import msvcrt
+            import time
+            get_input = get_input_win
+
+        while not CLOSING_THREADS_EVENT.is_set():
+            # its the same timeout like the socket without a reason, just for orded with the error messages
+            commend, finished_flag = get_input(SERVER_SOCKET_TIMEOUT)
+            if finished_flag is False:
+                unfinished_buffer += commend
+                continue
+            commend = (unfinished_buffer + commend).strip().lower()
+            unfinished_buffer = ''
 
             # -------------------
             if commend == 'shutdown':
@@ -960,6 +1029,7 @@ def check_user_input_thread(server_socket: socket):
                     # delete the DB file
                     print_ansi(text="   [Deleting current DB ('Server_DB.db' file) from your system]", new_line=False,
                                color='cyan')
+                    sys.stdout.flush()  # force flushing the buffer to the terminal
                     try:
                         os.remove(DB_PATH)
                         print_ansi(text=' -------------------------> completed', color='green', italic=True)
@@ -969,6 +1039,7 @@ def check_user_input_thread(server_socket: socket):
                     # creating a new empty DB
                     print_ansi(text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
                                new_line=False, color='cyan')
+                    sys.stdout.flush()  # force flushing the buffer to the terminal
                     initialize_sqlite_rdb()
                     print_ansi(text=' ------> completed', color='green', italic=True)
 
@@ -1006,7 +1077,8 @@ def check_user_input_thread(server_socket: socket):
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
         print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
-        print_ansi(text='Server crashed. closing it...', color='blue')
+        print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                   color='blue')
 
         # setting the shutdown trigger event.
         SHUTDOWN_TRIGGER_EVENT.set()
@@ -1230,7 +1302,7 @@ def get_private_ip() -> str:
     return "[Your private IP (our system couldn't find it)]"
 
 
-def print_start_info_and_runnig_status():
+def print_start_info_and_running_status():
     """
     Printing start info and running status
     """
@@ -1302,8 +1374,8 @@ def print_start_info_and_runnig_status():
 
 def main():
 
-    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
-        SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, SHUTDOWN_INFORMING_EVENT
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
+        SHUTDOWN_INFORMING_EVENT, CLOSING_THREADS_EVENT
 
     executor = None
     server_socket = None
@@ -1328,13 +1400,11 @@ def main():
         # retrieving the Fernet encryption key (for the DB) from the keyring and setting a Fernet object with it
         retrieve_fernet_key_from_keyring()
         # initializing a thread pool executor object
-        executor = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')
+        # I don't set max_workers so it will use the numer of CPU cores on my machine.
+        executor = ThreadPoolExecutor(thread_name_prefix='worker_thread_')
         # --------------------------------------------------
 
-        # setting a thread to handle user's terminal commends
-        executor.submit(check_user_input_thread, server_socket)
-
-        print_start_info_and_runnig_status()
+        print_start_info_and_running_status()
 
         print("\n>> ", end='')
         print_ansi(text='All Set! ENJOY!!!\n   (see below the commends you can use as the server manager...)\n',
@@ -1353,6 +1423,9 @@ def main():
                    color='cyan')
         # --------------------------------------------------
 
+        # setting a thread to handle user's terminal commends
+        executor.submit(check_user_input_thread, server_socket)
+
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
         while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
@@ -1367,6 +1440,7 @@ def main():
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     except OSError as ex:
+        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
         if ex.errno == 98 or ex.errno == 10048:
             # In UNIX-like operating systems error number 98 is what in windows specifies by error number 10048.
             # (in windows its Error-'WSAEADDRINUSE' and in UNIX-like - 'EADDRINUSE')
@@ -1377,7 +1451,8 @@ def main():
                        "    Make sure the port is available and is not already in use by another service and run again.",
                        color='red')
             print(">> ", end='')
-            print_ansi(text='Server is shutting down...', color='blue')
+            print_ansi(text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                       color='blue')
             # don't have clients to inform so setting the event
             SHUTDOWN_INFORMING_EVENT.set()
         else:
@@ -1385,21 +1460,25 @@ def main():
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
             print(">> ", end='')
-            print_ansi(text='Server crashed. closing it...', color='blue')
+            print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                       color='blue')
             inform_active_clients_about_shutdown(server_socket, 'error')
 
     except Exception as ex:
+        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
         print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
-        print_ansi(text='Server crashed. closing it...', color='blue')
+        print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                   color='blue')
         inform_active_clients_about_shutdown(server_socket, 'error')
 
     finally:
         SHUTDOWN_INFORMING_EVENT.wait()  # wait for informing to complete
 
         print_ansi(text='   [waiting for running threads to complete]', new_line=False, color='cyan')
+        sys.stdout.flush()  # force flushing the buffer to the terminal
         if executor:  # if there is an executor up
             # the next commend waits for all running tasks to complete (blocking till then), shuts down the
             # tread pool executor and frees up any resources used by it.
@@ -1407,6 +1486,7 @@ def main():
         print_ansi(text=' -----------> completed', color='green', italic=True)
 
         print_ansi(text='   [freeing up last resources]', new_line=False, color='cyan')
+        sys.stdout.flush()  # force flushing the buffer to the terminal
         if server_socket:  # if there is a socket up
             server_socket.close()
         colorama.deinit()  # stop using colorama. restore stduot and stderr to original values (terminal)
