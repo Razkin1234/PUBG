@@ -4,7 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+<<<<<<< HEAD
     <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="" />
+=======
+    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
+>>>>>>> 33cb2127f114e6dabf0f29322dacc891ef367336
+    </list>
+>>>>>>> 02cba1f223dddabca2bb7d4deb54a3d8aaf82bdd
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -75,6 +85,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Networks/pubg&quot;
@@ -85,8 +96,14 @@
       <recent name="C:\Networks\pubg\test" />
     </key>
   </component>
+<<<<<<< HEAD
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+=======
+  <component name="RunManager" selected="Python.main">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pubg" />
+>>>>>>> 02cba1f223dddabca2bb7d4deb54a3d8aaf82bdd
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -129,6 +146,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+<<<<<<< HEAD
     <configuration default="true" type="Tox" factoryName="Tox">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -187,11 +205,33 @@
       <option name="TEST_TYPE" value="TEST_SCRIPT" />
       <option name="PATTERN" value="" />
       <option name="USE_PATTERN" value="false" />
+=======
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pubg" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+>>>>>>> 02cba1f223dddabca2bb7d4deb54a3d8aaf82bdd
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.test" />
       </list>
     </recent_temporary>
   </component>
@@ -253,7 +293,63 @@
       <option name="project" value="LOCAL‎" />
       <updated>1675616860231</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL‎-00008" summary="noting">
+      <created>1675701773262</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL‎-00008" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1675701773262</updated>
+    </task>
+    <task id="LOCAL‎-00009" summary="interaction done">
+      <created>1675883408292</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL‎-00009" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1675883408292</updated>
+    </task>
+    <task id="LOCAL‎-00010" summary="done the particles stuf biatch ha ha">
+      <created>1676136069098</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL‎-00010" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676136069098</updated>
+    </task>
+    <task id="LOCAL‎-00011" summary="still not dune the magic stuff what do you think im hogwortrs biatch ha ha">
+      <created>1676148526373</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL‎-00011" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676148526373</updated>
+    </task>
+    <task id="LOCAL‎-00012" summary="still not done the magic stuff what do you think im hogwortrs biatch ha ha">
+      <created>1676149102548</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL‎-00012" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676149102548</updated>
+    </task>
+    <task id="LOCAL‎-00013" summary="done the main menu biatch ha ha">
+      <created>1676748730854</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL‎-00013" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1676748730854</updated>
+    </task>
+    <task id="LOCAL‎-00014" summary="done the main menu biatch ha ha">
+      <created>1677012289101</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL‎-00014" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1677012289101</updated>
+    </task>
+    <task id="LOCAL‎-00015" summary="done the main menu biatch ha ha">
+      <created>1677012839615</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL‎-00015" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1677012839615</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -296,7 +392,13 @@
     <MESSAGE value="stop the player when he hits the border you son of a cow" />
     <MESSAGE value="marge the mouse movement with raz's code you son of a cow" />
     <MESSAGE value="adding interaction between player and the enemy(need to continue) fucking bitch son of a hor" />
-    <option name="LAST_COMMIT_MESSAGE" value="adding interaction between player and the enemy(need to continue) fucking bitch son of a hor" />
+    <MESSAGE value="noting" />
+    <MESSAGE value="interaction done" />
+    <MESSAGE value="done the particles stuf biatch ha ha" />
+    <MESSAGE value="still not dune the magic stuff what do you think im hogwortrs biatch ha ha" />
+    <MESSAGE value="still not done the magic stuff what do you think im hogwortrs biatch ha ha" />
+    <MESSAGE value="done the main menu biatch ha ha" />
+    <option name="LAST_COMMIT_MESSAGE" value="done the main menu biatch ha ha" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -305,6 +407,16 @@
           <url>file://$PROJECT_DIR$/test/player.py</url>
           <line>42</line>
           <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>89</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/main.py</url>
+          <line>51</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
