@@ -29,9 +29,6 @@ class Level:
         self.attack_sprites = pygame.sprite.Group()
         self.attackable_sprites = pygame.sprite.Group()
 
-        # user interface
-        self.ui = UI()
-
         self.can_update_floor = False
         self.update_floor_cooldown = 1000
         self.floor_update_time = 0
@@ -56,6 +53,8 @@ class Level:
         self.player_move = [0, 0]
         self.player_prev_location = self.player.rect[0:2]
 
+        # user interface
+        self.ui = UI(self.player.objects_on,self.player.items_on)
 
 
 
@@ -263,5 +262,8 @@ class Level:
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
+
+        if self.player.i_pressed:
+            self.ui.ui_screen()
 
 

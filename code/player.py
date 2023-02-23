@@ -36,7 +36,9 @@ class Player(Entity):
         self.weapon_switch_time = None
         self.switch_duration_cooldown = 200 #}
 
-        self.objects_on = {'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png'}}
+        self.objects_on = {'sword': {'ui': 1, 'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png'}}#max valeus = 6
+        self.items_on = {} #for all of the items we will have
+
         #magic
         self.create_magic = create_magic
         self.magic_index = 0 #the magic index we will use
@@ -64,6 +66,7 @@ class Player(Entity):
         self.hurt_time =None
         self.invulnerability_duration =500
 
+        self.i_pressed = False
 
 
     def import_player_assets(self):
@@ -142,6 +145,10 @@ class Player(Entity):
                 self.weapon_index = 0
             self.weapon = list(self.objects_on.keys())[self.weapon_index]  # the weapon we are using
 
+        #for the ui screen
+        if keys[pygame.K_i]:
+            self.i_pressed = True
+        else: self.i_pressed =False
 
 
         if keys[pygame.K_e] and self.can_switch_magic:
