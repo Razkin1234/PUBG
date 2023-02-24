@@ -27,6 +27,12 @@ class UI:
             magic = pygame.image.load(path).convert_alpha()
             self.magic_graphics.append(magic)  # }
 
+        self.weapon_graphics_dict = {} #a dict that contains the image of evevry weapon
+        for magic , magic_value in weapon_data.items():
+            path = magic_value['graphic']
+            image = pygame.image.load(path).convert_alpha()
+            self.weapon_graphics_dict[magic] = image
+
         #the boxes will be printed if we will press i
         self.box_on = ['weapon',1]
         self.ui_weapon_boxes = {
@@ -94,7 +100,7 @@ class UI:
         for weapon , weapon_value in player.objects_on.items():
             temp_dict = self.ui_weapon_boxes[str(player.objects_on[weapon]['ui'])]
             bg_rect = pygame.Rect(temp_dict['left'],temp_dict['top'],ITEM_BOX_SIZE,ITEM_BOX_SIZE)
-            weapon_surf = self.weapon_graphics[weapon_value['graphics_num']]
+            weapon_surf = self.weapon_graphics_dict[weapon]
             weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
             self.display_surface.blit(weapon_surf, weapon_rect)
 
@@ -160,7 +166,14 @@ class UI:
                     objects_copy = player.objects_on.copy()
                     for weapon, weapon_value in objects_copy.items():
                         if weapon_value['ui'] == self.box_on[1]:
-                            del player.objects_on[weapon]
+                            if len(list(player.objects_on.keys()))> 1:
+                                del player.objects_on[weapon]
+                                if player.weapon_index < len(list(player.objects_on.keys())) - 1:
+                                    player.weapon_index += 1  # new weapon
+                                else:
+                                    player.weapon_index = 0
+                                player.weapon = list(player.objects_on.keys())[player.weapon_index]  # the weapon we are using
+
         if keys[pygame.K_x]:
             if self.can_press_x:
                 self.x_pressed_time = pygame.time.get_ticks()
@@ -276,9 +289,9 @@ class UI:
             pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, bg_rect, 3)
         return bg_rect
 
-    def weapon_overlay(self,weapon_index,has_switched,player_shield_on ): #printing the weapon image
+    def weapon_overlay(self,has_switched,player_shield_on,player ): #printing the weapon image
         bg_rect = self.selection_box(10, 630,has_switched,player_shield_on)  # box backround
-        weapon_surf = self.weapon_graphics[weapon_index]
+        weapon_surf = self.weapon_graphics_dict[player.weapon]
         weapon_rect = weapon_surf.get_rect(center = bg_rect.center)
 
         self.display_surface.blit(weapon_surf,weapon_rect)
@@ -296,7 +309,7 @@ class UI:
       self.show_bar(player.energy,player.stats['energy'],self.energy_bar_rect,ENERGY_COLOR) #to print the energy bar
 
       self.show_exp(player.exp)
-      self.weapon_overlay(player.weapon_index, not player.can_switch_weapon,True)
+      self.weapon_overlay(not player.can_switch_weapon,True, player)
       self.magic_overlay(player.magic_index, not player.can_switch_magic,player.can_shield)
 
 
