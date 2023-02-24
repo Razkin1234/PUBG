@@ -25,6 +25,14 @@ The full packet looks like this:                                                
 Headers API:                                                                                                                                                 |
             - login_request: [user_name],[password]                                                                                [only clients send]       |
             - login_status: fail [if wrong user name or password] or [the ID given to him] or already_active                       [only server sends]       |
+            - first_inventory: [[weapon_name1]/[weapon_name2]...],                                                                 [only server sends]       |
+                               [how much ammo?],                                                                                                             |
+                               [how much bombs?],                                                                                                            |
+                               [how much med kits?],                                                                                                         |
+                               [how much backpack?],                                                                                                         |
+                               [how much energy drinks?],                                                                                                    |
+                               [how much exp?],                                                                                                              |
+                               [how much energy?]         (*NOTE: all in 1 line)                                                                             |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
@@ -343,16 +351,16 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
 
 def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str, cursor) -> str:
     """
-    Checking if the user_name exists and matches its password in the DB. if yes giving ID.
+    Checking if the user_name exists and matches its password in the DB. if yes giving ID and inventory.
     :param user_name: <Sting> the user name entered in the login request.
     :param password: <String> the password entered in the login request.
     :param client_ip: <String> the IP of the client.
     :param client_port <String> the port of the client.
     :param cursor: the cursor object to the DB.
-    :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
+    :return: <String> login_status header (if matches then the given ID, if not then 'fail') and first_inventory header.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME
+    global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -382,7 +390,20 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                         f'   User port number - {client_port}\n'
                         f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
 
-        return 'login_status: ' + given_id + '\r\n'
+        # decrypting the data from the DB
+        plsintext_inventory = []
+        for i in range(2, len(result), 1):
+            plsintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
+
+        return 'login_status: ' + given_id + '\r\n' + f'first_inventory: ' \
+                                                      f"{plsintext_inventory[0].replace(',', '/')}," \
+                                                      f'{plsintext_inventory[1]},' \
+                                                      f'{plsintext_inventory[2]},' \
+                                                      f'{plsintext_inventory[3]},' \
+                                                      f'{plsintext_inventory[4]},' \
+                                                      f'{plsintext_inventory[5]},' \
+                                                      f'{plsintext_inventory[6]},' \
+                                                      f'{plsintext_inventory[7]}\r\n'
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
