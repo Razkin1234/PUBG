@@ -8,8 +8,6 @@ class UI:
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
 
-        self.objects_on = dict(objects_on)
-
         #bar setup
         self.health_bar_rect = pygame.Rect(10,10,HEALTH_BAR_WIDTH,BAR_HEIGHT)
         self.energy_bar_rect = pygame.Rect(10,34,ENERGY_BAR_WIDTH,BAR_HEIGHT)
@@ -52,6 +50,8 @@ class UI:
             '9': {'left': 1190, 'top': 430, 'onit': False, 'rep': True}
         }
 
+        self.replace_first_one = []
+
         #cooldowns
         self.can_press_w = True
         self.w_pressed_time = None
@@ -69,9 +69,17 @@ class UI:
         self.d_pressed_time = None
         self.d_pressed_cooldown = 150
 
+        self.can_press_z = True
+        self.z_pressed_time = None
+        self.z_pressed_cooldown = 150
+
+        self.can_press_x = True
+        self.x_pressed_time = None
+        self.x_pressed_cooldown = 150
+
     def ui_screen(self,player):
         self.items_weapons_box()
-        self.ui_input()
+        self.ui_input(player)
         if self.box_on[0] == 'weapon':
             self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = True
         else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = True
@@ -83,8 +91,8 @@ class UI:
         for box,box_value in self.ui_item_boxes.items():
             self.selection_box(box_value['left'],box_value['top'],box_value['onit'],box_value['rep'])
 
-        for weapon , weapon_value in self.objects_on.items():
-            temp_dict = self.ui_weapon_boxes[str(self.objects_on[weapon]['ui'])]
+        for weapon , weapon_value in player.objects_on.items():
+            temp_dict = self.ui_weapon_boxes[str(player.objects_on[weapon]['ui'])]
             bg_rect = pygame.Rect(temp_dict['left'],temp_dict['top'],ITEM_BOX_SIZE,ITEM_BOX_SIZE)
             weapon_surf = self.weapon_graphics[weapon_value['graphics_num']]
             weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
@@ -92,7 +100,7 @@ class UI:
 
         self.cooldown() #for the cooldown
 
-    def ui_input(self):
+    def ui_input(self,player):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
             if self.can_press_w:
@@ -143,6 +151,48 @@ class UI:
                         self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
                     else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
                     self.box_on[1] += 1
+
+        if keys[pygame.K_z]: #remove the item or weapon from the player
+            if self.can_press_z:
+                self.can_press_z = False
+                self.z_pressed_time = pygame.time.get_ticks()
+                if self.box_on[0] == 'weapon':
+                    objects_copy = player.objects_on.copy()
+                    for weapon, weapon_value in objects_copy.items():
+                        if weapon_value['ui'] == self.box_on[1]:
+                            del player.objects_on[weapon]
+        if keys[pygame.K_x]:
+            if self.can_press_x:
+                self.x_pressed_time = pygame.time.get_ticks()
+                self.can_press_x = False
+                if self.box_on[0] == 'weapon':
+                    if len(self.replace_first_one) == 0:
+                        self.replace_first_one = self.box_on.copy()
+                        self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = False
+                    else:
+                        print(self.replace_first_one)
+                        print(self.box_on)
+                        item_to_replace = None
+                        second_item_to_replace = None
+                        for weapon , weapon_value in player.objects_on.items():
+                            if self.replace_first_one[1] == weapon_value['ui']:
+                                item_to_replace = weapon
+                            if self.box_on[1] == weapon_value['ui']:
+                                second_item_to_replace = weapon
+                        if item_to_replace != None and second_item_to_replace != None:
+                            temp = player.objects_on[item_to_replace]['ui']
+                            player.objects_on[item_to_replace]['ui'] = player.objects_on[second_item_to_replace]['ui']
+                            player.objects_on[second_item_to_replace]['ui'] = temp
+                        elif item_to_replace != None and second_item_to_replace == None:
+                            player.objects_on[item_to_replace]['ui'] = self.box_on[1]
+                        elif item_to_replace == None and second_item_to_replace != None:
+                            player.objects_on[second_item_to_replace]['ui'] = self.replace_first_one[1]
+                        self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = True
+                        self.replace_first_one.clear()
+
+
+
+
     def cooldown(self):
         current_time = pygame.time.get_ticks()
         if not self.can_press_w:
@@ -151,14 +201,18 @@ class UI:
         if not self.can_press_s:
             if current_time - self.s_pressed_time >= self.s_pressed_cooldown:
                 self.can_press_s = True
-
         if not self.can_press_a:
             if current_time - self.a_pressed_time >= self.a_pressed_cooldown:
                 self.can_press_a = True
         if not self.can_press_d:
             if current_time - self.d_pressed_time >= self.d_pressed_cooldown:
                 self.can_press_d = True
-
+        if not self.can_press_z:
+            if current_time - self.z_pressed_time >= self.z_pressed_cooldown:
+                self.can_press_z = True
+        if not self.can_press_x:
+            if current_time - self.x_pressed_time >= self.x_pressed_cooldown:
+                self.can_press_x = True
 
     def items_weapons_box(self):
         #the weapon box
