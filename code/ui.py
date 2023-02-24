@@ -21,6 +21,7 @@ class UI:
             weapon = pygame.image.load(path).convert_alpha()
             self.weapon_graphics.append(weapon) #}
 
+
         #convert magic dictionary
         self.magic_graphics = []
         for magic in magic_data.values():  # putting the magic visuals in a list {
@@ -28,39 +29,136 @@ class UI:
             magic = pygame.image.load(path).convert_alpha()
             self.magic_graphics.append(magic)  # }
 
+        #the boxes will be printed if we will press i
+        self.box_on = ['weapon',1]
+        self.ui_weapon_boxes = {
+            '1': {'left': 1020, 'top': 45, 'onit': False , 'rep': True },
+            '2': {'left': 1105, 'top': 45, 'onit': False, 'rep': True},
+            '3': {'left': 1190, 'top': 45, 'onit': False, 'rep': True},
+            '4': {'left': 1020, 'top': 130, 'onit': False, 'rep': True},
+            '5': {'left': 1105, 'top': 130, 'onit': False, 'rep': True},
+            '6': {'left': 1190, 'top': 130, 'onit': False, 'rep': True}
+        }
+
+        self.ui_item_boxes = {
+            '1': {'left': 1020, 'top': 260, 'onit': False, 'rep': True},
+            '2': {'left': 1105, 'top': 260, 'onit': False, 'rep': True},
+            '3': {'left': 1190, 'top': 260, 'onit': False, 'rep': True},
+            '4': {'left': 1020, 'top': 345, 'onit': False, 'rep': True},
+            '5': {'left': 1105, 'top': 345, 'onit': False, 'rep': True},
+            '6': {'left': 1190, 'top': 345, 'onit': False, 'rep': True},
+            '7': {'left': 1020, 'top': 430, 'onit': False, 'rep': True},
+            '8': {'left': 1105, 'top': 430, 'onit': False, 'rep': True},
+            '9': {'left': 1190, 'top': 430, 'onit': False, 'rep': True}
+        }
+
+        #cooldowns
+        self.can_press_w = True
+        self.w_pressed_time = None
+        self.w_pressed_cooldown = 150
+
+        self.can_press_s = True
+        self.s_pressed_time = None
+        self.s_pressed_cooldown = 150
+
+        self.can_press_a = True
+        self.a_pressed_time = None
+        self.a_pressed_cooldown = 150
+
+        self.can_press_d = True
+        self.d_pressed_time = None
+        self.d_pressed_cooldown = 150
 
     def ui_screen(self,player):
         self.items_weapons_box()
+        self.ui_input()
+        if self.box_on[0] == 'weapon':
+            self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = True
+        else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = True
+
         #weapons:
-        self.selection_box(1190, 45, False, True)  # box 3
-        self.selection_box(1105, 45, False, True)  # box 2
-        self.selection_box(1020, 45, False, True)  # box 1
-
-        self.selection_box(1190, 130, False, True)  # box 6
-        self.selection_box(1105, 130, False, True)  # box 5
-        self.selection_box(1020, 130, False, True)  # box 4
-
+        for box,box_value in self.ui_weapon_boxes.items():
+            self.selection_box(box_value['left'],box_value['top'],box_value['onit'],box_value['rep'])
         #items:
-        self.selection_box(1190, 260, False, True)  # box 3
-        self.selection_box(1105, 260, False, True)  # box 2
-        self.selection_box(1020, 260, False, True)  # box 1
+        for box,box_value in self.ui_item_boxes.items():
+            self.selection_box(box_value['left'],box_value['top'],box_value['onit'],box_value['rep'])
 
-        self.selection_box(1190, 345, False, True)  # box 6
-        self.selection_box(1105, 345, False, True)  # box 5
-        self.selection_box(1020, 345, False, True)  # box 4
+        for weapon , weapon_value in self.objects_on.items():
+            temp_dict = self.ui_weapon_boxes[str(self.objects_on[weapon]['ui'])]
+            bg_rect = pygame.Rect(temp_dict['left'],temp_dict['top'],ITEM_BOX_SIZE,ITEM_BOX_SIZE)
+            weapon_surf = self.weapon_graphics[weapon_value['graphics_num']]
+            weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
+            self.display_surface.blit(weapon_surf, weapon_rect)
 
-        self.selection_box(1190, 430, False, True)  # box 9
-        self.selection_box(1105, 430, False, True)  # box 8
-        self.selection_box(1020, 430, False, True)  # box 7
+        self.cooldown() #for the cooldown
 
-        if 'sword' in self.objects_on:
-            if self.objects_on['sword']['ui'] == 1:
-                bg_rect = pygame.Rect(1020, 45, ITEM_BOX_SIZE, ITEM_BOX_SIZE)
-                weapon_surf = self.weapon_graphics[0]
-                weapon_rect = weapon_surf.get_rect(center=bg_rect.center)
-                if player.weapon == 'sword':
-                    self.selection_box(1020, 45, True, True)  # box 1
-                self.display_surface.blit(weapon_surf, weapon_rect)
+    def ui_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            if self.can_press_w:
+                self.can_press_w = False
+                self.w_pressed_time = pygame.time.get_ticks()
+                if not (1<=self.box_on[1]<=3):
+                    if self.box_on[0] == 'weapon':
+                        self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                    else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                    self.box_on[1] = self.box_on[1]-3
+                else:
+                    if self.box_on[0] == 'item':
+                        self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                        self.box_on[0] = 'weapon'
+                        self.box_on[1] += 3
+        if keys[pygame.K_s]:
+            if self.can_press_s:
+                self.can_press_s = False
+                self.s_pressed_time = pygame.time.get_ticks()
+                if self.box_on[0] == 'weapon':
+                    self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                    if not (4 <= self.box_on[1] <= 6):
+                        self.box_on[1] = self.box_on[1] + 3
+                    else:
+                        self.box_on[0] = 'item'
+                        self.box_on[1] = self.box_on[1]-3
+                else:
+                    self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                    if not (7 <= self.box_on[1] <= 9):
+                        self.box_on[1] = self.box_on[1] + 3
+
+        if keys[pygame.K_a]:
+            if self.can_press_s:
+                self.can_press_s = False
+                self.s_pressed_time = pygame.time.get_ticks()
+                if (self.box_on[1]-1) % 3 != 0:
+                    if self.box_on[0] == 'weapon':
+                        self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                    else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                    self.box_on[1] -= 1
+
+        if keys[pygame.K_d]:
+            if self.can_press_d:
+                self.can_press_d = False
+                self.d_pressed_time = pygame.time.get_ticks()
+                if self.box_on[1] % 3 != 0:
+                    if self.box_on[0] == 'weapon':
+                        self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                    else: self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                    self.box_on[1] += 1
+    def cooldown(self):
+        current_time = pygame.time.get_ticks()
+        if not self.can_press_w:
+            if current_time - self.w_pressed_time >= self.w_pressed_cooldown:
+                self.can_press_w = True
+        if not self.can_press_s:
+            if current_time - self.s_pressed_time >= self.s_pressed_cooldown:
+                self.can_press_s = True
+
+        if not self.can_press_a:
+            if current_time - self.a_pressed_time >= self.a_pressed_cooldown:
+                self.can_press_a = True
+        if not self.can_press_d:
+            if current_time - self.d_pressed_time >= self.d_pressed_cooldown:
+                self.can_press_d = True
+
 
     def items_weapons_box(self):
         #the weapon box
