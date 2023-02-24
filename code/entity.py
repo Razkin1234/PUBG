@@ -12,7 +12,6 @@ class Entity(pygame.sprite.Sprite):
     def move(self, speed):  # moves the player around
         if self.direction.magnitude() != 0:
             self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
-
         self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
         self.collision('horizontal')
         self.hitbox.y += self.direction.y * speed  # making the player move verticaly
@@ -27,8 +26,9 @@ class Entity(pygame.sprite.Sprite):
                         self.hitbox.right = sprite.hitbox.left
                     if self.direction.x < 0:  # when we are moving left
                         self.hitbox.left = sprite.hitbox.right
-                    self.direction.y = 0
                     self.direction.x = 0
+                    self.direction.y = 0
+
 
         if direction == 'vertical':
             for sprite in self.obstacle_sprites:

@@ -6,7 +6,7 @@
 * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
                                                                                                                                                              |
 structure - 'Rotshild <ID>/r/n/r/n<headers>'                                                                                                                 |
-[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0]                                         |
+[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register request there is no ID]     |
 [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
                                                                                                                                                              |
 ------------------------------------------------------------------                                                                                           |
@@ -25,6 +25,7 @@ The full packet looks like this:                                                
 Headers API:                                                                                                                                                 |
             - login_request: [user_name],[password]                                                                                [only clients send]       |
             - login_status: fail [if user name doesn't exist in database or wrong password] or [the ID given to him]               [only server sends]       |
+            - first_inventory: [the inventory] it will be organized like the header 'inventory_update without the - and +          [only server sends]       |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
@@ -40,12 +41,14 @@ Headers API:                                                                    
                                  - backpack [how much?]                                                                                                      |
                                  + energy_drinks [how much?]                                                                                                 |
                                  - energy_drinks [how much?]                                                                                                 |
+                                 + coins [how much?]                                                                                                         |
+                                 - coins [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
                                  + energy [how much?]                                                                                                        |
                                  - energy [how much?]                                                                                                        |
               [comes with user_name]                                                                                                                         |
-            - user_name: [user_name]  [comes with inventory_update or chat]                                                        [clients and server send] |
+            - user_name: [user_name]  [comes with inventory_update or chat or dead]                                                [clients and server send] |
             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id                  [clients and server send] |
             - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
             - image: [the name of the file with the image of the player who moved] [comes with player_place]                       [clients and server send] |
@@ -53,25 +56,32 @@ Headers API:                                                                    
             - hit_id: [the ID of the hitted client] [comes with hit_hp and shooter_id]                                             [only server sends]       |
             - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id and shooter_id]    [clients ans server send] |
             - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
-            - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
+            - dead: [the ID of the dead client]  [comes with user_name]                                                            [clients ans server send] |
             - chat: [the info of the message]  [comes with user_name]                                                              [clients and server send] |
+            - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
 
 
+import os
 import sqlite3
 import public_ip
+from concurrent.futures import ThreadPoolExecutor
 import threading
-import socket
+from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 import rsa
 from rsa.key import PublicKey, PrivateKey
-
+from prettytable import PrettyTable
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
 SERVER_IP = '0.0.0.0'
-DEFAULT_BUFFER_SIZE = 1024
+SOCKET_BUFFER_SIZE = 1024
+SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
+# check the main loop trigger event sometimes.
+# The bigger you'll set this timeout - you will check the trigger event less often,
+# but your chances of losing packets are smaller.
 # ------------------------
 
 # ------------------------ Default DB values of a new client
@@ -81,16 +91,25 @@ DEFAULT_BOMBS = 0
 DEFAULT_MED_KITS = 0
 DEFAULT_BACKPACK = 0
 DEFAULT_ENERGY_DRINKS = 0
+DEFAULT_COINS = 0
 DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
 
-# ------------------------ SQLite DateBase objects
-DB_CONNECTION = None  # The connection with the SQLite RDB
-CURSOR = None  # Cursor object to execute SQL commends on the DB
+
+# ------------------------ Files path
+SCRIPT_PATH = os.path.abspath(__file__)
+SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+DB_FILE = "Server_DB.db"
+DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
 # ------------------------
 
+
 # ------------------------ General
+SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
+MAX_WORKER_THREADS = 10  # The max amount of running worker threads.
+# (larger amount mean faster client handling and able to handle more clients,
+# but a big amount that is not match to your CPU will just waste important system resources and wont help)
 CLIENTS_ID_IP_PORT = []  # IPs, PORTs and IDs of all clients as (ID, IP, PORT)      [ID, IP and PORT are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
@@ -128,86 +147,63 @@ PRIVATE_EXPONENT = 2487759366909086609556743084782273179840859044614268230877791
 FIRST_PRIME_FACTOR = 6722171653111129608666978173114450112621458860424439037672507726695639042339185147  # (secret)
 SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087853990359411067  # (secret)
 
-PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT,)  # (not secret)
+PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT)  # (not secret)
 PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
 
 
-def intialize_sqlite_rdb():
-    """
-    Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
-    Creating a cursor object for the DB to execute SQLite commends on it,
-    Creating a table of clients_info (if doesn't exist).
-    """
-
-    global DB_CONNECTION, CURSOR
-
-    DB_CONNECTION = sqlite3.connect("Server_DB.db")  # connect to the db file or create a new one if doesn't exist
-    CURSOR = DB_CONNECTION.cursor()  # creating a cursor object to execute SQL commends
-    CURSOR.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
-                   " (user_name TEXT PRIMARY KEY,"
-                   " password TEXT,"
-                   " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
-                   " ammo INTEGER,"
-                   " bombs INTEGER,"
-                   " med_kits INTEGER,"
-                   " backpack INTEGER,"
-                   " energy_drinks INTEGER,"
-                   " exp INTEGER,"
-                   " energy INTEGER)")
-
-
-def handle_update_inventory(header_info: str, user_name: str):
+def handle_update_inventory(header_info: str, user_name: str, connector, cursor):
     """
     updating the inventory of a client in the DB
     :param header_info: <String> all the raw info in the update_inventory header.
     :param user_name: <String> the user name of the client (get from the user_name header).
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     """
-
-    global DB_CONNECTION, CURSOR
 
     updates = header_info.split(',')
     # handle each inventory update
     for update in updates:
         operation, column, info = update.split()
         if column != 'weapons':
-            CURSOR.execute(f"UPDATE clients_info"
+            cursor.execute(f"UPDATE clients_info"
                            f" SET {column} = {column} {operation} {info}"
                            f" WHERE user_name = '{user_name}'")
         else:
             if operation == '+':
-                CURSOR.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
+                cursor.execute(f"UPDATE clients_info SET weapons = weapons + ',{info}' WHERE user_name = '{user_name}'")
             else:
-                result = CURSOR.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
-                result = CURSOR.fetchone()
+                cursor.execute(f"SELECT weapons FROM clients_info WHERE user_name = '{user_name}'")
+                result = cursor.fetchone()
                 client_weapons = result[0].split(',')
                 updated_weapons = []
                 for weapon in client_weapons:
                     if weapon != info:
                         updated_weapons.append(weapon)
                 updated_weapons = ','.join(updated_weapons)
-                CURSOR.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
-    DB_CONNECTION.commit()
+                cursor.execute(f"UPDATE clients_info SET weapons = '{updated_weapons}' WHERE user_name = '{user_name}'")
+    connector.commit()
 
 
-def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str) -> str:
+def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str, cursor) -> str:
     """
     Checking if the user_name exists and matches its password in the DB. if yes giving ID.
     :param user_name: <Sting> the user name entered in the login request.
     :param password: <String> the password entered in the login request.
     :param client_ip: <String> the IP of the client.
     :param client_port <String> the port of the client.
+    :param cursor: the cursor object to the DB.
     :return: <String> login_status header. (if matches then the given ID, if not then 'fail').
     """
 
-    global CURSOR, CLIENTS_ID_IP_PORT
+    global CLIENTS_ID_IP_PORT
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'login_status: fail\r\n'
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
-    result = CURSOR.fetchone()
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name = '{user_name}'")
+    result = cursor.fetchone()
     if not result:
         # user name does not exist in DB
         return 'login_status: fail\r\n'
@@ -215,12 +211,12 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port))
         print(f'>> New client connected to the game server.\n'
-              f'   User Name - {user_name}'
-              f'   User game ID - {given_id}'
-              f'   User IPv4 addr - {client_ip}'
-              f'   User port number - {client_port}'
+              f'   User Name - {user_name}\n'
+              f'   User game ID - {given_id}\n'
+              f'   User IPv4 addr - {client_ip}\n'
+              f'   User port number - {client_port}\n'
               f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
-        return 'login_status: ' + given_id + '\r\n'
+        return 'login_status: ' + given_id + '\r\n' + f'first_inventory: weapons {result[2]},ammo {result[3]},bombs {result[4]},med_kits {result[5]},backpack {result[6]},energy_drinks {result[7]},coins {result[8]},exp {result[9]},energy {result[10]}\r\n'
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
@@ -261,40 +257,43 @@ def create_new_id(client_ip_port: tuple) -> str:
     return str(last_id)
 
 
-def handle_register_request(user_name: str, password: str) -> str:
+def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
     """
     Checking if user_name already taken. if not - adds it to the DB with his password and default values of player data.
     :param user_name: <String> the user name entered in the register request.
     :param password: <String> the password entered in the register request.
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DB_CONNECTION, CURSOR, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
-        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
+        DEFAULT_ENERGY_DRINKS, DEFAULT_COINS, DEFAULT_EXP, DEFAULT_ENERGY
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
         return 'register_status: invalid\r\n'
 
-    CURSOR.execute(f"SELECT * FROM clients_info WHERE user_name='{user_name}'")
-    result = CURSOR.fetchone()
+    cursor.execute(f"SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+    result = cursor.fetchone()
 
     if result:
         # user name is taken
         return 'register_status: taken\r\n'
 
     # user name is free. saving it to the DB
-    new_client = (f'{user_name}',
-                  f'{password}',
-                  f'{DEFAULT_WEAPONS}',
+    new_client = (user_name,
+                  password,
+                  DEFAULT_WEAPONS,
                   DEFAULT_AMMO,
                   DEFAULT_BOMBS,
                   DEFAULT_MED_KITS,
                   DEFAULT_BACKPACK,
                   DEFAULT_ENERGY_DRINKS,
+                  DEFAULT_COINS,
                   DEFAULT_EXP,
                   DEFAULT_ENERGY)
-    CURSOR.execute("INSERT INTO clients_info"
+    cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
                    " password,"
                    " weapons,"
@@ -303,10 +302,11 @@ def handle_register_request(user_name: str, password: str) -> str:
                    " med_kits,"
                    " backpack,"
                    " energy_drinks,"
+                   " coins,"
                    " exp,"
                    " energy)"
-                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
-    DB_CONNECTION.commit()
+                   " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
+    connector.commit()
 
     print(f'>> New client registered to server. User Name: {user_name}.')
     return 'register_status: success\r\n'
@@ -340,10 +340,14 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     return f'shot_place: {str(shot_place)}\r\nshooter_id: {shooter_id}\r\n'
 
 
-def handle_dead(dead_id: str) -> str:
+def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list.
+    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT list,
+    and initializing the inventory (the DB values but for user_name, password and coins) to default.
     :param dead_id: <String> the ID of the dead client
+    :param user_name: <String> the uesr name of the dead client.
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     :return: <String> dead header with the ID of the dead client.
     """
 
@@ -359,9 +363,30 @@ def handle_dead(dead_id: str) -> str:
             CLIENTS_ID_IP_PORT.remove(client_addr)
             break
 
+    # Initializing the inventory (the DB values but for user_name, password and coins) to default
+    client_update = (DEFAULT_WEAPONS,
+                     DEFAULT_AMMO,
+                     DEFAULT_BOMBS,
+                     DEFAULT_MED_KITS,
+                     DEFAULT_BACKPACK,
+                     DEFAULT_ENERGY_DRINKS,
+                     DEFAULT_EXP,
+                     DEFAULT_ENERGY)
+    cursor.execute("UPDATE clients_info"
+                   " SET weapons = ?,"
+                   " ammo = ?,"
+                   " bombs = ?,"
+                   " med_kits = ?,"
+                   " backpack = ?,"
+                   " energy_drinks = ?,"
+                   " exp = ?,"
+                   " energy = ?"
+                   " WHERE user_name = ?", client_update + (user_name,))
+    connector.commit()
+
     # returning a dead header
-    print(f'>> Client died and disconnected from game server.'
-          f'   Dead client ID - {dead_id}'
+    print(f'>> Client died and disconnected from game server.\n'
+          f'   Dead client ID - {dead_id}\n'
           f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT))}')
     return 'dead: ' + dead_id + '\r\n'
 
@@ -398,25 +423,35 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     global CLIENTS_ID_IP_PORT, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
+    connector = None  # connection object to DB
+    cursor = None  # cursor object to DB
     individual_reply = False  # should the reply for that packet be for an individual client?
+    user_name_cache = ''  # saving the user_name header info after found ones (to prevent more scans to find it later)
 
     lines = rotshild_raw_layer.split('\r\n')
+    lines.remove('')
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
         # Recognize and handle each header
         # -------------
         if line_parts[0] == 'login_request:':
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port)
+            reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port, cursor)
             individual_reply = True
             break
         # -------------
 
         # -------------
         if line_parts[0] == 'register_request:':
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_register_request(user_name, password)
+            reply_rotshild_layer += handle_register_request(user_name, password, connector, cursor)
             individual_reply = True
             break
         # --------------
@@ -447,17 +482,36 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # --------------
         elif line_parts[0] == 'dead:':
-            reply_rotshild_layer += handle_dead(line_parts[1])
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
+            # looking for user_name
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        reply_rotshild_layer += handle_dead(line_parts[1], l_parts[1], connector, cursor)
+                        break
+            else:
+                reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
         elif line_parts[0] == 'inventory_update:':
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
             # looking for user_name
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    handle_update_inventory(line[18::], l_parts[1])
-                    break
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        handle_update_inventory(line[18::], l_parts[1], connector, cursor)
+                        break
+            else:
+                handle_update_inventory(line[18::], user_name_cache, connector, cursor)
         # --------------
 
         # --------------
@@ -465,11 +519,15 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # so they should print only what comes from the server and don't print their own messages just after sending it.
         elif line_parts[0] == 'chat:':
             # looking for user_name
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    reply_rotshild_layer += line + '\r\n' + l + '\r\n'
-                    break
+            if user_name_cache == '':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        user_name_cache = l_parts[1]
+                        reply_rotshild_layer += line + '\r\n' + l + '\r\n'
+                        break
+            else:
+                reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
         # --------------
 
     if not individual_reply:
@@ -481,6 +539,9 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     else:
         # sending the reply to the specific client
         server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY), (src_ip, int(src_port)))
+
+    if connector or cursor:
+        close_connection_to_db_and_cursor(connector, cursor)
 
 
 def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
@@ -508,35 +569,253 @@ def rotshild_filter(payload: bytes) -> bool:
     global PRIVATE_KEY
 
     expected = 'Rotshild'.encode('utf-8')
-    return rsa.decrypt(payload[:len(expected)], PRIVATE_KEY) == expected
+    return rsa.decrypt(payload, PRIVATE_KEY)[:len(expected)] == expected
+
+
+def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
+    """
+    Checking on encoded data if it's a Rotshild protocol packet.
+    Then (if not register request) verifies match of src IP-PORT-ID.
+    If all good then handling the packet.
+    :param payload: <Bytes> the payload received.
+    :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
+    :param server_socket: <Socket> the socket object of the server.
+    """
+
+    global PRIVATE_KEY
+
+    if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
+        plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
+        # handling packet if ID-IP-PORT matches or if register request
+        if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                               src_addr[0],
+                                                               str(src_addr[1])):
+            packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
+
+
+def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
+    """
+    Informing all active clients that the server is shutting down.
+    :param server_socket: <Socket> The server's socket object.
+    :param reason: <String> why doed it closed? (by_user or error)
+    """
+
+    global CLIENTS_ID_IP_PORT, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS
+
+    for client in CLIENTS_ID_IP_PORT:
+        server_socket.sendto(
+            rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
+                        PUBLIC_KEY), (client[1], int(client[2])))
+
+
+def check_user_input_thread():
+    """
+    Waiting for the user to enter a commend in terminal and execute it.
+    - 'shutdown' to shutdown the server. (will set the game loop trigger event)
+    - 'get clients' to prints all clients registered to this serve with their info.
+    - 'delete user_name' to delete a client from the server.
+    """
+
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
+
+    while True:
+        commend = input().lower()
+
+        # -------------------
+        if commend == 'shutdown':
+            print(f'>> Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)')
+            # setting the shutdown trigger event.
+            SHUTDOWN_TRIGGER_EVENT.set()
+            return
+        # -------------------
+
+        # -------------------
+        elif commend == 'get clients':
+            connector, cursor = connect_to_db_and_build_cursor()
+            # selecting and fetching the entire table
+            cursor.execute("SELECT * FROM clients_info")
+            rows = cursor.fetchall()
+
+            if rows:
+                table = PrettyTable()
+                table.field_names = [i[0] for i in cursor.description]
+                for row in rows:
+                    table.add_row(row)
+                print(table)
+
+            else:
+                print('>> The server got no clients yet.')
+
+            close_connection_to_db_and_cursor(connector, cursor)
+        # -------------------
+
+        # -------------------
+        elif commend.split()[0] == 'delete':
+            connector, cursor = connect_to_db_and_build_cursor()
+            user_name = commend.split()[1]
+
+            # selecting and fetching the user name line
+            cursor.execute("SELECT * FROM clients_info WHERE user_name=?", (user_name,))
+            row = cursor.fetchone()
+
+            # if user name exists
+            if row:
+                cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name,))
+                print(f'>> Client {user_name} has been deleted from server.')
+                connector.commit()
+
+            else:
+                print(f">> Client {user_name} does'nt exist in the server.")
+
+            close_connection_to_db_and_cursor(connector, cursor)
+        # -------------------
+
+        # -------------------
+        else:
+            print(">> Invalid input. (to shutdown the server enter 'shutdown')\n"
+                  "                  (to get server's clients info enter 'get clients')\n"
+                  "                  (to delete a client from the server enter 'delete user_name')")
+        # -------------------
+
+
+def close_connection_to_db_and_cursor(connection, cursor):
+    """
+    Closing the connection to the DB and the cursor object.
+    :param connection: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
+    """
+
+    cursor.close()
+    connection.close()
+
+
+def connect_to_db_and_build_cursor() -> tuple:
+    """
+    Connecting to the DataBase ('Server_DB.db') or creating a new one if doesn't exist,
+    Creating a cursor object for the DB to execute SQLite commends on it,
+    :return: <Tuple> the Connection object of the DB and the Cursor object of it (by that order).
+    """
+
+    global DB_PATH
+
+    connection = sqlite3.connect(DB_PATH)  # connect to the db file or create a new one if doesn't exist
+    cursor = connection.cursor()  # creating a cursor object to execute SQL commends
+
+    return connection, cursor
+
+
+def initialize_sqlite_rdb():
+    """
+    Creating a table of clients_info (if doesn't exist). (also creating the DB file if not exists).
+    """
+
+    connection, cursor = connect_to_db_and_build_cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS clients_info"  # creating a table of clients data if not exists yet
+                   " (user_name TEXT PRIMARY KEY,"
+                   " password TEXT,"
+                   " weapons TEXT,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
+                   " ammo INTEGER,"
+                   " bombs INTEGER,"
+                   " med_kits INTEGER,"
+                   " backpack INTEGER,"
+                   " energy_drinks INTEGER,"
+                   " coins INTEGER,"
+                   " exp INTEGER,"
+                   " energy INTEGER)")
+    close_connection_to_db_and_cursor(connection, cursor)
+
+
+def set_socket() -> socket:
+    """
+    Setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
+    :return: <Socket> the socket object.
+    """
+
+    global SERVER_SOCKET_TIMEOUT
+
+    # setting an IPv4/UDP socket
+    server_socket = socket(AF_INET, SOCK_DGRAM)
+    # set timeout for the socket (in order to check the loop trigger event and not block forever if not receiving)
+    server_socket.settimeout(SERVER_SOCKET_TIMEOUT)
+    # binding the server socket
+    server_socket.bind((SERVER_IP, SERVER_UDP_PORT))
+    return server_socket
 
 
 def main():
 
-    global CURSOR, SERVER_IP, SERVER_UDP_PORT, DEFAULT_BUFFER_SIZE, PRIVATE_KEY
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, MAX_WORKER_THREADS,\
+        SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # setting an IPv4 UDP socket
+    executor = None
+    server_socket = None
     try:
         print(f'>> NOTE: The server requires your network to have port forwarding'
               f' to route from UDP port {str(SERVER_UDP_PORT)} to your local IP.')
-        intialize_sqlite_rdb()  # building connection and initialization of the SQL (SQLite) server
-        server_socket.bind((SERVER_IP, SERVER_UDP_PORT))  # binding the server socket
-        print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
-        while True:
-            data, client_address = server_socket.recvfrom(DEFAULT_BUFFER_SIZE)  # getting incoming packets
-            if rotshild_filter(data):  # checking on encoded data if it's a Rotshild protocol packet
-                plaintext = rsa.decrypt(data, PRIVATE_KEY).decode('utf-8')
-                if check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                               client_address[0],
-                                               str(client_address[1])):  # verifies match of src IP-PORT-ID
-                    packet_handler(plaintext, client_address[0], str(client_address[1]), server_socket)  # handling it
+
+        # -------------------------------------------------- GETTING THINGS READY TO GO
+        # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT.
+        server_socket = set_socket()
+        # building connection and initialization of the SQL (SQLite) DataBase
+        initialize_sqlite_rdb()
+        # initializing a thread pool executor object
+        executor = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS, thread_name_prefix='worker_thread_')
+        # --------------------------------------------------
+
+        # setting a thread to handle user's terminal commends
+        executor.submit(check_user_input_thread)
+
+        # print(f'>> Server is up and running on {public_ip.get()}:{str(SERVER_UDP_PORT)}')
+        print(f">> To shutdown the server - enter 'shutdown' in your terminal.\n"
+              f"   To show all clients registered on this server and their info - enter 'get clients' in your terminal."
+              f"\n   To delete a client from the server enter 'delete user_name' in your terminal.")
+
+        # ------------------GAME LOOP-----------------------
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            try:
+                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets
+            except socket_timeout:
+                continue
+
+            # verify the packet in a different thread and if all good then handling it in another thread
+            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)
+        # --------------------------------------------------
+
+        # server is shutting down. informing all active clients
+        print('   [informing all active clients about the shutdown]', end='')
+        inform_active_clients_about_shutdown(server_socket, 'by_user')
+        print(' ---> completed')
+
+    except OSError as ex:
+        if ex.errno == 98:
+            print(f">> [ERROR] Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
+                  f"    Make sure the port is available and is not already in use by another service and run again.")
+        else:
+            print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
+            print('>> Server crashed.')
+            print('   [informing all active clients about the shutdown]', end='')
+            inform_active_clients_about_shutdown(server_socket, 'error')
+            print(' ---> completed')
 
     except Exception as ex:
-        print(f'something went wrong... : {ex}\n')
+        print(f'>> [ERROR] Something went wrong... This is the error message: {ex}')
+        print('>> Server crashed.')
+        print('   [informing all active clients about the shutdown]', end='')
+        inform_active_clients_about_shutdown(server_socket, 'error')
+        print(' ---> completed')
 
     finally:
-        DB_CONNECTION.close()
+        print('   [waiting for running threads to complete]', end='')
+        # the next commend waits for all running tasks to complete (blocking till then), shuts down the
+        # tread pool executor and frees up any resources used by it.
+        executor.shutdown(wait=True)
+        print(' -----------> completed')
+
+        print('   [freeing up last resources]', end='')
         server_socket.close()
+        print(' -------------------------> completed')
+
+        print('>> Server is closed.')
 
 
 # --------------------------- Main Guard
