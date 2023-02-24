@@ -73,7 +73,6 @@ import sqlite3
 import requests
 import subprocess
 import re
-import platform
 import threading
 import colorama
 import MyKeyring  # my module (not the external library)
@@ -107,13 +106,13 @@ DEFAULT_EXP = 0
 DEFAULT_ENERGY = 0
 # ------------------------
 
-# ------------------------ Files
-SCRIPT_PATH = os.path.abspath(__file__)
-SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
-DB_FILE = "Server_DB.db"
-DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
-DB_ACCESS_PERMISSION = 0o600  # The access permission for the  DB file in both UNIX-like and Windows Operating Systems
-# (0o600 - means read and write access only for the owner)
+# ------------------------ Running machine info
+SYS_PLATFORM = None  # The operating system of the machine (will be 'nt' for windows or 'posix' for Unix-like)
+SCRIPT_PATH = None
+SCRIPT_DIR = None
+DB_FILE = None
+DB_PATH = None
+DB_ACCESS_PERMISSION = None  # The access permission for the  DB file in both UNIX-like and Windows Operating Systems
 # ------------------------
 
 # ------------------------ Events
@@ -206,6 +205,8 @@ def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool 
     :param new_line: <Boolean> to print - '\n'?
     """
 
+    global SYS_PLATFORM
+
     try:
         # Mostly ANSI escape sequences work on UNIX-like but not windows. that is what the colorama module used to solve
 
@@ -215,7 +216,7 @@ def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool 
         colorama.just_fix_windows_console()
 
         # Check if its a 'dumb' UNIX-like system (then its most likely don't support ANSI)
-        if os.name != 'nt' and os.getenv('TERM') == 'dumb':
+        if SYS_PLATFORM != 'nt' and os.getenv('TERM') == 'dumb':
             # The terminal might not support ANSI, so just printing normally
             if new_line:
                 print(text)
@@ -868,7 +869,7 @@ def check_user_input_thread(server_socket: socket):
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION,\
-        CLOSING_THREADS_EVENT
+        CLOSING_THREADS_EVENT, SYS_PLATFORM
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -921,17 +922,27 @@ def check_user_input_thread(server_socket: socket):
             return '', True
 
         unfinished_buffer = ''  # will save the unfinished messages
-        platform = os.name  # DO IT GLOBAL AND CHANGE IN ALL OTHER PLACES TOO!!!
 
         # wrapper to get the right method
-        if platform == 'posix':
+        if SYS_PLATFORM == 'posix':
+            # if UNIX-like (Linux, MAC...)
             import termios
             import select
             get_input = get_input_unix
-        elif platform == 'nt':
+        elif SYS_PLATFORM == 'nt':
+            # if Windows
             import msvcrt
             import time
             get_input = get_input_win
+        else:
+            # if unsupported platform. trying with the unix method and printing a warning
+            print(">> ", end='')
+            print_ansi(text='[WARNING] ', color='yellow', blink=True, new_line=False)
+            print_ansi(text="The user UI commends may not works on your platform. You can try, but it may act "
+                            "unexpectedly.\n", color='yellow')
+            import termios
+            import select
+            get_input = get_input_unix
 
         while not CLOSING_THREADS_EVENT.is_set():
             # its the same timeout like the socket without a reason, just for orded with the error messages
@@ -1152,10 +1163,10 @@ def set_db_read_write_permissions_to_only_owner():
     Setting the DataBase file permissions to allow only the owner user account (the creator) to read and write.
     """
 
-    global DB_ACCESS_PERMISSION, DB_PATH
+    global DB_ACCESS_PERMISSION, DB_PATH, SYS_PLATFORM
 
     try:
-        if os.name == "posix" or os.name == 'nt':
+        if SYS_PLATFORM == "posix" or SYS_PLATFORM == 'nt':
             # UNIX or Windows Operating System
             os.chmod(DB_PATH, DB_ACCESS_PERMISSION)
         else:
@@ -1282,10 +1293,13 @@ def get_private_ip() -> str:
     :return: <String> the private IP address.
     """
 
+    global SYS_PLATFORM
+
     # -------------------
     # If its a Windows Operating System
     try:
-        if platform.system() == 'Windows':
+        # if windows
+        if SYS_PLATFORM == 'nt':
             # Execute the 'ipconfig' command and get the output
             output = subprocess.check_output(['ipconfig']).decode('cp850')
 
@@ -1393,6 +1407,28 @@ def print_start_info_and_running_status():
     # --------------------------------------------------
 
 
+def initialize_global_system_consts():
+    """
+    Initializing the global vars related to the OS and file paths for example with the correct data about this machine.
+    """
+
+    global SYS_PLATFORM, SCRIPT_PATH, SCRIPT_DIR, DB_FILE, DB_PATH, DB_ACCESS_PERMISSION
+
+    SYS_PLATFORM = os.name  # The operating system of the machine (will be 'nt' for windows or 'posix' for Unix-like)
+    if SYS_PLATFORM != 'nt' and SYS_PLATFORM != 'posix':
+        print("\n>> ", end='')
+        print_ansi(text='[WARNING] ', color='yellow', blink=True, new_line=False)
+        print_ansi(text="Seems like your platform is not Windows or UNIX-like (Linux, MAC...) system.\n"
+                        '   The program designed to run on these systems (better on Windows) and it may act in an '
+                        'unexpected manner on your system.', color='yellow')
+    SCRIPT_PATH = os.path.abspath(__file__)
+    SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+    DB_FILE = "Server_DB.db"
+    DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE)
+    DB_ACCESS_PERMISSION = 0o600  # The access permission for the  DB file in both UNIX-like and Windows Operating Systems
+    # (0o600 - means read and write access only for the owner)
+
+
 def main():
 
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
@@ -1414,6 +1450,8 @@ def main():
         print_ansi(text='Loading...\n', color='blue', bold=True, italic=True)
 
         # -------------------------------------------------- GETTING THINGS READY TO GO
+        # initializing global vars related to the OS and file paths for example with the correct data about this machine
+        initialize_global_system_consts()
         # setting a socket object of AF_INET (IPv4) and SOCK_DGRAM (UDP) with timeout SERVER_SOCKET_TIMEOUT
         server_socket = set_socket()
         # initializing the SQL (SQLite) DataBase
