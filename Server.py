@@ -1588,9 +1588,15 @@ def main():
 
         print_ansi(text='   [freeing up last resources]', new_line=False, color='cyan')
         sys.stdout.flush()  # force flushing the buffer to the terminal
-        if server_socket:  # if there is a socket up
+        # if there is a socket up, closing it
+        if server_socket:
             server_socket.close()
-        colorama.deinit()  # stop using colorama. restore stduot and stderr to original values (terminal)
+        # stop using colorama. restore stduot and stderr to original values (terminal)
+        colorama.deinit()
+        # unset all events
+        SHUTDOWN_TRIGGER_EVENT.clear()
+        SHUTDOWN_INFORMING_EVENT.clear()
+        CLOSING_THREADS_EVENT.clear()
         print_ansi(text=' -------------------------> completed', color='green', italic=True)
 
         print(">> ", end='')
