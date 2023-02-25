@@ -63,6 +63,7 @@ Headers API:                                                                    
             - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
             - chat: [the info of the message]  [comes with user_name when server sends]                                            [clients and server send] |
             - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
+            - disconnect: [the ID of the clients]                                                                                  [clients ans server send] |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -253,6 +254,34 @@ def sha512_hash(data: bytes) -> bytes:
     hash_object = sha512()
     hash_object.update(data)
     return hash_object.digest()
+
+
+def handle_disconnect(client_id: str) -> str:
+    """
+    Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list
+    :param client_id: <String> the ID of the clients who is disconnecting.
+    :return: <String> disconnect header with the ID of the disconnected clients.
+    """
+
+    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME
+
+    # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
+    if client_id in PLAYER_PLACES_BY_ID:
+        del PLAYER_PLACES_BY_ID[client_id]
+
+    # Deleting the dead client from the CLIENTS_ID_IP_PORT_NAME list
+    for client_addr in CLIENTS_ID_IP_PORT_NAME:
+        if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
+            CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
+            break
+
+    print(">> ", end='')
+    print_ansi(text='Client manually disconnected from game server', color='red', bold=True, underline=True)
+    print_ansi(text=f'   Dead client ID - {client_id}\n'
+                    f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='red')
+
+    # returning a dead header
+    return 'disconnect: ' + client_id + '\r\n'
 
 
 def handle_update_inventory(header_info: str, user_name: str, connector, cursor):
@@ -664,22 +693,6 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
 
         # --------------
-        elif line_parts[0] == 'dead:':
-            # open db connector and cursor if not open already
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
-
-            if user_name_cache == '':
-                if id_cache == '':
-                    id_cache = lines[0].split()[1]
-                for client in CLIENTS_ID_IP_PORT_NAME:
-                    if client[0] == id_cache:
-                        user_name_cache = client[3]
-                        break
-            reply_rotshild_layer += handle_dead(line_parts[1], user_name_cache, connector, cursor)
-        # --------------
-
-        # --------------
         elif line_parts[0] == 'inventory_update:':
             # open db connector and cursor if not open already
             if not (connector and cursor):
@@ -707,6 +720,29 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                         user_name_cache = client[3]
                         break
             reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'disconnect:':
+            if id_cache == '':
+                id_cache = line_parts[1]
+            reply_rotshild_layer += handle_disconnect(id_cache)
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'dead:':
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
+
+            if user_name_cache == '':
+                if id_cache == '':
+                    id_cache = line_parts[1]
+                for client in CLIENTS_ID_IP_PORT_NAME:
+                    if client[0] == id_cache:
+                        user_name_cache = client[3]
+                        break
+            reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
         # --------------
 
     if not individual_reply:

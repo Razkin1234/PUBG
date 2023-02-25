@@ -69,11 +69,24 @@ def test_dead(id: str, user_name: str):
 
     print(f'{str(payload_bytes)} bytes od dead sent successfully')
 
-    wait_for_reply()
+
+def test_disconnect(id: str):
+    plaintext = f'Rotshild {id}\r\n' \
+                '\r\n' \
+                f'disconnect: {id}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    try:
+        payload_bytes = my_socket.send(encoded)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes od dead sent successfully')
 
 
 def test_update_inventory(header_info: str, id: str):
-    plaintext = 'Rotshild {id}\r\n' \
+    plaintext = f'Rotshild {id}\r\n' \
                 '\r\n' \
                 f'inventory_update: {header_info}\r\n'
 
@@ -89,6 +102,7 @@ def test_update_inventory(header_info: str, id: str):
 
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')  # BUG: to check if user name already logging before logging in
-#test_update_inventory('+ bombs 4', '1')
+#test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1', 'user1')  # BUG: to check if user name exists and active
+#test_disconnect('1')
 #wait_for_reply()
