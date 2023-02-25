@@ -76,8 +76,6 @@ import re
 import threading
 import colorama
 import MyKeyring  # my module (not the external library)
-import rsa
-from rsa.key import PublicKey, PrivateKey
 from prettytable import PrettyTable
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
@@ -146,42 +144,6 @@ CLIENTS_ID_IP_PORT_NAME = []  # IPs, PORTs, IDs and user names of all clients
 # as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
-# -------------------------
-
-# ------------------------- RSA deterministic asymmetric encryption
-"""
-The key generation proccess:
-    - generate two large prime numbers, known as the first and second prime factors.
-    - These prime factors are used to calculate the modulus, which is used in the modular arithmetic of RSA encryption.
-    - The public exponent is selected, which is usually 65537 in modern RSA implementations.
-    - The private exponent is calculated based on the public exponent and the totient of the modulus.
-      (totient is the number of positive integers less than or equal to a given integer,
-       in the RSA case it is calculated as (first prime factor - 1) * (second prime factor - 1)).
-
-* The key generation process is designed to ensure that it is computationally infeasible to determine the private key
-  from the public key, even if an attacker has access to both the public and private exponents.
-
-The encryption process works as follows:
-(using the public key - contains the modulus and the public exponent)
-    - A plaintext message is transformed into a numerical value.
-    - The numerical value is raised to the power of the public exponent (modulo the modulus) to produce the ciphertext
-      (ciphertext = plaintext ** public_exponent % modulus).
-
-The decryption process works as follows:
-(using the private key - contains the modulus, the private exponent and the two prime factors)
-    - A ciphertext is raised to the power of the private exponent (modulo the modulus) to produce the plaintext
-    (plaintext = ciphertext ** private_exponent % modulus).
-    - The recipient then obtains the original message by transforming the plaintext back to its original form.
-"""
-
-MODULUS = 7202380422720360875138943832989169827593337421340517606000697629974789073279088263129156773084889735203215777657443638346916570347919877966671239593821849  # (not secret)
-PUBLIC_EXPONENT = 65537  # (not secret)
-PRIVATE_EXPONENT = 2487759366909086609556743084782273179840859044614268230877791053141573463839494045756198356306801278556401491488506285362190686031132636395114287646477909  # (secret)
-FIRST_PRIME_FACTOR = 6722171653111129608666978173114450112621458860424439037672507726695639042339185147  # (secret)
-SECOND_PRIME_FACTOR = 1071436552707930761066064576213162123693476737940140711087853990359411067  # (secret)
-
-PUBLIC_KEY = PublicKey(MODULUS, PUBLIC_EXPONENT)  # (not secret)
-PRIVATE_KEY = PrivateKey(MODULUS, PUBLIC_EXPONENT, PRIVATE_EXPONENT, FIRST_PRIME_FACTOR, SECOND_PRIME_FACTOR)  # (secret)
 # -------------------------
 
 
@@ -750,12 +712,11 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT_NAME:
-            server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY),
-                                 (client[1], int(client[2])))
+            server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
 
     else:
         # sending the reply to the specific client
-        server_socket.sendto(rsa.encrypt(reply_rotshild_layer.encode('utf-8'), PUBLIC_KEY), (src_ip, int(src_port)))
+        server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
 
     if connector or cursor:
         close_connection_to_db_and_cursor(connector, cursor)
@@ -789,7 +750,7 @@ def rotshild_filter(payload: bytes) -> bool:
     global PRIVATE_KEY
 
     expected = 'Rotshild'.encode('utf-8')
-    return rsa.decrypt(payload, PRIVATE_KEY)[:len(expected)] == expected
+    return payload[:len(expected)] == expected
 
 
 def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
@@ -808,7 +769,7 @@ def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_sock
     # not be cought in the main.
     try:
         if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
-            plaintext = rsa.decrypt(payload, PRIVATE_KEY).decode('utf-8')
+            plaintext = payload.decode('utf-8')
             # handling packet if ID-IP-PORT matches or if register request
             if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
                                                                    src_addr[0],
@@ -843,9 +804,8 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     sys.stdout.flush()  # force flushing the buffer to the terminal
     try:
         for client in CLIENTS_ID_IP_PORT_NAME:
-            server_socket.sendto(
-                rsa.encrypt((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8'),
-                            PUBLIC_KEY), (client[1], int(client[2])))
+            server_socket.sendto((ROTSHILD_OPENING_OF_SERVER_PACKETS + f'server_shutdown: {reason}\r\n').encode('utf-8')
+                                 , (client[1], int(client[2])))
         print_ansi(' ---> completed', color='green', italic=True)
 
     except Exception as ex:
@@ -1473,7 +1433,7 @@ def initialize_global_system_consts():
 
 def main():
 
-    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, PRIVATE_KEY, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
         SHUTDOWN_INFORMING_EVENT, CLOSING_THREADS_EVENT
 
     executor = None
