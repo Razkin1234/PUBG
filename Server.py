@@ -865,7 +865,7 @@ def check_user_input_thread(server_socket: socket):
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION,\
-        CLOSING_THREADS_EVENT, SYS_PLATFORM
+        CLOSING_THREADS_EVENT, SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -1046,6 +1046,37 @@ def check_user_input_thread(server_socket: socket):
 
                 # if user name exists
                 if row:
+                    # check if user name is active
+                    for client in CLIENTS_ID_IP_PORT_NAME:
+                        if client[3] == user_name:
+                            print(">> ", end='')
+                            print_ansi(text=f"Client '{user_name}' is currently active on the server. disconnecting him"
+                                            f" first...", color='blue')
+                            print_ansi(text="   [Disconnecting the client from the game]", new_line=False, color='cyan')
+                            sys.stdout.flush()  # force flushing the buffer to the terminal
+
+                            client_id = client[0]
+                            # disconnecting the clients from the game
+                            # ---------------------
+                            # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
+                            if client_id in PLAYER_PLACES_BY_ID:
+                                del PLAYER_PLACES_BY_ID[client_id]
+
+                            # Deleting the dead client from the CLIENTS_ID_IP_PORT_NAME list
+                            for client_addr in CLIENTS_ID_IP_PORT_NAME:
+                                if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
+                                    CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
+                                    break
+
+                            # informing all other clients
+                            layer = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'disconnect: ' + client_id + '\r\n'
+                            for player in CLIENTS_ID_IP_PORT_NAME:
+                                server_socket.sendto(layer.encode('utf-8'), (client[1], int(client[2])))
+                            # ---------------------
+
+                            print_ansi(text=' ------------------------> completed', color='green', italic=True)
+
+                    # deleting the clients from the server DB
                     cursor.execute("DELETE FROM clients_info WHERE user_name=?", (user_name.encode('utf-8'),))
                     connector.commit()
 
