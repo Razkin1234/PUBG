@@ -970,7 +970,7 @@ def check_user_input_thread(server_socket: socket):
 
         while not CLOSING_THREADS_EVENT.is_set():
             # ------------------ Take input
-            # its the same timeout like the socket without a reason, just for orded with the error messages
+            # its the same timeout like the socket without a reason, just for order with the error messages
             commend, finished_flag = get_input(SERVER_SOCKET_TIMEOUT)
             # handle backspace
             while '\x08' in commend:
@@ -1071,7 +1071,7 @@ def check_user_input_thread(server_socket: socket):
                             # informing all other clients
                             layer = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'disconnect: ' + client_id + '\r\n'
                             for player in CLIENTS_ID_IP_PORT_NAME:
-                                server_socket.sendto(layer.encode('utf-8'), (client[1], int(client[2])))
+                                server_socket.sendto(layer.encode('utf-8'), (player[1], int(player[2])))
                             # ---------------------
 
                             print_ansi(text=' ------------------------> completed', color='green', italic=True)
