@@ -107,7 +107,7 @@ DEFAULT_ENERGY = 0
 # ------------------------
 
 # ------------------------ Running machine info
-SYS_PLATFORM = None  # The operating system of the machine (will be 'nt' for windows or 'posix' for Unix-like)
+SYS_PLATFORM = None  # The operating system of the machine (will be 'nt' for windows and 'posix' for Unix-like)
 SCRIPT_PATH = None
 SCRIPT_DIR = None
 DB_FILE = None
@@ -888,10 +888,38 @@ def check_user_input_thread(server_socket: socket):
                     if char == b'\r':  # If Enter key is pressed
                         print()
                         return input_string, True  # Return the input string and flag indicating that input is complete
-                    elif char == b'\x03':  # If Ctrl+C is pressed (it means terminate program)
+                    elif char == b'\x03':  # If Ctrl+C is pressed (its a keyboard interrupt)
                         raise KeyboardInterrupt  # Raise a KeyboardInterrupt exception
+                    elif char == b'\x08':  # If backspace key is pressed
+                        print(' \b', end='', flush=True)  # clear last character from screen and move cursor back.
+                        # the last line assumes that the terminal will move the cursor back by its own after
+                        # pressing backspace but wont delete the char (because that is what my terminal does),
+                        # but it might be different in different terminals. In some terminals it might do nothing
+                        # visible on the screen, but the program will see it like the last char was deleted,
+                        # so it wont effect the functionality of the code. It may only confuse the user because he
+                        # will see like it didn't delete anything while it does.
+                        if input_string != '' and input_string[len(input_string)-1] != '\x08':  # if it is not empty
+                            input_string = input_string[:-1]  # remove last character
+                        else:
+                            input_string += '\x08'
                     else:
-                        input_string += char.decode('utf-8')  # Add the character to the input string
+                        try:
+                            input_string += char.decode('utf-8')  # Add the character to the input string
+                        except UnicodeDecodeError:
+                            input_string = ''  # clearing input string
+                            print('\b \b', end='', flush=True)  # clear last character from screen and move cursor back.
+                            # (in my terminal a trash char is being printed to the screen. that's why the previous line)
+                            print("\n>> ", end='')
+                            print_ansi(text="You pressed a character that is not available on this program.\n",
+                                       color='red')
+                            # flushing the input buffer although it should be clean (because the msvcrt.getche() is
+                            # popping the char from the buffer). But I still do it because in some cases there will be
+                            # more then one char and we wont read the second one (like for example, in my terminal, when
+                            # pressing an arrow key it saves to the buffer 2 chars, the first one is handled in the
+                            # UnicodeDecodeError exception block, but then we need to check the second one too...)
+                            while msvcrt.kbhit():
+                                msvcrt.getch()  # Read and discard any remaining characters in the input buffer
+
                 # If timeout is set and the timeout period has elapsed
                 elif timeout is not None and (time.time() - start_time) > timeout:
                     return input_string, False  # Return the input string and a flag indicating that input is incomplete
@@ -945,13 +973,21 @@ def check_user_input_thread(server_socket: socket):
             get_input = get_input_unix
 
         while not CLOSING_THREADS_EVENT.is_set():
+            # ------------------ Take input
             # its the same timeout like the socket without a reason, just for orded with the error messages
             commend, finished_flag = get_input(SERVER_SOCKET_TIMEOUT)
+            # handle backspace
+            while '\x08' in commend:
+                commend = commend[1:]  # remove backspace character
+                if unfinished_buffer != '':
+                    unfinished_buffer = unfinished_buffer[:-1]  # remove last character
+            # chack is finished line
             if finished_flag is False:
                 unfinished_buffer += commend
                 continue
             commend = (unfinished_buffer + commend).strip().lower()
             unfinished_buffer = ''
+            # -------------------
 
             # -------------------
             if commend == 'shutdown':
@@ -1351,12 +1387,18 @@ def print_start_info_and_running_status():
     print_ansi(text='---------------------------------------------------------',
                color='magenta', italic=True, bold=True)
     print(">> ", end='')
-    print_ansi(text='NOTE:', new_line=False, color='magenta', italic=True, bold=True)
+    print_ansi(text='NOTE: ', new_line=False, color='magenta', italic=True, bold=True)
     print_ansi(text='The server requires your network to have port forwarding\n'
                     f'         to route from UDP port {str(SERVER_UDP_PORT)} to your local IP if you want\n'
                     '         it to be available for clients from WAN (outside your network).\n'
-                    '         If you only run it for players on your LAN then this is not a mandatory requirement for you.\n'
+                    '         If you only run it for players on your LAN then this is not a mandatory requirement for'
+                    ' you.\n'
                , color='magenta', italic=True)
+    print(">> ", end='')
+    print_ansi(text='NOTE: ', new_line=False, color='magenta', italic=True, bold=True)
+    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, and checked only'
+                    ' on Windows.\n         We can only be sure it works the best on Windows, any other platform wasnt '
+                    'checked.\n', color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
     if my_public_ip == "[Your public IP (our system couldn't find it)]":
