@@ -34,8 +34,8 @@ class Level:
         self.floor_update_time = 0
         self.player_first_location = (22*TILESIZE,33*TILESIZE)
         self.layout :dict[str: list[list[int]]]={
-            'floor': import_csv_layout('../map/map_Floor2.csv'),
-            'boundary': import_csv_layout('../map/map_FloorBlocks2.csv')
+            'floor': import_csv_layout('../map/map_Floor.csv'),
+            'boundary': import_csv_layout('../map/map_FloorBlocks.csv')
             #,'entities': import_csv_layout('../map/map_Entities.csv')
         }
         self.graphics: dict[str: dict[int: pygame.Surface]] = {

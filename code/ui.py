@@ -183,8 +183,6 @@ class UI:
                         self.replace_first_one = self.box_on.copy()
                         self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = False
                     else:
-                        print(self.replace_first_one)
-                        print(self.box_on)
                         item_to_replace = None
                         second_item_to_replace = None
                         for weapon , weapon_value in player.objects_on.items():
