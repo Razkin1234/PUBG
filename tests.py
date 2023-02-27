@@ -9,7 +9,7 @@ SERVER_PORT = 56789
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # -------------------
 
-
+#my_socket.bind(('0.0.0.0', 62227))
 my_socket.connect((SERVER_IP, SERVER_PORT))
 
 

@@ -32,7 +32,8 @@ Headers API:                                                                    
                                [how much backpack?],                                                                                                         |
                                [how much energy drinks?],                                                                                                    |
                                [how much exp?],                                                                                                              |
-                               [how much energy?]         (*NOTE: all in 1 line)                                                                             |
+                               [how much energy?],                                                                                                           |
+                               ([the X respawn coordinate]-[the Y respawn coordinate])               (*NOTE: all in 1 line)                                  |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
             - inventory_update: [can be only one, or a few of the options below, you should separate them by ',']                  [only clients send]       |
@@ -141,10 +142,14 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ General
-CLIENTS_ID_IP_PORT_NAME = []  # IPs, PORTs, IDs and user names of all clients
-# as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
-PLAYER_PLACES_BY_ID = {}  # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
-ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'  # Opening for server's packets (after this are the headers)
+# The optional respawn places on the map as (X,Y)   [X and Y are str]
+RESPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
+# IPs, PORTs, IDs and user names of all clients as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
+CLIENTS_ID_IP_PORT_NAME = []
+# Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
+PLAYER_PLACES_BY_ID = {}
+# Opening for server's packets (after this are the headers)
+ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
 # -------------------------
 
 
@@ -256,20 +261,30 @@ def sha512_hash(data: bytes) -> bytes:
     return hash_object.digest()
 
 
-def handle_disconnect(client_id: str) -> str:
+def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list
+    Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list and saving its place to
+    the DB for respawn.
     :param client_id: <String> the ID of the clients who is disconnecting.
+    :param user_name: <String> the user name of the client.
+    :param connector: the connection object to the DB.
+    :param cursor: the cursor object to the DB.
     :return: <String> disconnect header with the ID of the disconnected clients.
     """
 
-    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME
+    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
 
-    # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
+    # Store current place to DB and delete the client from the PLAYER_PLACES_BY_ID dict
     if client_id in PLAYER_PLACES_BY_ID:
+        # saving the location for respawn
+        cursor.execute("UPDATE clients_info SET respawn_place = ? WHERE user_name = ?",
+                       (FERNET_ENCRYPTION.encrypt(str(PLAYER_PLACES_BY_ID[client_id]).replace("'", '').replace(' ', '')
+                                                  .encode('utf-8')), user_name.encode('utf-8')))
+        connector.commit()
+        # deleting client from game dict
         del PLAYER_PLACES_BY_ID[client_id]
 
-    # Deleting the dead client from the CLIENTS_ID_IP_PORT_NAME list
+    # Deleting the client from the CLIENTS_ID_IP_PORT_NAME list
     for client_addr in CLIENTS_ID_IP_PORT_NAME:
         if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
@@ -277,7 +292,7 @@ def handle_disconnect(client_id: str) -> str:
 
     print(">> ", end='')
     print_ansi(text='Client manually disconnected from game server', color='red', bold=True, underline=True)
-    print_ansi(text=f'   Dead client ID - {client_id}\n'
+    print_ansi(text=f'   client ID - {client_id}\n'
                     f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='red')
 
     # returning a dead header
@@ -288,7 +303,7 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
     """
     updating the inventory of a client in the DB
     :param header_info: <String> all the raw info in the update_inventory header.
-    :param user_name: <String> the user name of the client (get from the user_name header).
+    :param user_name: <String> the user name of the client.
     :param connector: the connection object to the DB.
     :param cursor: the cursor object to the DB.
     """
@@ -352,7 +367,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :return: <String> login_status header (if matches then the given ID, if not then 'fail') and first_inventory header.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
+    global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, PLAYER_PLACES_BY_ID
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -374,6 +389,14 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         # user name exists in DB and matches the password
         given_id = create_new_id((client_ip, client_port, user_name))
 
+        # decrypting the data from the DB
+        plsintext_inventory = []
+        for i in range(2, len(result), 1):
+            plsintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
+
+        # save in PLAYER_PLACES_BY_ID dict
+        PLAYER_PLACES_BY_ID[given_id] = tuple(plsintext_inventory[8][1:-1].split(','))
+
         print(">> ", end='')
         print_ansi(text='New client connected to the game', color='green', bold=True, underline=True)
         print_ansi(text=f'   User Name - {user_name}\n'
@@ -381,11 +404,6 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                         f'   User IPv4 addr - {client_ip}\n'
                         f'   User port number - {client_port}\n'
                         f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
-
-        # decrypting the data from the DB
-        plsintext_inventory = []
-        for i in range(2, len(result), 1):
-            plsintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
 
         return 'login_status: ' + given_id + '\r\n' + f'first_inventory: ' \
                                                       f"{plsintext_inventory[0].replace(',', '/')}," \
@@ -395,7 +413,8 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                                                       f'{plsintext_inventory[4]},' \
                                                       f'{plsintext_inventory[5]},' \
                                                       f'{plsintext_inventory[6]},' \
-                                                      f'{plsintext_inventory[7]}\r\n'
+                                                      f'{plsintext_inventory[7]},' \
+                                                      f"{plsintext_inventory[8].replace(',', '-')}\r\n"
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
@@ -437,6 +456,17 @@ def create_new_id(client_ip_port_name: tuple) -> str:
     return str(last_id)
 
 
+def random_respawn_place() -> tuple:
+    """
+    Random a respawn spot from the RESPAWN_SPOTS global list.
+    :return: <Tuple> the random respawn place as (X,Y).  [X and Y are str]
+    """
+
+    global RESPAWN_SPOTS
+
+    return RESPAWN_SPOTS[randint(0, len(RESPAWN_SPOTS) - 1)]
+
+
 def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
     """
     Checking if user_name already taken. if not - adds it to the DB with his password and default values of player data.
@@ -461,6 +491,9 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         # user name is taken
         return 'register_status: taken\r\n'
 
+    # random a spawn location
+    spawn_place = random_respawn_place()
+
     # encrypting the data to be saved (and hashing the password)
     hashed_password = sha512_hash(password.encode('utf-8'))
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
@@ -471,6 +504,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
+    encrypted_spawn_place = FERNET_ENCRYPTION.encrypt(str(spawn_place).replace("'", '').replace(' ', '')
+                                                      .encode('utf-8'))
 
     # user name is free. saving it to the DB
     new_client = (user_name.encode('utf-8'),
@@ -482,7 +517,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                   encrypted_default_backpack,
                   encrypted_default_energy_drinks,
                   encrypted_default_exp,
-                  encrypted_default_energy)
+                  encrypted_default_energy,
+                  encrypted_spawn_place)
     cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
                    " hashed_password,"
@@ -493,8 +529,9 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " backpack,"
                    " energy_drinks,"
                    " exp,"
-                   " energy)"
-                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
+                   " energy,"
+                   " respawn_place)"
+                   " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
     connector.commit()
 
     print(">> ", end='')
@@ -535,7 +572,7 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
     Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list,
-    and initializing the inventory (the DB values but for user_name, password and coins) to default.
+    and initializing the inventory (the DB values but for user_name and password) to default.
     :param dead_id: <String> the ID of the dead client
     :param user_name: <String> the uesr name of the dead client.
     :param connector: the connection object to the DB.
@@ -556,6 +593,9 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
 
+    # random a new respawn location
+    respawn_place = random_respawn_place()
+
     # encrypting the data to be saved (and hashing the password)
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
@@ -565,6 +605,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
+    encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
+                                                        .encode('utf-8'))
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
     client_update = (encrypted_default_weapons,
@@ -574,7 +616,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                      encrypted_default_backpack,
                      encrypted_default_energy_drinks,
                      encrypted_default_exp,
-                     encrypted_default_energy)
+                     encrypted_default_energy,
+                     encrypted_respawn_place)
     cursor.execute("UPDATE clients_info"
                    " SET weapons = ?,"
                    " ammo = ?,"
@@ -583,7 +626,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " backpack = ?,"
                    " energy_drinks = ?,"
                    " exp = ?,"
-                   " energy = ?"
+                   " energy = ?,"
+                   " respawn_place = ?"
                    " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
     connector.commit()
 
@@ -724,9 +768,18 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
 
         # --------------
         elif line_parts[0] == 'disconnect:':
-            if id_cache == '':
-                id_cache = line_parts[1]
-            reply_rotshild_layer += handle_disconnect(id_cache)
+            # open db connector and cursor if not open already
+            if not (connector and cursor):
+                connector, cursor = connect_to_db_and_build_cursor()
+
+            if user_name_cache == '':
+                if id_cache == '':
+                    id_cache = line_parts[1]
+                for client in CLIENTS_ID_IP_PORT_NAME:
+                    if client[0] == id_cache:
+                        user_name_cache = client[3]
+                        break
+            reply_rotshild_layer += handle_disconnect(id_cache, user_name_cache, connector, cursor)
         # --------------
 
         # --------------
@@ -1010,7 +1063,7 @@ def check_user_input_thread(server_socket: socket):
                     table = PrettyTable()
                     # setting field names
                     fields = []
-                    for i in range(len(cursor.description)):
+                    for i in range(len(cursor.description)-1):
                         if i != 1:
                             fields.append(cursor.description[i][0].replace('_', ' ').title())
                         else:
@@ -1019,11 +1072,12 @@ def check_user_input_thread(server_socket: socket):
                     # adding rows
                     for row in rows:
                         row = list(row)
+                        del row[len(row)-1]  # the respawn place
                         for i in range(len(row)):
                             if i != 0 and i != 1:
                                 row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode('utf-8')
-                        row[0] = row[0].decode('utf-8')
-                        row[1] = '* * * * * * * *'
+                        row[0] = row[0].decode('utf-8')  # the user_name
+                        row[1] = '* * * * * * * *'  # the password
                         table.add_row(row)
                     # printing the table
                     print_ansi(text=str(table) + '\n', color='cyan', bold=True)
@@ -1292,7 +1346,8 @@ def initialize_sqlite_rdb():
                    " backpack BLOB,"
                    " energy_drinks BLOB,"
                    " exp BLOB,"
-                   " energy BLOB)")
+                   " energy BLOB,"
+                   " respawn_place BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
     set_db_read_write_permissions_to_only_owner()
 
@@ -1498,6 +1553,24 @@ def initialize_global_system_consts():
     # (0o600 - means read and write access only for the owner)
 
 
+def store_all_respawn_places():
+    """
+    Storing in the DB the current places of all the active clients on the map (for respawn later)
+    """
+
+    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, FERNET_ENCRYPTION
+
+    connector, cursor = connect_to_db_and_build_cursor()
+    for client in CLIENTS_ID_IP_PORT_NAME:
+        client_id = client[0]
+        client_user_name = client[3]
+        cursor.execute("UPDATE clients_info SET respawn_place = ? WHERE user_name = ?",
+                       (FERNET_ENCRYPTION.encrypt(str(PLAYER_PLACES_BY_ID[client_id]).replace("'", '').replace(' ', '')
+                                                  .encode('utf-8')), client_user_name.encode('utf-8')))
+    connector.commit()
+    close_connection_to_db_and_cursor(connector, cursor)
+
+
 def main():
 
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
@@ -1612,6 +1685,13 @@ def main():
             # tread pool executor and frees up any resources used by it.
             executor.shutdown(wait=True)
         print_ansi(text=' -----------> completed', color='green', italic=True)
+
+        print_ansi(text='   [storing respawn locations of active players]', new_line=False, color='cyan')
+        sys.stdout.flush()  # force flushing the buffer to the terminal
+        # if this exists, it means all initializations till retrieve_fernet_key_from_keyring were successfully executed
+        if FERNET_ENCRYPTION:
+            store_all_respawn_places()
+        print_ansi(text=' -------> completed', color='green', italic=True)
 
         print_ansi(text='   [freeing up last resources]', new_line=False, color='cyan')
         sys.stdout.flush()  # force flushing the buffer to the terminal
