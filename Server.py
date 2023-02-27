@@ -27,12 +27,11 @@ Headers API:                                                                    
             - login_status: fail [if wrong user name or password] or [the ID given to him] or already_active                       [only server sends]       |
             - first_inventory: [[weapon_name1]/[weapon_name2]...],                                                                 [only server sends]       |
                                [how much ammo?],                                                                                                             |
-                               [how much bombs?],                                                                                                            |
                                [how much med kits?],                                                                                                         |
                                [how much backpack?],                                                                                                         |
-                               [how much energy drinks?],                                                                                                    |
+                               [how much plasters?],                                                                                                         |
+                               [how much shoes?],                                                                                                            |
                                [how much exp?],                                                                                                              |
-                               [how much energy?],                                                                                                           |
                                ([the X respawn coordinate]-[the Y respawn coordinate])               (*NOTE: all in 1 line)                                  |
             - register_request: [user name],[password]                                                                             [only clients send]       |
             - register_status: taken [if the user name already exists] or success  or invalid                                      [only server sends]       |
@@ -41,18 +40,16 @@ Headers API:                                                                    
                                  - weapons [weapon name]                                                                                                     |
                                  + ammo [how much?]                                                                                                          |
                                  - ammo [how much?]                                                                                                          |
-                                 + bombs [how much?]                                                                                                         |
-                                 - bombs [how much?]                                                                                                         |
                                  + med_kits [how much?]                                                                                                      |
                                  - med_kits [how much?]                                                                                                      |
                                  + backpack [how much?]                                                                                                      |
                                  - backpack [how much?]                                                                                                      |
-                                 + energy_drinks [how much?]                                                                                                 |
-                                 - energy_drinks [how much?]                                                                                                 |
+                                 + plasters [how much?]                                                                                                      |
+                                 - plasters [how much?]                                                                                                      |
+                                 + shoes [how much?]                                                                                                         |
+                                 - shoes [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
-                                 + energy [how much?]                                                                                                        |
-                                 - energy [how much?]                                                                                                        |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
             - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id]                 [clients and server send] |
             - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
@@ -98,12 +95,11 @@ SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting an
 # ------------------------ Default DB values of a new client
 DEFAULT_WEAPONS = 'stick'
 DEFAULT_AMMO = 0
-DEFAULT_BOMBS = 0
 DEFAULT_MED_KITS = 0
 DEFAULT_BACKPACK = 0
-DEFAULT_ENERGY_DRINKS = 0
+DEFAULT_PLASTERS = 0
+DEFAULT_SHOES = 0
 DEFAULT_EXP = 0
-DEFAULT_ENERGY = 0
 # ------------------------
 
 # ------------------------ Running machine info
@@ -395,7 +391,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
             plsintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
 
         # save in PLAYER_PLACES_BY_ID dict
-        PLAYER_PLACES_BY_ID[given_id] = tuple(plsintext_inventory[8][1:-1].split(','))
+        PLAYER_PLACES_BY_ID[given_id] = tuple(plsintext_inventory[7][1:-1].split(','))
 
         print(">> ", end='')
         print_ansi(text='New client connected to the game', color='green', bold=True, underline=True)
@@ -413,8 +409,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                                                       f'{plsintext_inventory[4]},' \
                                                       f'{plsintext_inventory[5]},' \
                                                       f'{plsintext_inventory[6]},' \
-                                                      f'{plsintext_inventory[7]},' \
-                                                      f"{plsintext_inventory[8].replace(',', '-')}\r\n"
+                                                      f"{plsintext_inventory[7].replace(',', '-')}\r\n"
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
@@ -477,8 +472,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS, DEFAULT_MED_KITS, DEFAULT_BACKPACK, \
-        DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY, FERNET_ENCRYPTION
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, \
+        DEFAULT_EXP, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
         # user name and password can not contain spaces
@@ -498,12 +493,11 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     hashed_password = sha512_hash(password.encode('utf-8'))
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
-    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
     encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
+    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
+    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
-    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
     encrypted_spawn_place = FERNET_ENCRYPTION.encrypt(str(spawn_place).replace("'", '').replace(' ', '')
                                                       .encode('utf-8'))
 
@@ -512,26 +506,24 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                   hashed_password,
                   encrypted_default_weapons,
                   encrypted_default_ammo,
-                  encrypted_default_bombs,
                   encrypted_default_med_kits,
                   encrypted_default_backpack,
-                  encrypted_default_energy_drinks,
+                  encrypted_default_plasters,
+                  encrypted_default_shoes,
                   encrypted_default_exp,
-                  encrypted_default_energy,
                   encrypted_spawn_place)
     cursor.execute("INSERT INTO clients_info"
                    " (user_name,"
                    " hashed_password,"
                    " weapons,"
                    " ammo,"
-                   " bombs,"
                    " med_kits,"
                    " backpack,"
-                   " energy_drinks,"
+                   " plasters,"
+                   " shoes,"
                    " exp,"
-                   " energy,"
                    " respawn_place)"
-                   " VALUES (?,?,?,?,?,?,?,?,?,?,?)", new_client)
+                   " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
     connector.commit()
 
     print(">> ", end='')
@@ -580,8 +572,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     :return: <String> dead header with the ID of the dead client.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_BOMBS,\
-        DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_ENERGY_DRINKS, DEFAULT_EXP, DEFAULT_ENERGY, FERNET_ENCRYPTION
+    global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, \
+        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -599,34 +591,31 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     # encrypting the data to be saved (and hashing the password)
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
-    encrypted_default_bombs = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOMBS).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
     encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_energy_drinks = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY_DRINKS).encode('utf-8'))
+    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
+    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
-    encrypted_default_energy = FERNET_ENCRYPTION.encrypt(str(DEFAULT_ENERGY).encode('utf-8'))
     encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
-                                                        .encode('utf-8'))
+                                                      .encode('utf-8'))
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
     client_update = (encrypted_default_weapons,
                      encrypted_default_ammo,
-                     encrypted_default_bombs,
                      encrypted_default_med_kits,
                      encrypted_default_backpack,
-                     encrypted_default_energy_drinks,
+                     encrypted_default_plasters,
+                     encrypted_default_shoes,
                      encrypted_default_exp,
-                     encrypted_default_energy,
                      encrypted_respawn_place)
     cursor.execute("UPDATE clients_info"
                    " SET weapons = ?,"
                    " ammo = ?,"
-                   " bombs = ?,"
                    " med_kits = ?,"
                    " backpack = ?,"
-                   " energy_drinks = ?,"
+                   " plasters = ?,"
+                   " shoes = ?,"
                    " exp = ?,"
-                   " energy = ?,"
                    " respawn_place = ?"
                    " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
     connector.commit()
@@ -1341,12 +1330,11 @@ def initialize_sqlite_rdb():
                    " hashed_password BLOB,"
                    " weapons BLOB,"  # to store separated by ',' like- 'sniper,AR,sword' [can be: stick,sniper,AR,sword]
                    " ammo BLOB,"
-                   " bombs BLOB,"
                    " med_kits BLOB,"
                    " backpack BLOB,"
-                   " energy_drinks BLOB,"
+                   " plasters BLOB,"
+                   " shoes BLOB,"
                    " exp BLOB,"
-                   " energy BLOB,"
                    " respawn_place BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
     set_db_read_write_permissions_to_only_owner()

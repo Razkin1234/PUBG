@@ -9,7 +9,7 @@ SERVER_PORT = 56789
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # -------------------
 
-#my_socket.bind(('0.0.0.0', 62227))
+my_socket.bind(('0.0.0.0', 62227))
 my_socket.connect((SERVER_IP, SERVER_PORT))
 
 
@@ -55,7 +55,7 @@ def test_login_request(user_name: str, password: str):
     wait_for_reply()
 
 
-def test_dead(id: str, user_name: str):
+def test_dead(id: str):
     plaintext = f'Rotshild {id}\r\n' \
                 '\r\n' \
                 f'dead: {id}\r\n'
@@ -103,6 +103,6 @@ def test_update_inventory(header_info: str, id: str):
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')
 #test_update_inventory('+ weapons weapon_name1', '1')
-#test_dead('1', 'user1')  # BUG: to check if user name exists and active
+#test_dead('1')  # BUG: to check if user name exists and active
 #test_disconnect('1')
 #wait_for_reply()
