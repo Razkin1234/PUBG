@@ -40,15 +40,13 @@ class Player(Entity):
             'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0 , 'weapon_index': 0},
             'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1, 'weapon_index': 1},
             'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2},
-        }#max valeus = 6
+        }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
             'backpack': {'name': 'backpack','ui':1},
             'ammo': {'name': 'ammo','amount': 10,'ui':2},
             'boots': {'name': 'boots','speed': 1, 'graphic': '../graphics/items/boots.png','ui':3},
             'medkit': {'name': 'medkit','health': 50, 'graphic': '../graphics/items/medkit.png','ui':4},
-            'bendage': {'name': 'bendage','health': 7, 'graphic': '../graphics/items/bendage.png','ui':5},
-            'medkit2': {'name': 'medkit', 'health': 50, 'graphic': '../graphics/items/medkit.png', 'ui': 12}
-
+            'bendage': {'name': 'bendage','health': 7, 'graphic': '../graphics/items/bendage.png','ui':5}
         } #for all of the items we will have
 
         #magic
@@ -284,10 +282,9 @@ class Player(Entity):
         if not self.can_run:
             if current_time - self.run_timer >= self.run_duration:
                 self.can_run = True
-                self.speed = 5
+                self.speed = self.stats['speed']
             else:
-                self.speed = 10
-                print('sprrd')
+                self.speed = 16
 
         #ui screen
         if not self.can_press_i:
@@ -333,4 +330,9 @@ class Player(Entity):
         self.animate()
         self.move(self.speed)  # making the player move
         self.stop()
+
+        if 'boots' in self.items_on.keys(): #checks if to be faster if we have boots in inventory
+            self.speed = self.stats['speed'] + 2
+        else:
+            self.speed = self.stats['speed']
 

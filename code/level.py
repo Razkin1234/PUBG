@@ -262,7 +262,6 @@ class Level:
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
-
         if self.player.i_pressed:
             self.ui.ui_screen(self.player)
 
