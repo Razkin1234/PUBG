@@ -39,9 +39,17 @@ class Player(Entity):
         self.objects_on = {
             'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0 , 'weapon_index': 0},
             'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1, 'weapon_index': 1},
-            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2}
+            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2},
         }#max valeus = 6
-        self.items_on = {} #for all of the items we will have
+        self.items_on = {
+            'backpack': {'name': 'backpack','ui':1},
+            'ammo': {'name': 'ammo','amount': 10,'ui':2},
+            'boots': {'name': 'boots','speed': 1, 'graphic': '../graphics/items/boots.png','ui':3},
+            'medkit': {'name': 'medkit','health': 50, 'graphic': '../graphics/items/medkit.png','ui':4},
+            'bendage': {'name': 'bendage','health': 7, 'graphic': '../graphics/items/bendage.png','ui':5},
+            'medkit2': {'name': 'medkit', 'health': 50, 'graphic': '../graphics/items/medkit.png', 'ui': 12}
+
+        } #for all of the items we will have
 
         #magic
         self.create_magic = create_magic
@@ -60,7 +68,7 @@ class Player(Entity):
 
         #stats
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
-        self.health = self.stats['health'] #our current health
+        self.health = self.stats['health']-60 #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
         self.speed = self.stats['speed'] #the speed of the player
