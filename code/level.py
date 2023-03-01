@@ -24,7 +24,7 @@ class Level:
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
-        self.item_spites = YsortCameraGroup()
+        self.item_sprites = YsortCameraGroup()
 
         # attack sprites
         self.current_attack = None
@@ -57,6 +57,8 @@ class Level:
 
         # user interface
         self.ui = UI(self.player.objects_on,self.player.items_on)
+
+        self.item = Item
 
 
 
@@ -157,7 +159,9 @@ class Level:
         self.camera.x = self.player.rect.centerx
         self.camera.y = self.player.rect.centery
 
-        Item((1100,1000) , self.item_spites , "ammo") #item create
+        Item((1100,1000), self.item_sprites, "medkit") #item create
+        Item((1300,1000), self.item_sprites, "backpack") #item create
+
 
         #printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -258,7 +262,9 @@ class Level:
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
-        self.item_spites.custom_draw(self.camera)
+        self.item_sprites.custom_draw(self.camera)
+
+        self.item_sprites.item_picking(self.player)
 
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()

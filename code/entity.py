@@ -28,7 +28,6 @@ class Entity(pygame.sprite.Sprite):
                         self.hitbox.left = sprite.hitbox.right
                     self.direction.x = 0
 
-
         if direction == 'vertical':
             for sprite in self.obstacle_sprites:
                 if sprite.hitbox.colliderect(self.hitbox):

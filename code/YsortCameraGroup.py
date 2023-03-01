@@ -4,6 +4,7 @@ from settings import *
 from tile import Tile
 from player import Player
 from debug import debug
+import itertools
 
 class YsortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -53,5 +54,44 @@ class YsortCameraGroup(pygame.sprite.Group):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
+
+    def item_picking(self,player):
+        copy_items = self.sprites().copy()
+        for sprite in copy_items:
+            if sprite.rect.colliderect(player.hitbox):
+                if 'backpack' in player.items_on:
+                    count = 13
+                else: count = 10
+                for i in range(1,count):
+                    flag = True
+                    for item , item_value in player.items_on.items():
+                        if item_value['ui'] == i:
+                            flag = False
+                            break
+                    if flag: #we will put the item in this slott
+                        if sprite.sprite_type != "backpack":
+                            temp_dict = items_add_data[sprite.sprite_type].copy()
+                            temp_dict['ui'] = i
+                            counter = 0#for the loop that gives the dict name in player.itmes (can't have the same names)
+                            while True:
+                                if not str(counter) in player.items_on:
+                                    player.items_on[str(counter)] = temp_dict.copy()
+                                    temp_dict.clear()
+                                    sprite.kill()
+                                    break
+                                counter+=1
+                            break
+                        else:
+                            if 'backpack' in player.items_on:
+                                break
+                            else:
+                                temp_dict = items_add_data[sprite.sprite_type].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['backpack'] = temp_dict.copy()
+                                temp_dict.clear()
+                                sprite.kill()
+
+
+
 
 

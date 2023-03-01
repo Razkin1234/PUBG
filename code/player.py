@@ -44,9 +44,9 @@ class Player(Entity):
         self.items_on = {
             'backpack': {'name': 'backpack','ui':1},
             'ammo': {'name': 'ammo','amount': 10,'ui':2},
-            'boots': {'name': 'boots','speed': 1, 'graphic': '../graphics/items/boots.png','ui':3},
-            'medkit': {'name': 'medkit','health': 50, 'graphic': '../graphics/items/medkit.png','ui':4},
-            'bendage': {'name': 'bendage','health': 7, 'graphic': '../graphics/items/bendage.png','ui':5}
+            'boots': {'name': 'boots','speed': 1,'ui':3},
+            'medkit': {'name': 'medkit','health': 50,'ui':4},
+            'bendage': {'name': 'bendage','health': 7,'ui':5}
         } #for all of the items we will have
 
         #magic

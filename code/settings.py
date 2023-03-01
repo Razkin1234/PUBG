@@ -47,6 +47,14 @@ item_data = {
 	'medkit': {'health': 50, 'graphic': '../graphics/items/medkit.png'},
 	'bendage': {'health': 7, 'graphic': '../graphics/items/bendage.png'}
 }
+items_add_data = {
+            'backpack': {'name': 'backpack','ui':0},
+            'ammo': {'name': 'ammo','amount': 10,'ui':0},
+            'boots': {'name': 'boots','speed': 1,'ui':0},
+            'medkit': {'name': 'medkit','health': 50,'ui':0},
+            'bendage': {'name': 'bendage','health': 7,'ui':0}
+        } #for all of the items we will have
+
 
 #magic
 magic_data = {

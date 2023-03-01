@@ -245,7 +245,7 @@ class UI:
                                 items_copy = player.items_on.copy()
                                 del_flag = True
                                 for item, item_data in items_copy.items():
-                                    if 1 <= item_data['ui'] >= 12:
+                                    if 9 <= item_data['ui'] <= 12:
                                         del_flag = False
                                 if del_flag:
                                     del player.items_on[weapon]
