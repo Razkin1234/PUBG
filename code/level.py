@@ -12,6 +12,7 @@ from player import Player
 from typing import Dict
 from particles import AnimationPlayer
 from magic import MagicPlayer
+from item import Item
 
 class Level:
     def __init__(self):
@@ -23,6 +24,7 @@ class Level:
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
+        self.item_spites = YsortCameraGroup()
 
         # attack sprites
         self.current_attack = None
@@ -155,7 +157,7 @@ class Level:
         self.camera.x = self.player.rect.centerx
         self.camera.y = self.player.rect.centery
 
-
+        Item((1100,1000) , self.item_spites , "ammo") #item create
 
         #printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -179,6 +181,7 @@ class Level:
                                     Tile((x, y), [self.floor_sprites], 'floor', image_surf)
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
+
 
 
     def create_attack(self):
@@ -255,7 +258,7 @@ class Level:
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
-
+        self.item_spites.custom_draw(self.camera)
 
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()

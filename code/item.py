@@ -1,13 +1,10 @@
 import pygame
+from settings import *
 
-class Item:
-    def __init__(self):
-        self.plus_health = self.plus_health
-    def plus_health(self,heel,player):
-        """
-        gets how much to heel the player (player.health + heel) and the player
-        heel the player.health by the heel parameter we got
-        """
-        if player.health+heel >= 100:
-            player.health = 100
-        else: player.health += heel
+class Item(pygame.sprite.Sprite):
+    def __init__(self, pos, groups, item_type):
+        super().__init__(groups)
+        path = item_data[item_type]['graphic']
+        self.image = pygame.image.load(path).convert_alpha()
+        self.rect = self.image.get_rect(topleft=pos)
+        self.hitbox = self.rect.inflate(0, 0)  # if i want to overlap itemes

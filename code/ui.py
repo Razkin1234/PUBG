@@ -3,7 +3,6 @@ from settings import *
 from item import Item
 class UI:
     def __init__(self,objects_on,items_on):
-        self.item = Item()
         #general
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
@@ -70,6 +69,7 @@ class UI:
         self.replace_first_one = []
         self.replace_first_item = []
 
+        self.plus_health = self.plus_health
         #cooldowns
         self.can_press_w = True
         self.w_pressed_time = None
@@ -261,14 +261,14 @@ class UI:
                     for item , item_data in items_copy.items():
                         if item_data['ui'] == self.box_on[1]:
                             if item_data['name'] == 'medkit':
-                                self.item.plus_health(50,player)
+                                self.plus_health(50,player)
                                 objects_copy = player.items_on.copy() #deletes the medkit after the use
                                 for weapon, weapon_value in objects_copy.items():
                                     if weapon_value['ui'] == self.box_on[1]:
                                         if len(list(player.items_on.keys())) > 0:
                                             del player.items_on[weapon]
                             if item_data['name'] == 'bendage':
-                                self.item.plus_health(10,player)
+                                self.plus_health(10,player)
                                 objects_copy = player.items_on.copy() #deletes the medkit after the use
                                 for weapon, weapon_value in objects_copy.items():
                                     if weapon_value['ui'] == self.box_on[1]:
@@ -366,7 +366,14 @@ class UI:
 
 
 
-
+    def plus_health(self,heel,player):
+        """
+        gets how much to heel the player (player.health + heel) and the player
+        heel the player.health by the heel parameter we got
+        """
+        if player.health+heel >= 100:
+            player.health = 100
+        else: player.health += heel
 
     def cooldown(self):
         current_time = pygame.time.get_ticks()
