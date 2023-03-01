@@ -161,6 +161,13 @@ class Level:
 
         Item((1100,1000), self.item_sprites, "medkit") #item create
         Item((1300,1000), self.item_sprites, "backpack") #item create
+        Item((1400, 1000), self.item_sprites, "medkit")  # item create
+        Item((1500, 1000), self.item_sprites, "medkit")  # item create
+        Item((1600, 1000), self.item_sprites, "medkit")  # item create
+        Item((1700, 1000), self.item_sprites, "medkit")  # item create
+        Item((1100, 1100), self.item_sprites, "medkit")  # item create
+        Item((1100, 1200), self.item_sprites, "medkit")  # item create
+        Item((1100, 1300), self.item_sprites, "medkit")  # item create
 
 
         #printing the area around the player:

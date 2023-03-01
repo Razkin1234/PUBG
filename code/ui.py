@@ -279,14 +279,14 @@ class UI:
                     for item, item_data in items_copy.items():
                         if item_data['ui'] == self.box_on[1] + 9:
                             if item_data['name'] == 'medkit':
-                                self.item.plus_health(50, player)
+                                self.plus_health(50, player)
                                 objects_copy = player.items_on.copy()  # deletes the medkit after the use
                                 for weapon, weapon_value in objects_copy.items():
                                     if weapon_value['ui'] == self.box_on[1] + 9:
                                         if len(list(player.items_on.keys())) > 0:
                                             del player.items_on[weapon]
                             if item_data['name'] == 'bendage':
-                                self.item.plus_health(10, player)
+                                self.plus_health(10, player)
                                 objects_copy = player.items_on.copy()  # deletes the medkit after the use
                                 for weapon, weapon_value in objects_copy.items():
                                     if weapon_value['ui'] == self.box_on[1] + 9:
