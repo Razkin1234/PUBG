@@ -544,7 +544,11 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     :return: <String> Rotshild headers to describe the shot status - shot_place, hit_hp, shooter_id.
     """
 
-    return f'shot_place: {str(shot_place)}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
+    # now the shot_place it a tuple of strings, and when casting it to str it will be like - "('1', '1')".
+    # So changing it to be '(1,1)'
+    place = f'({shot_place[0]},{shot_place[1]})'
+
+    return f'shot_place: {shot_place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
@@ -629,8 +633,12 @@ def handle_player_place(place: tuple, id: str, image: str) -> str:
     # Updates the dict PLAYER_PLACES_BY_ID with the new place of the player
     PLAYER_PLACES_BY_ID[id] = place
 
+    # now the place it a tuple of strings, and when casting it to str it will be like - "('1', '1')".
+    # So changing it to be '(1,1)'
+    place = f'({place[0]},{place[1]})'
+
     # returning Rotshild headers with values according to the player's movement
-    return 'player_place: {}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(str(place), id, image)
+    return 'player_place: {}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(place, id, image)
 
 
 def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_socket: socket):

@@ -142,7 +142,7 @@ def test_player_place(place: str, image: str, id: str):
 #test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1')
 #test_disconnect('1')
-#test_shot_place('(1,1)', '8', '1')  # BUG?: Server returns with "'". (like - ('1','1'))
-#test_player_place('(2,2)', 'image_name', '1')  # BUG?: Server returns with "'". (like - ('1','1'))
+#test_shot_place('(1,1)', '8', '1')
+#test_player_place('(1,2)', 'image_name', '1')
 #wait_for_reply()
 # -------------------------------------------------
