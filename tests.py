@@ -100,9 +100,49 @@ def test_update_inventory(header_info: str, id: str):
     print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
 
 
+def test_shot_place(place: str, hp: str, id: str):
+    plaintext = f'Rotshild {id}\r\n' \
+                '\r\n' \
+                f'shot_place: {place}\r\n' \
+                f'hit_hp: {hp}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    try:
+        payload_bytes = my_socket.send(encoded)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
+
+    wait_for_reply()
+
+
+def test_player_place(place: str, image: str, id: str):
+    plaintext = f'Rotshild {id}\r\n' \
+                '\r\n' \
+                f'player_place: {place}\r\n' \
+                f'image: {image}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    try:
+        payload_bytes = my_socket.send(encoded)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
+
+    wait_for_reply()
+
+
+# -------------------------------------------------
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')
 #test_update_inventory('+ weapons weapon_name1', '1')
-#test_dead('1')  # BUG: to check if user name exists and active
+#test_dead('1')
 #test_disconnect('1')
+#test_shot_place('(1,1)', '8', '1')  # BUG?: Server returns with "'". (like - ('1','1'))
+#test_player_place('(2,2)', 'image_name', '1')  # BUG?: Server returns with "'". (like - ('1','1'))
 #wait_for_reply()
+# -------------------------------------------------

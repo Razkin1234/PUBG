@@ -51,13 +51,12 @@ Headers API:                                                                    
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
-            - player_place: ([the X coordinate],[the Y coordinate]) [when server sends comes with moved_player_id]                 [clients and server send] |
-            - moved_player_id: [the ID of the player who moved] [comes with player_place]                                          [only server sends]       |
-            - image: [the name of the file with the image of the player who moved] [comes with player_place]                       [clients and server send] |
-            - shot_place: ([the X coordinate],[the Y coordinate]) [when client sends comes with hit_hp]                            [clients and server send] |
-            - hit_id: [the ID of the hitted client] [comes with hit_hp and shooter_id]                                             [only server sends]       |
-            - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place or hit_id and shooter_id]    [clients ans server send] |
-            - shooter_id: [the ID of the client who shoot the shot] [comes with hit_id and hit_hp]                                 [only server sends]       |
+            - player_place: ([the X coordinate],[the Y coordinate]) [comes with image and when server sends moved_player_id]       [clients and server send] |
+            - moved_player_id: [the ID of the player who moved] [comes with player_place and image]                                [only server sends]       |
+            - image: [the name of the file with the image of the player who moved] [comes with player_place and image]             [clients and server send] |
+            - shot_place: ([the X coordinate],[the Y coordinate]) [comes with hit_hp and when server sends then shooter_id too]    [clients and server send] |
+            - hit_hp: [the amount of heal points to take from a hitted client] [comes with shot_place and shooter_id if server]    [clients ans server send] |
+            - shooter_id: [the ID of the client who shoot the shot] [comes with shot_place and hit_hp]                             [only server sends]       |
             - dead: [the ID of the dead client]                                                                                    [clients ans server send] |
             - chat: [the info of the message]  [comes with user_name when server sends]                                            [clients and server send] |
             - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
@@ -535,30 +534,17 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
 
 def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     """
-    Checking if the shot hit a client.
-    if no - building Rotshild headers to inform all clients about where the shot is,
-            and who is the shooter (so he knows not to print the shot again).
-    if yes - building Rotshild headers to inform all clients there was a hit (so they stop showing the shot),
-             the ID of the hitted one (so he knows to take down hp), how much hp to take off,
-             and the ID of the shooter (so he knows to increase exp).
+    Return the following Rotshild headers:
+    *shot_place - to inform the clients about the shot location.
+    *hit_hp - because if a client got hit he should know how much HP to take down.
+    *shooter_id - for the clients to ignore self-fire.
     :param shot_place: <Tuple> the place of the shot as (X,Y).  [X and Y are str]
     :param hp: <String> the amount of heal point the shot takes down if hit.
     :param shooter_id: <String> the ID of the shooter client.
-    :return: <String> Rotshild headers to describe the shot status.
-             if not hit then shot_place and shooter_id.
-             if hit then hit_id and hit_hp and shooter_id.
+    :return: <String> Rotshild headers to describe the shot status - shot_place, hit_hp, shooter_id.
     """
-    global PLAYER_PLACES_BY_ID
 
-    # checking if one of the players got hit
-    for player_id, player_place in PLAYER_PLACES_BY_ID.items():
-        # checking if current client was hitted
-        if player_place[0] == shot_place[0] and player_place[1] == shot_place[1]:
-            # if got here there was a hit.
-            return f'hit_id: {player_id}\r\nhit_hp: {hp}\r\nshooter_id: {shooter_id}\r\n'
-
-    # if got here then no one got hit so sending to all the clients the shot place and the shooter ID
-    return f'shot_place: {str(shot_place)}\r\nshooter_id: {shooter_id}\r\n'
+    return f'shot_place: {str(shot_place)}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
@@ -712,7 +698,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
 
         # --------------
-        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+        # in this header clients should check the shooter_id so they wont take self-fire.
         elif line_parts[0] == 'shot_place:':
             # looking for the hit_hp header
             for l in lines:
@@ -1382,9 +1368,11 @@ def get_public_ip() -> str:
                 if response.status_code == 200:  # (200 is a success HTTP status code)
                     if url in ['https://api.ipify.org?format=json', 'https://api.myip.com/']:
                         # response is JSON object
-                        return response.json()['ip']
+                        if response.json()['ip'] != '':  # some APIs may reply with empty strings
+                            return response.json()['ip']
                     # response is plaintext
-                    return response.text.strip()
+                    if response.text.strip() != '':  # some APIs may reply with empty strings
+                        return response.text.strip()
             except:
                 pass
     # ----------------
