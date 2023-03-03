@@ -56,7 +56,7 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on)
+        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites)
 
         self.item = Item
 
@@ -161,7 +161,7 @@ class Level:
 
         Item((1100,1000), self.item_sprites, "medkit") #item create
         Item((1300,1000), self.item_sprites, "backpack") #item create
-        Item((1400, 1000), self.item_sprites, "medkit")  # item create
+        Item((1400, 1000), self.item_sprites, "boots")  # item create
         Item((1500, 1000), self.item_sprites, "medkit")  # item create
         Item((1600, 1000), self.item_sprites, "medkit")  # item create
         Item((1700, 1000), self.item_sprites, "medkit")  # item create
@@ -280,5 +280,6 @@ class Level:
         self.ui.display(self.player)
         if self.player.i_pressed:
             self.ui.ui_screen(self.player)
+        debug(self.player.speed)
 
 

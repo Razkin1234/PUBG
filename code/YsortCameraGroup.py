@@ -57,39 +57,49 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def item_picking(self,player):
         copy_items = self.sprites().copy()
-        for sprite in copy_items:
-            if sprite.rect.colliderect(player.hitbox):
-                if 'backpack' in player.items_on:
-                    count = 13
-                else: count = 10
-                for i in range(1,count):
-                    flag = True
-                    for item , item_value in player.items_on.items():
-                        if item_value['ui'] == i:
-                            flag = False
-                            break
-                    if flag: #we will put the item in this slott
-                        if sprite.sprite_type != "backpack":
-                            temp_dict = items_add_data[sprite.sprite_type].copy()
-                            temp_dict['ui'] = i
-                            counter = 0#for the loop that gives the dict name in player.itmes (can't have the same names)
-                            while True:
-                                if not str(counter) in player.items_on:
-                                    player.items_on[str(counter)] = temp_dict.copy()
-                                    temp_dict.clear()
-                                    sprite.kill()
-                                    break
-                                counter+=1
-                            break
-                        else:
-                            if 'backpack' in player.items_on:
+        if player.can_pick_item:
+            for sprite in copy_items:
+                if sprite.rect.colliderect(player.hitbox):
+                    if 'backpack' in player.items_on:
+                        count = 13
+                    else: count = 10
+                    for i in range(1,count):
+                        flag = True
+                        for item , item_value in player.items_on.items():
+                            if item_value['ui'] == i:
+                                flag = False
                                 break
-                            else:
+                        if flag: #we will put the item in this slott
+                            if sprite.sprite_type != "backpack" and sprite.sprite_type != 'boots':
                                 temp_dict = items_add_data[sprite.sprite_type].copy()
                                 temp_dict['ui'] = i
-                                player.items_on['backpack'] = temp_dict.copy()
-                                temp_dict.clear()
-                                sprite.kill()
+                                counter = 0#for the loop that gives the dict name in player.itmes (can't have the same names)
+                                while True:
+                                    if not str(counter) in player.items_on:
+                                        player.items_on[str(counter)] = temp_dict.copy()
+                                        temp_dict.clear()
+                                        sprite.kill()
+                                        break
+                                    counter+=1
+                                break
+                            elif sprite.sprite_type == 'backpack':
+                                if 'backpack' in player.items_on:
+                                    break
+                                else:
+                                    temp_dict = items_add_data[sprite.sprite_type].copy()
+                                    temp_dict['ui'] = i
+                                    player.items_on['backpack'] = temp_dict.copy()
+                                    temp_dict.clear()
+                                    sprite.kill()
+                            elif sprite.sprite_type == 'boots':
+                                if 'boots' in player.items_on:
+                                    break
+                                else:
+                                    temp_dict = items_add_data[sprite.sprite_type].copy()
+                                    temp_dict['ui'] = i
+                                    player.items_on['boots'] = temp_dict.copy()
+                                    temp_dict.clear()
+                                    sprite.kill()
 
 
 

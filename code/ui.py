@@ -2,10 +2,11 @@ import pygame
 from settings import *
 from item import Item
 class UI:
-    def __init__(self,objects_on,items_on):
+    def __init__(self,objects_on,items_on,item_sprites):
         #general
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
+        self.item_sprites = item_sprites
 
         #bar setup
         self.health_bar_rect = pygame.Rect(10,10,HEALTH_BAR_WIDTH,BAR_HEIGHT)
@@ -225,6 +226,9 @@ class UI:
                     for weapon, weapon_value in objects_copy.items():
                         if weapon_value['ui'] == self.box_on[1]:
                             if weapon != 'backpack':
+                                player.can_pick_item = False
+                                player.drop_item_time = pygame.time.get_ticks()
+                                Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                 del player.items_on[weapon]
                             else: #only for the backpack erasing
                                 items_copy = player.items_on.copy()
@@ -233,13 +237,19 @@ class UI:
                                     if 10 <= item_data['ui'] <= 12:
                                         del_flag = False
                                 if del_flag:
+                                    player.can_pick_item = False
+                                    player.drop_item_time = pygame.time.get_ticks()
+                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                     del player.items_on[weapon]
 
-                else:
+                else: #for the backpack items
                     objects_copy = player.items_on.copy()
                     for weapon, weapon_value in objects_copy.items():
                         if weapon_value['ui'] - 9 == self.box_on[1]:
                             if weapon != 'backpack':
+                                player.can_pick_item = False
+                                player.drop_item_time = pygame.time.get_ticks()
+                                Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                 del player.items_on[weapon]
                             else:  # only for the backpack erasing
                                 items_copy = player.items_on.copy()
@@ -248,6 +258,9 @@ class UI:
                                     if 9 <= item_data['ui'] <= 12:
                                         del_flag = False
                                 if del_flag:
+                                    player.can_pick_item = False
+                                    player.drop_item_time = pygame.time.get_ticks()
+                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                     del player.items_on[weapon]
                                     self.box_on[0] = 'item'
                                     self.box_on[1] += 6

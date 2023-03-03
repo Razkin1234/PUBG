@@ -49,6 +49,11 @@ class Player(Entity):
             'bendage': {'name': 'bendage','health': 7,'ui':5}
         } #for all of the items we will have
 
+        #items picking:
+        self.can_pick_item = True
+        self.drop_item_time = None
+        self.pick_item_cooldown = 550
+
         #magic
         self.create_magic = create_magic
         self.magic_index = 0 #the magic index we will use
@@ -290,6 +295,11 @@ class Player(Entity):
         if not self.can_press_i:
             if current_time - self.i_pressed_time >= self.i_pressed_cooldown:
                 self.can_press_i = True
+
+        #item picking after droping theme:
+        if not self.can_pick_item:
+            if current_time - self.drop_item_time >= self.pick_item_cooldown:
+                self.can_pick_item = True
 
     def animate(self): #shows us the animations
         animation = self.animations[self.status]
