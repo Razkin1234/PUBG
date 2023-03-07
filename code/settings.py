@@ -44,10 +44,26 @@ weapon_data = {
 	'sai':{'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png'}
 	}
 
+item_data = {
+	'backpack' : {'graphic' : '../graphics/items/backpack.png'},
+	'ammo' : {'amount': 10,'graphic': '../graphics/items/ammo.png' },
+	'boots': {'speed': 1,'graphic': '../graphics/items/boots.png'},
+	'medkit': {'health': 50, 'graphic': '../graphics/items/medkit.png'},
+	'bendage': {'health': 7, 'graphic': '../graphics/items/bendage.png'}
+}
+items_add_data = {
+            'backpack': {'name': 'backpack','ui':0},
+            'ammo': {'name': 'ammo','amount': 10,'ui':0},
+            'boots': {'name': 'boots','speed': 1,'ui':0},
+            'medkit': {'name': 'medkit','health': 50,'ui':0},
+            'bendage': {'name': 'bendage','health': 7,'ui':0}
+        } #for all of the items we will have
+
+
 #magic
 magic_data = {
-	'flame': {'strength': 5,'cost': 20,'graphic':'../graphics/particles/flame/fire.png'},
-	'heal': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/heal/heal.png'},
+	'flame': {'strength': 5,'cost': 20,'graphic':'../graphics/particles/flame/ferari.png'},
+	'heal': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/heal/teleport.png'},
 	'shield': {'strength': 20,'cost': 10,'graphic':'../graphics/particles/shield/shield.png'}}
 
 #enemy

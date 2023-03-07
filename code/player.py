@@ -39,10 +39,22 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
 
         self.objects_on = {
-            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0},
-            'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1}
-        }#max valeus = 6
-        self.items_on = {} #for all of the items we will have
+            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0 , 'weapon_index': 0},
+            'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1, 'weapon_index': 1},
+            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2},
+        }#max valeus without backpack = 6 , max valeu with backpack = 9
+        self.items_on = {
+            'backpack': {'name': 'backpack','ui':1},
+            'ammo': {'name': 'ammo','amount': 10,'ui':2},
+            'boots': {'name': 'boots','speed': 1,'ui':3},
+            'medkit': {'name': 'medkit','health': 50,'ui':4},
+            'bendage': {'name': 'bendage','health': 7,'ui':5}
+        } #for all of the items we will have
+
+        #items picking:
+        self.can_pick_item = True
+        self.drop_item_time = None
+        self.pick_item_cooldown = 550
 
         #magic
         self.create_magic = create_magic
@@ -61,7 +73,7 @@ class Player(Entity):
 
         #stats
         self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
-        self.health = self.stats['health'] #our current health
+        self.health = self.stats['health']-60 #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
         self.speed = self.stats['speed'] #the speed of the player
@@ -277,15 +289,19 @@ class Player(Entity):
         if not self.can_run:
             if current_time - self.run_timer >= self.run_duration:
                 self.can_run = True
-                self.speed = 5
+                self.speed = self.stats['speed']
             else:
-                self.speed = 10
-                print('sprrd')
+                self.speed = 16
 
         #ui screen
         if not self.can_press_i:
             if current_time - self.i_pressed_time >= self.i_pressed_cooldown:
                 self.can_press_i = True
+
+        #item picking after droping theme:
+        if not self.can_pick_item:
+            if current_time - self.drop_item_time >= self.pick_item_cooldown:
+                self.can_pick_item = True
 
     def animate(self): #shows us the animations
         animation = self.animations[self.status]
@@ -326,3 +342,11 @@ class Player(Entity):
         self.animate()
         self.move(self.speed)  # making the player move
         self.stop()
+
+
+        if 'boots' in self.items_on.keys(): #checks if to be faster if we have boots in inventory
+            self.speed = self.stats['speed'] + 2
+        else:
+            self.speed = self.stats['speed']
+
+

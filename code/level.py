@@ -13,7 +13,7 @@ from particles import AnimationPlayer
 from magic import MagicPlayer
 import socket
 from Incoming_packets import Incoming_packets
-
+from item import Item
 
 
 """""
@@ -90,6 +90,8 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player):
             pass
 
 
+
+
 class Level:
     def __init__(self):
         # get the display surface
@@ -101,6 +103,8 @@ class Level:
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
         self.bullet_group = YsortCameraGroup()
+        self.item_sprites = YsortCameraGroup()
+
 
         # attack sprites
         self.current_attack = None
@@ -112,8 +116,8 @@ class Level:
         self.floor_update_time = 0
         self.player_first_location = (22*TILESIZE,33*TILESIZE)
         self.layout :dict[str: list[list[int]]]={
-            'floor': import_csv_layout('../map/map_Floor2.csv'),
-            'boundary': import_csv_layout('../map/map_FloorBlocks2.csv')
+            'floor': import_csv_layout('../map/map_Floor.csv'),
+            'boundary': import_csv_layout('../map/map_FloorBlocks.csv')
             #,'entities': import_csv_layout('../map/map_Entities.csv')
         }
         self.graphics: dict[str: dict[int: pygame.Surface]] = {
@@ -133,7 +137,9 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on)
+        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites)
+
+        self.item = Item
 
 
 
@@ -232,6 +238,15 @@ class Level:
         self.camera.x = self.player.rect.centerx
         self.camera.y = self.player.rect.centery
 
+        Item((1100,1000), self.item_sprites, "medkit") #item create
+        Item((1300,1000), self.item_sprites, "backpack") #item create
+        Item((1400, 1000), self.item_sprites, "boots")  # item create
+        Item((1500, 1000), self.item_sprites, "medkit")  # item create
+        Item((1600, 1000), self.item_sprites, "medkit")  # item create
+        Item((1700, 1000), self.item_sprites, "medkit")  # item create
+        Item((1100, 1100), self.item_sprites, "medkit")  # item create
+        Item((1100, 1200), self.item_sprites, "medkit")  # item create
+        Item((1100, 1300), self.item_sprites, "medkit")  # item create
 
 
         #printing the area around the player:
@@ -256,6 +271,7 @@ class Level:
                                     Tile((x, y), [self.floor_sprites], 'floor', image_surf)
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
+
 
 
     def create_attack(self):
@@ -344,13 +360,14 @@ class Level:
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
+        self.item_sprites.custom_draw(self.camera)
 
+        self.item_sprites.item_picking(self.player)
 
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic()
         self.ui.display(self.player)
-
         if self.player.i_pressed:
             self.ui.ui_screen(self.player)
