@@ -73,6 +73,8 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
+            - enemy_player_place_image_type_hit: [id_enemy],([the X coordinate],[the Y coordinate]),[image],[type_of_enemy],[Yes or No(if hitting)] [only server sends]  |
+            - hit_an_enemy: [id_of_enemy]                                                                                          [only clients sends]      |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -179,9 +181,36 @@ PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
 # ------------------------- General
+# List of all of the IDs of enemy [ID1,ID2,ID3,....]
+SAVE_ID_FOR_ENEMY = []
+# Dictionary that the key is the id of enemy like ID:[[place_of_enemy],[[id_of_player_locked]],[number_of_lives_enemy],[type_enemy]]
+ENEMY_BY_ID = {}
 # Opening for server's packets (after this are the headers)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
 # -------------------------
+
+
+def handle_locking_on_enemy(enemy_id, player_id):
+    """
+    changing the enemy who got shot to locked on the one who shot him
+    :param player_id:
+    :param enemy_id:
+    :return: none
+    """
+    global ENEMY_BY_ID
+    ENEMY_BY_ID[enemy_id][1] = player_id
+
+
+def first_player_locked_on():
+    """
+    i am checking if there is only one player on the map. if there
+    so i am setting all of the enemies to be locked on him
+    """
+    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, SAVE_ID_FOR_ENEMY
+    if len(PLAYER_PLACES_BY_ID) == 1:
+        client_id = CLIENTS_ID_IP_PORT_NAME[0][0]
+        for id_enemy in SAVE_ID_FOR_ENEMY:
+            ENEMY_BY_ID[id_enemy][1] = client_id
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -725,7 +754,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
-                                                      .encode('utf-8'))
+                                                        .encode('utf-8'))
 
     # Initializing the inventory (the DB values but for user_name, password and coins) to default
     client_update = (encrypted_default_weapons,
@@ -926,6 +955,13 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
         # --------------
 
+        # --------------
+        elif line_parts[0] == 'hit_an_enemy:':
+            if id_cache == '':
+                id_cache = lines[0].split()[1]
+            handle_locking_on_enemy(line_parts[1], id_cache)
+        # --------------
+
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT_NAME:
@@ -1075,7 +1111,7 @@ def check_user_input_thread(server_socket: socket):
                         # visible on the screen, but the program will see it like the last char was deleted,
                         # so it wont effect the functionality of the code. It may only confuse the user because he
                         # will see like it didn't delete anything while it does.
-                        if input_string != '' and input_string[len(input_string)-1] != '\x08':  # if it is not empty
+                        if input_string != '' and input_string[len(input_string) - 1] != '\x08':  # if it is not empty
                             input_string = input_string[:-1]  # remove last character
                         else:
                             input_string += '\x08'
@@ -1191,7 +1227,7 @@ def check_user_input_thread(server_socket: socket):
                     table = PrettyTable()
                     # setting field names
                     fields = []
-                    for i in range(len(cursor.description)-1):
+                    for i in range(len(cursor.description) - 1):
                         if i != 1:
                             fields.append(cursor.description[i][0].replace('_', ' ').title())
                         else:
@@ -1200,7 +1236,7 @@ def check_user_input_thread(server_socket: socket):
                     # adding rows
                     for row in rows:
                         row = list(row)
-                        del row[len(row)-1]  # the respawn place
+                        del row[len(row) - 1]  # the respawn place
                         for i in range(len(row)):
                             if i != 0 and i != 1:
                                 row[i] = FERNET_ENCRYPTION.decrypt(row[i]).decode('utf-8')
@@ -1446,7 +1482,7 @@ def retrieve_fernet_key_from_keyring():
         user_names = [FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3,
                       FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5]
         for _ in range(len(user_names)):
-            index = randint(0, len(user_names)-1)
+            index = randint(0, len(user_names) - 1)
             key = Fernet.generate_key().decode('utf-8')
             keyring.set_password(SERVICE_NAME, user_names[index], key)
             if index == 0:
@@ -1778,7 +1814,6 @@ def store_all_respawn_places():
 
 
 def main():
-
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
         SHUTDOWN_INFORMING_EVENT, CLOSING_THREADS_EVENT
 
@@ -1838,6 +1873,7 @@ def main():
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
         while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
+            first_player_locked_on()                                                                              # !!
             try:                                                                                                  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
             except socket_timeout:                                                                                # !!
