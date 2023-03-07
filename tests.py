@@ -15,7 +15,7 @@ my_socket.connect((SERVER_IP, SERVER_PORT))
 
 def wait_for_reply():
     print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(1024)
+    ciphertext_reply = my_socket.recv(4096)
     encoded_reply = ciphertext_reply
     plaintext_reply = encoded_reply.decode('utf-8')
     print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
@@ -136,6 +136,23 @@ def test_player_place(place: str, image: str, id: str):
     wait_for_reply()
 
 
+def test_object_update(header_info: str, id: str):
+    plaintext = f'Rotshild {id}\r\n' \
+                '\r\n' \
+                f'object_update: {header_info}\r\n'
+
+    encoded = plaintext.encode('utf-8')
+
+    try:
+        payload_bytes = my_socket.send(encoded)
+    except Exception as ex:
+        print(f'ERROR: {ex}')
+
+    print(f'{str(payload_bytes)} bytes of inventory_update sent successfully')
+
+    wait_for_reply()
+
+
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')
@@ -144,5 +161,6 @@ def test_player_place(place: str, image: str, id: str):
 #test_disconnect('1')
 #test_shot_place('(1,1)', '8', '1')
 #test_player_place('(1,2)', 'image_name', '1')
+#test_object_update('drop-med_kits-(1,1)-2', '1')
 #wait_for_reply()
 # -------------------------------------------------

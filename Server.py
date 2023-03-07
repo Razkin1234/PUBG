@@ -61,6 +61,18 @@ Headers API:                                                                    
             - chat: [the info of the message]  [comes with user_name when server sends]                                            [clients and server send] |
             - server_shutdown: by_user [if closed by the user] or error [if closed because of an error]                            [only server sends]       |
             - disconnect: [the ID of the clients]                                                                                  [clients ans server send] |
+            - object_update: pick or drop-[object type]-([X],[Y])-[amount]/pick or drop-[object type]-([X],[Y])-[amount]...        [clients and server send] |
+                            !!! the structure in the previous line is for when clients send.                                                                 |
+                            !!! when server sends there is also the sender client ID and '?' in the beginning of the header regular info, see below.         |
+                            [sender ID]?pick or drop-[object type]-([X],[Y])-[amount]/pick or drop-[object type]-([X],[Y])-[amount]...                       |
+              [between each change there is '/']                                                                                                             |
+              [between each part in a single change there is '-']                                                                                            |
+              [between the sender client ID and the regular header info (when server sends) there is '?']                                                    |
+            - first_objects_position: [type]-([X],[Y])|[amount];([X],[Y])|[amount]\[type]-([X],[Y])|[amount];([X],[Y])|[amount]... [only server sends]       |
+              [between the object type and the places there is '-']                                                                                          |
+              [between the place and the amount there is '|']                                                                                                |
+              [between the places there is ';']                                                                                                              |
+              [between each type there is '/']                                                                                                               |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -79,7 +91,7 @@ from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
 from cryptography.fernet import Fernet
-from random import randint
+from random import randint, choice
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -89,16 +101,6 @@ SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting an
 # check the main loop trigger event sometimes.
 # The bigger you'll set this timeout - you will check the trigger event less often,
 # but your chances of losing packets are smaller.
-# ------------------------
-
-# ------------------------ Default DB values of a new client
-DEFAULT_WEAPONS = 'stick'
-DEFAULT_AMMO = 0
-DEFAULT_MED_KITS = 0
-DEFAULT_BACKPACK = 0
-DEFAULT_PLASTERS = 0
-DEFAULT_SHOES = 0
-DEFAULT_EXP = 0
 # ------------------------
 
 # ------------------------ Running machine info
@@ -136,13 +138,47 @@ FAKE_FERNET_KEY_4 = 'fake_fernet_4'  # a fake Fernet key
 FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
-# ------------------------ General
+# ------------------------ Objects
+DEFAULT_WEAPONS = 'stick'  #
+DEFAULT_AMMO = 0           #
+DEFAULT_MED_KITS = 0       # DEFAULT
+DEFAULT_BACKPACK = 0       # AMOUNTS
+DEFAULT_PLASTERS = 0       #
+DEFAULT_SHOES = 0          #
+DEFAULT_EXP = 0            #
+
+MAX_SIZE_FOR_AMMO_PACKAGE = 30
+MIN_SIZE_FOR_AMMO_PACKAGE = 10
+MAX_SIZE_FOR_MEDKITS_PACKAGE = 2
+MIN_SIZE_FOR_MEDKITS_PACKAGE = 1
+MAX_SIZE_FOR_BACKPACKS_PACKAGE = 1
+MIN_SIZE_FOR_BACKPACKS_PACKAGE = 1
+MAX_SIZE_FOR_PLASTERS_PACKAGE = 5
+MIN_SIZE_FOR_PLASTERS_PACKAGE = 1
+MAX_SIZE_FOR_SHOES_PACKAGE = 1
+MIN_SIZE_FOR_SHOES_PACKAGE = 1
+MAX_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
+MIN_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
+
+# The optional spawn places for objects on the map as (X,Y)   [X and Y are str]
+OBJECTS_SPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
+# the current existing objects on the map as {str:{(str,str):int,},}
+# for each object type (key) it will be like {(X,Y):amount, (X,Y):amount...}       [X, Y are str and amount is int]
+OBJECTS_PLACES = {'ammo': {}, 'med_kits': {}, 'backpacks': {}, 'plasters': {}, 'shoes': {}, 'exp': {}}
+# The amount of each object to be on the map every moment
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters': 120, 'shoes': 40}
+# ------------------------
+
+# ------------------------ Players
 # The optional respawn places on the map as (X,Y)   [X and Y are str]
 RESPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
 # IPs, PORTs, IDs and user names of all clients as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 CLIENTS_ID_IP_PORT_NAME = []
 # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 PLAYER_PLACES_BY_ID = {}
+# -------------------------
+
+# ------------------------- General
 # Opening for server's packets (after this are the headers)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
 # -------------------------
@@ -256,6 +292,76 @@ def sha512_hash(data: bytes) -> bytes:
     return hash_object.digest()
 
 
+def handle_object_update(header_data: str, sender_id: str) -> str:
+    """
+    Updates the object places global dict.
+    :param header_data: <String> the data of the object_update header.
+    :param sender_id: <String> the ID of the sender client (Ill add it to the reply header so he will know to ignore it)
+    :return: <String> object_update header to send to the clients.
+    """
+
+    global OBJECTS_PLACES
+
+    reply_header = 'object_update: ' + sender_id + '?' + header_data
+    changes = header_data.split('/')
+    for change in changes:
+        operation, object_type, place, amount = change.split('-')
+        place = tuple(place[1:-1].split(','))  # converting the place from str to tuple
+        amount = int(amount)  # converting the amount from str to int
+        if operation == 'pick':
+            if place in OBJECTS_PLACES[object_type] and OBJECTS_PLACES[object_type][place] >= amount:
+                # updating the old place with the new amount
+                OBJECTS_PLACES[object_type][place] -= amount
+                if OBJECTS_PLACES[object_type][place] == 0:
+                    del OBJECTS_PLACES[object_type][place]
+                # generating a new place to spawn this object in
+                spawn_place = random_spawn_place('object')
+                # saving the new place
+                if spawn_place in OBJECTS_PLACES[object_type]:
+                    OBJECTS_PLACES[object_type][spawn_place] += amount
+                else:
+                    OBJECTS_PLACES[object_type][spawn_place] = amount
+                # add the new place to the reply header
+                str_spawn_place = str(spawn_place).replace("'", '').replace(' ', '')
+                reply_header += f'/drop-{object_type}-{str_spawn_place}-{str(amount)}'
+        else:
+            removed_places_and_amounts = {}  # will save the information that we need for the reply message
+            if not object_type == 'exp':
+                # replacing a random object of this type on the map with the drop place
+                left_to_remove = amount  # help in splitting the random delete of needed
+                # delete the same amount from the map as the drop amount
+                while left_to_remove != 0:
+                    while True:
+                        random_place = choice(list(OBJECTS_PLACES[object_type].keys()))
+                        if not random_place == place:
+                            break
+                    random_place_amount = OBJECTS_PLACES[object_type][random_place]
+                    if random_place_amount < left_to_remove:
+                        removed_places_and_amounts[random_place] = random_place_amount
+                        del OBJECTS_PLACES[object_type][random_place]
+                        left_to_remove -= random_place_amount
+                    elif random_place_amount > left_to_remove:
+                        removed_places_and_amounts[random_place] = left_to_remove
+                        OBJECTS_PLACES[object_type][random_place] -= left_to_remove
+                        left_to_remove = 0
+                    else:
+                        removed_places_and_amounts[random_place] = random_place_amount
+                        del OBJECTS_PLACES[object_type][random_place]
+                        left_to_remove = 0
+            # add the drop objects to the global dict
+            if place in OBJECTS_PLACES[object_type]:
+                OBJECTS_PLACES[object_type][place] += amount
+            else:
+                OBJECTS_PLACES[object_type][place] = amount
+            # add the object we removed to the reply message
+            for remove_place in removed_places_and_amounts:
+                str_remove_place = str(remove_place).replace("'", '').replace(' ', '')
+                str_remove_amount = str(removed_places_and_amounts[remove_place])
+                reply_header += f'/pick-{object_type}-{str_remove_place}-{str_remove_amount}'
+
+    return reply_header + '\r\n'
+
+
 def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     """
     Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list and saving its place to
@@ -351,6 +457,29 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
     connector.commit()
 
 
+def get_current_object_position_header() -> str:
+    """
+    Reading the data from the OBJECTS_PLACS global dict and returning it in first_object_position header structure.
+    :return: <String> first_object_position header.
+    """
+
+    global OBJECTS_PLACES
+
+    objects_position = ''
+    for object_type in OBJECTS_PLACES:
+        objects_position += object_type + '-'
+        for place in OBJECTS_PLACES[object_type]:
+            str_place = str(place).replace("'", '').replace(' ', '')
+            str_amount = str(OBJECTS_PLACES[object_type][place])
+            objects_position += str_place + '|' + str_amount + ';'
+        objects_position = objects_position[:-1] + '/'
+    objects_position = objects_position[:-1]
+    if objects_position[-1] == 'p':  # if there is exp on the map at the moment
+        objects_position += '-'
+
+    return objects_position
+
+
 def handle_login_request(user_name: str, password: str, client_ip: str, client_port: str, cursor) -> str:
     """
     Checking if the user_name exists and matches its password in the DB. if yes giving ID and inventory.
@@ -359,7 +488,8 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
     :param client_ip: <String> the IP of the client.
     :param client_port <String> the port of the client.
     :param cursor: the cursor object to the DB.
-    :return: <String> login_status header (if matches then the given ID, if not then 'fail') and first_inventory header.
+    :return: <String> login_status header (if matches then the given ID, if not then 'fail'),  first_inventory header,
+             and first_objects_position header.
     """
 
     global CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, PLAYER_PLACES_BY_ID
@@ -385,12 +515,15 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         given_id = create_new_id((client_ip, client_port, user_name))
 
         # decrypting the data from the DB
-        plsintext_inventory = []
+        plaintext_inventory = []
         for i in range(2, len(result), 1):
-            plsintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
+            plaintext_inventory.append(FERNET_ENCRYPTION.decrypt(result[i]).decode('utf-8'))
 
-        # save in PLAYER_PLACES_BY_ID dict
-        PLAYER_PLACES_BY_ID[given_id] = tuple(plsintext_inventory[7][1:-1].split(','))
+        # getting object position
+        objects_position = get_current_object_position_header()
+
+        # save client in PLAYER_PLACES_BY_ID dict
+        PLAYER_PLACES_BY_ID[given_id] = tuple(plaintext_inventory[7][1:-1].split(','))
 
         print(">> ", end='')
         print_ansi(text='New client connected to the game', color='green', bold=True, underline=True)
@@ -400,15 +533,16 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                         f'   User port number - {client_port}\n'
                         f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
 
-        return 'login_status: ' + given_id + '\r\n' + f'first_inventory: ' \
-                                                      f"{plsintext_inventory[0].replace(',', '/')}," \
-                                                      f'{plsintext_inventory[1]},' \
-                                                      f'{plsintext_inventory[2]},' \
-                                                      f'{plsintext_inventory[3]},' \
-                                                      f'{plsintext_inventory[4]},' \
-                                                      f'{plsintext_inventory[5]},' \
-                                                      f'{plsintext_inventory[6]},' \
-                                                      f"{plsintext_inventory[7].replace(',', '-')}\r\n"
+        return 'login_status: ' + given_id + '\r\n' + 'first_objects_position: ' + objects_position + '\r\n'\
+               + f'first_inventory: ' \
+                 f"{plaintext_inventory[0].replace(',', '/')}," \
+                 f'{plaintext_inventory[1]},' \
+                 f'{plaintext_inventory[2]},' \
+                 f'{plaintext_inventory[3]},' \
+                 f'{plaintext_inventory[4]},' \
+                 f'{plaintext_inventory[5]},' \
+                 f'{plaintext_inventory[6]},' \
+                 f"{plaintext_inventory[7].replace(',', '-')}\r\n"
     else:
         # user name exists but password doesn't match
         return 'login_status: fail\r\n'
@@ -450,15 +584,19 @@ def create_new_id(client_ip_port_name: tuple) -> str:
     return str(last_id)
 
 
-def random_respawn_place() -> tuple:
+def random_spawn_place(for_what: str) -> tuple:
     """
-    Random a respawn spot from the RESPAWN_SPOTS global list.
-    :return: <Tuple> the random respawn place as (X,Y).  [X and Y are str]
+    Random a spawn spot from the RESPAWN_SPOTS global list or from the OBJECTS_SPAWN_SPOTS (according to for_what arg).
+    :param for_what: <String> what do you want to random for? ('player' or 'object')
+    :return: <Tuple> the random spawn place as (X,Y).  [X and Y are str]
     """
 
-    global RESPAWN_SPOTS
+    global RESPAWN_SPOTS, OBJECTS_SPAWN_SPOTS
 
-    return RESPAWN_SPOTS[randint(0, len(RESPAWN_SPOTS) - 1)]
+    if for_what == 'player':
+        return RESPAWN_SPOTS[randint(0, len(RESPAWN_SPOTS) - 1)]
+    if for_what == 'object':
+        return OBJECTS_SPAWN_SPOTS[randint(0, len(OBJECTS_SPAWN_SPOTS) - 1)]
 
 
 def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
@@ -486,7 +624,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         return 'register_status: taken\r\n'
 
     # random a spawn location
-    spawn_place = random_respawn_place()
+    spawn_place = random_spawn_place('player')
 
     # encrypting the data to be saved (and hashing the password)
     hashed_password = sha512_hash(password.encode('utf-8'))
@@ -576,7 +714,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             break
 
     # random a new respawn location
-    respawn_place = random_respawn_place()
+    respawn_place = random_spawn_place('player')
 
     # encrypting the data to be saved (and hashing the password)
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
@@ -717,6 +855,13 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
                     reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], id_cache)
                     break
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'object_update:':
+            if id_cache == '':
+                id_cache = lines[0].split()[1]
+            reply_rotshild_layer += handle_object_update(line_parts[1], id_cache)
         # --------------
 
         # --------------
@@ -1537,6 +1682,83 @@ def initialize_global_system_consts():
     # (0o600 - means read and write access only for the owner)
 
 
+def set_first_objects_position():
+    """
+    Setting the position of the objects on the map at the beginning of the game (saving to global OBJECTS_PLACES)
+    """
+
+    global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE,\
+        MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE,\
+        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE,\
+        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE,\
+        MIN_SIZE_FOR_WEAPONS_PACKAGE
+
+    # for each object type
+    for object_type in OBJECTS_AMOUNT_ON_MAP:
+        # for number of times like the amount of this object type that should be on the map
+        left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+        if object_type == 'ammo':
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place('object')
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_AMMO_PACKAGE, MAX_SIZE_FOR_AMMO_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'med_kits':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place('object')
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_MEDKITS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'backpacks':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place('object')
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'plasters':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place('object')
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_PLASTERS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'shoes':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place('object')
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_SHOES_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        # add here for each weapon!!!
+
+
 def store_all_respawn_places():
     """
     Storing in the DB the current places of all the active clients on the map (for respawn later)
@@ -1587,6 +1809,8 @@ def main():
         # initializing a thread pool executor object
         # I don't set max_workers so it will use the numer of CPU cores on my machine.
         executor = ThreadPoolExecutor(thread_name_prefix='worker_thread_')
+        # setting a random objects position to be on the map
+        set_first_objects_position()
         # --------------------------------------------------
 
         print_start_info_and_running_status()
