@@ -1,6 +1,6 @@
 from support import *
 class Players:
-    def __init__(self, image, id, pos, groups):
+    def __init__(self, image, id, pos,groups): # add hiting
         # general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
@@ -31,8 +31,6 @@ class Players:
         self.can_attack = True
         self.attack_time = None
         self.attack_cooldown = 400
-        self.damage_player = damage_player
-        self.trigger_death_particles = trigger_death_particles
 
         # invincibility timer
         self.vulnerable = True
@@ -44,3 +42,29 @@ class Players:
         main_path = f'../graphics/ninjarobot/{name}/'
         for animation in self.animations.keys():
             self.animations[animation] = import_folder(main_path + animation)  # gives me the correct monster image
+
+    def get_damage(self, player, attack_type):
+        """
+
+        :param player: the player
+        :param attack_type: if its close weapon attack or away wepon attack
+        :return:nothing
+        """
+        if self.vulnerable:
+            self.direction = self.get_player_distance_direction(player)[1]
+            if attack_type == 'weapon':
+                self.health -= player.get_full_weapon_damege()
+            else:
+                pass
+                # away_damage
+            self.hit_time = pygame.time.get_ticks()
+            self.vulnerable = False
+
+    def chack_death(self):
+        """
+        check if the enemy lost all of his health and kill him if so
+        :return:
+        """
+        if self.health <= 0:
+            self.kill()
+            self.trigger_death_particles(self.rect.center,self.monster_name)

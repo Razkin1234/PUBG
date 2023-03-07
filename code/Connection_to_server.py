@@ -3,9 +3,8 @@ class Connection_to_server:
     ####################################################################################################################
     # FOR SENDING PACKETS
     ####################################################################################################################
-    def __init__(self, id, packet):
-        self.__packet = packet
-        self.__rotshild_opening_clients_packets = f'Rotshild {id}\r\n\r\n'
+    def __init__(self, id):
+        self.__packet = f'Rotshild {id}\r\n\r\n'
 
     def add_header_login_request(self, user_name, password):
         self.__packet += f'login_request: {user_name},{password}\r\n'
@@ -40,4 +39,7 @@ class Connection_to_server:
 
     def add_header_chat(self, message):
         self.__packet += f'chat: {message}\r\n'
+        return self.__packet
+
+    def get_packet(self):
         return self.__packet

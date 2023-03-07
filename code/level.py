@@ -15,24 +15,16 @@ import socket
 from Incoming_packets import Incoming_packets
 
 
-def handeler_of_incoming_packets(packet,visibale_sprites,player_pos):
+
+"""""
+    לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
+"""""
+def handeler_of_incoming_packets(packet,visibale_sprites,player):
     lines = packet.get_packet.split('\r\n')
     lines.remove('')
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
-        # Recognize and handle each header
-        # -------------
-        if line_parts[0] == 'login_status:':
-            answer = packet.handle_login_status(line_parts[1])  # returning a tuple (True/False, answer)
-            if not answer[0]:
-            # here print to the screen like what is in the value answer[1]
-                pass
-            else:
-        # here convert what is in answer[1] to integer because its your new id and put it in your player object
-        # -------------
-                pass
-        # -------------
         if line_parts[0] == 'register_status:':
             answer = packet.handle_register_status(line_parts[1])
             if not answer[0]:
@@ -45,7 +37,7 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player_pos):
 
         # --------------
         # in this header clients should check the moved_player_id so they wont print their own movement twice.
-        if line_parts[0] == 'player_place:':
+        elif line_parts[0] == 'player_place:':
             # looking for image header
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
@@ -53,10 +45,11 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player_pos):
                     # looking for moved player id
                     for l2 in lines:
                         l2_parts = l2.split()
-                        if l2_parts == 'moved_player_id:':
+                        if l2_parts[0] == 'moved_player_id:':
                             if packet.get_id != '# add player id':
-                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],player_pos,
+                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1], player.rect,
                                                            visibale_sprites)
+
                             break
                     break
                     # here calling the function
@@ -81,7 +74,7 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player_pos):
 
         # --------------
         elif line_parts[0] == 'first_inventory:':
-            packet.handle_first_inventory(line_parts[1])
+            packet.handle_first_inventory(line_parts[1],player)
         # --------------
 
         # --------------
@@ -93,16 +86,6 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player_pos):
                 if l_parts[0] == 'user_name:':
                     message = packet.handle_chat(line_parts[1], l_parts[1])  # getting in answer the message to print
                     break
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'hit_id:':
-            if line_parts[1] == '#the id of client':
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'hit_hp:':
-                        packet.handle_hit_id(line_parts[1], l_parts[1])
-                        break
         elif line_parts[0] == 'server_shutdown:':
             pass
 
@@ -117,6 +100,7 @@ class Level:
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
+        self.bullet_group = YsortCameraGroup()
 
         # attack sprites
         self.current_attack = None
@@ -334,19 +318,18 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self,server_ip,user_name,passward):  # update and draw the game
+    def run(self,server_ip,user_name,passward,packet):  # update and draw the game
 
-
-        # ------------------- Socket
-        my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # -------------------
-
-        my_socket.connect((server_ip, SERVER_PORT))
-        server_reply, addres = my_socket.recv(1024)
-        packet = Incoming_packets(server_reply,addres,server_ip,None)
-
-        if packet.rotshild_filter():
-            handeler_of_incoming_packets(packet, self.visble_sprites, self.player.rect)
+       # if packet.rotshild_filter():
+       #     handeler_of_incoming_packets(packet, self.visble_sprites, self.player)
+       # # ------------------- Socket
+       # my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+       # # -------------------
+       #
+       # my_socket.connect((server_ip, SERVER_PORT))
+       # server_reply, addres = my_socket.recv(1024)
+       # packet = Incoming_packets(server_reply,addres,server_ip,None)
+       
 
 
        #self.cooldown()

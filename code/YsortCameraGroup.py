@@ -47,6 +47,10 @@ class YsortCameraGroup(pygame.sprite.Group):
             if player.rect[1]-(ROW_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[1] or sprite.rect[1] > player.rect[1]+(ROW_LOAD_TILE_DISTANCE*TILESIZE):
                 sprite.kill()
 
+    def erase_dead_sprites(self,id):
+        for sprite in self.sprites():
+            if sprite.id ==id:
+                sprite.kill()
 
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']

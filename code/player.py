@@ -10,7 +10,7 @@ class Player(Entity):
     def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic):
         super().__init__(groups)
         #server conection
-        self.player_ID = 0
+        self.id = 0 #need to get id
 
         self.animations = None
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()

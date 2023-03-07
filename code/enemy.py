@@ -18,6 +18,7 @@ class Enemy(Entity):
         self.rect = self.image.get_rect(topleft = pos)
         self.hitbox = self.rect.inflate(0,-10)
         self.obstacle_sprites = obstacle_sprites
+        self.direction = pygame.math.Vector2()
 
         #stats
         self.monster_name = monster_name
@@ -145,6 +146,26 @@ class Enemy(Entity):
         """
         if not self.vulnerable:
             self.direction *= -self.resistance
+
+    def move(self, speed):  # moves the player around
+        if self.direction.magnitude() != 0:
+            self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
+        self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
+        self.collision('horizontal')
+        self.hitbox.y += self.direction.y * speed  # making the player move verticaly
+        self.collision('vertical')
+        self.rect.center = self.hitbox.center
+
+    def collision(self, direction):  # checking for collisions
+        if direction == 'horizontal':
+            for sprite in self.obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.x > 0:  # when we are moving right
+                        self.hitbox.right = sprite.hitbox.left
+                    if self.direction.x < 0:  # when we are moving left
+                        self.hitbox.left = sprite.hitbox.right
+                    self.direction.x = 0
+                    self.direction.y = 0
 
     def update(self):
         self.hit_reaction()

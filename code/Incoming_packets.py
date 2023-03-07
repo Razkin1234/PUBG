@@ -1,7 +1,8 @@
-from settings import COL_TILES, ROW_TILES
+from settings import COL_TILES, ROW_TILES,weapon_data
 # from level import Level
 from other_players import Players
 from player import Player
+from YsortCameraGroup import YsortCameraGroup
 class Incoming_packets:
 
     ####################################################################################################################
@@ -16,6 +17,9 @@ class Incoming_packets:
 
     def set_packet_after_filter(self, packet):
         self.__packet = packet
+
+    def set_playe_id(self, client_id):
+        self.__client_id = client_id
 
     def get_id(self):
         return self.__client_id
@@ -40,12 +44,17 @@ class Incoming_packets:
         elif login_status == 'already_active':
             # here to add a message that the user is active in the game already
             return False, 'someone already logged in'
-        self.handle_first_inventory()
         return True, login_status  # returning the id of the client is given
 
-    def handle_first_inventory(self, first_inventory):
+    def handle_first_inventory(self, first_inventory,player):
         # to add it to the inventory
-        pass
+            items = first_inventory.split(", ")
+            weapons = first_inventory.split("/")[0]
+            for weapon in weapons:
+                if weapon in weapon_data:
+                    player.objects_on[weapon] = weapon_data[weapon]
+                for item in items:
+                    pass
 
     def handle_register_status(self, register_status):
         if register_status == 'taken':
@@ -73,20 +82,17 @@ class Incoming_packets:
 
         except Exception as e:
             print(e)
-        pass
+
 
     def handle_shot_place(self, shot_place):
         # to check if its real and if not return false and
         # if yes print it on the map
         pass
 
-    def handle_hit_id(self, hit_id, hit_hp):
-        # decrease your life by the hit_hp
-        pass
 
-    def handle_dead(self, dead_id):
+    def handle_dead(self, dead_id,visble_sprites): #dont need
         # remove the dead id from your list
-        pass
+        visble_sprites.erase_dead_sprites(int(dead_id))
 
     def handle_chat(self, user_name, message):
         # print here the message and the user name
