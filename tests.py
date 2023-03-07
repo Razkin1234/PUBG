@@ -1,7 +1,7 @@
 import socket
 
 # ------------------- Server address
-SERVER_IP = '127.0.0.1'
+SERVER_IP = '192.168.1.229'
 SERVER_PORT = 56789
 # -------------------
 
@@ -137,8 +137,8 @@ def test_player_place(place: str, image: str, id: str):
 
 
 # -------------------------------------------------
-#test_register_request('user1', 'password1')
-#test_login_request('user1', 'password1')
+test_register_request('user1', 'password1')
+test_login_request('user1', 'password1')
 #test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1')
 #test_disconnect('1')
