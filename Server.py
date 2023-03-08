@@ -73,7 +73,7 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
-            - enemy_player_place_image_type_hit: [id_enemy],([the X coordinate],[the Y coordinate]),[image],[type_of_enemy],[Yes or No(if hitting)] [only server sends]  |
+            - enemy_player_place_image_type_hit: [id_enemy],([the X coordinate],[the Y coordinate]),[type_of_enemy],[Yes or No(if hitting)] [only server sends]  |
             - hit_an_enemy: [id_of_enemy]                                                                                          [only clients sends]      |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
