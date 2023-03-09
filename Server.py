@@ -1,3 +1,5 @@
+# The Server was written for python 3.8.0 64-bit interpreter
+
 """
 ====================================================PROTOCOL=================================================================================================|                                                                                                                |
 * It's a textual protocol                                                                                                                                    |
@@ -1607,9 +1609,13 @@ def print_start_info_and_running_status():
                , color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='NOTE: ', new_line=False, color='magenta', italic=True, bold=True)
-    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, and checked only'
-                    ' on Windows.\n         We can only be sure it works the best on Windows, any other platform wasnt '
-                    'checked.\n', color='magenta', italic=True)
+    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, of 64-bit '
+                    'version only, and was tested only on Windows.\n'
+                    '         A machine with 32-bit processor or 32-bit Operating System wont be able to run it '
+                    'properly.\n'
+                    '         We can only be sure it works the best on a 64-bit Windows platform. Any other platform '
+                    'of 64-bit should work, but wasnt tested, so might have an unexpected behavior.\n',
+               color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
     if my_public_ip == "[Your public IP (our system couldn't find it)]":
