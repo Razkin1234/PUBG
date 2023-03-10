@@ -232,7 +232,7 @@ class Level:
 
         # Create player with starting position
         self.player = Player((1000, 1000), self.visble_sprites,
-                             self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
+                    self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic,self.bullet_group)
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
@@ -357,11 +357,14 @@ class Level:
         self.obstacle_sprites.earase_non_relevant_sprites(self.player)
 
 
+
         self.floor_update()
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
         self.item_sprites.custom_draw(self.camera)
 
+        self.bullet_group.custom_draw(self.camera)
+        self.bullet_group.bullet_move()
         self.item_sprites.item_picking(self.player)
 
         self.visble_sprites.custom_draw(self.camera)

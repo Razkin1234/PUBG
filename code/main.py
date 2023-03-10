@@ -185,53 +185,53 @@ class Game:
                             # FOR REGISTER RECUEST
                             ####################################################################################################################
                             if sign_in:
-                                try:
-                                    print(self.server_ip)
-                                    print(type(self.server_ip))
-                                    self.my_socket.connect((self.server_ip, SERVER_PORT))
-                                    print("connected")
-                                    send_packet = Connection_to_server(None)
-                                    send_packet.add_header_register_request(self.user_name, self.passward)
-                                    self.my_socket.send(send_packet.get_packet().encode('utf-8'))
-                                    print(send_packet.get_packet())
-                                    print("sand")
-                                    # here the tttttl
-                                    server_reply, addres = self.my_socket.recv(1024)
-                                    print("recive")
-                                    packet = Incoming_packets(server_reply, addres, self.server_ip, None)
+                           #     try:
+#                                   print(self.server_ip)
+#                                   print(type(self.server_ip))
+#                                   self.my_socket.connect((self.server_ip, SERVER_PORT))
+#                                   print("connected")
+#                                   send_packet = Connection_to_server(None)
+#                                   send_packet.add_header_register_request(self.user_name, self.passward)
+#                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'))
+#                                   print(send_packet.get_packet())
+#                                   print("sand")
+#                                   # here the tttttl
+#                                   server_reply, addres = self.my_socket.recv(1024)
+#                                   print("recive")
+#                                   packet = Incoming_packets(server_reply, addres, self.server_ip, None)
 
-                                    if packet.rotshild_filter():
-                                        check = handeler_of_incoming_packets(packet, self.display_surface)
-                                    if not check:
-                                        sign_in = False
-                                        log_in = False
-                                        while event.type == pygame.K_SPACE:
-                                            pass
-                                except Exception as e:
-                                    print(e)
-                                    sign_in = False
-                                    log_in = False
-                            ####################################################################################################################
-                            # FOR LOGIN RECUEST
-                            ####################################################################################################################
-                            if (sign_in or log_in) and check:
-                                try:
-                                    if log_in:
-                                        self.my_socket.connect((self.server_ip, SERVER_PORT))
-                                    send_packet = Connection_to_server(None, "")
-                                    send_packet.add_header_login_request(self.user_name, self.passward)
-                                    self.my_socket.send(send_packet.get_packet().encode('utf-8'),
-                                                          (self.server_ip, int(SERVER_PORT)))
-                                    # here the tttttl
-                                    server_reply, addres = self.my_socket.recv(1024)
-                                    packet = Incoming_packets(server_reply, addres, self.server_ip, None)
+#                                   if packet.rotshild_filter():
+#                                       check = handeler_of_incoming_packets(packet, self.display_surface)
+#                                   if not check:
+#                                       sign_in = False
+#                                       log_in = False
+#                                       while event.type == pygame.K_SPACE:
+#                                           pass
+#                               except Exception as e:
+#                                   print(e)
+#                                   sign_in = False
+#                                   log_in = False
+#                           ####################################################################################################################
+#                           # FOR LOGIN RECUEST
+#                           ####################################################################################################################
+#                           if (sign_in or log_in) and check:
+#                               try:
+#                                   if log_in:
+#                                       self.my_socket.connect((self.server_ip, SERVER_PORT))
+#                                   send_packet = Connection_to_server(None, "")
+#                                   send_packet.add_header_login_request(self.user_name, self.passward)
+#                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'),
+#                                                         (self.server_ip, int(SERVER_PORT)))
+#                                   # here the tttttl
+#                                   server_reply, addres = self.my_socket.recv(1024)
+#                                   packet = Incoming_packets(server_reply, addres, self.server_ip, None)
 
-                                    if packet.rotshild_filter():
-                                        self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
-                                    if check:
-                                        self.play(packet)
-                                except Exception as e:
-                                    print(e)
+#                                   if packet.rotshild_filter():
+#                                       self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
+#                                   if check:
+                                    self.play(1) #packet
+                               # except Exception as e:
+                                #    print(e)
 
             if log_in or sign_in:
                 server_text_surface = self.font.render(self.server_ip, True, text_color)
@@ -263,7 +263,7 @@ class Game:
     def play(self, packet):
         pygame.display.set_caption('PUBG')
         self.screen.fill('black')
-        packet.set_playe_id(self.player_id)
+       # packet.set_playe_id(self.player_id)
         self.level.run(self.server_ip, self.user_name, self.passward, packet)
         pygame.display.update()
         self.clock.tick(FPS)
@@ -274,8 +274,8 @@ class Game:
                     pygame.quit()
                     sys.exit()
 
-            server_reply, addres = self.my_socket.recv(1024)
-            packet = Incoming_packets(server_reply, addres, self.server_ip, self.player_id)
+         #   server_reply, addres = self.my_socket.recv(1024)
+         #  packet = Incoming_packets(server_reply, addres, self.server_ip, self.player_id)
 
             self.level.run(self.server_ip, self.user_name, self.passward, packet)
             pygame.display.update()

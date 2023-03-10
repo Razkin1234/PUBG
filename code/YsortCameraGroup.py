@@ -3,6 +3,8 @@ from settings import *
 from tile import Tile
 from player import Player
 from debug import debug
+from bullet import Bullets
+from  entity import  Entity
 import itertools
 
 class YsortCameraGroup(pygame.sprite.Group):
@@ -48,16 +50,24 @@ class YsortCameraGroup(pygame.sprite.Group):
             if player.rect[1]-(ROW_LOAD_TILE_DISTANCE*TILESIZE)> sprite.rect[1] or sprite.rect[1] > player.rect[1]+(ROW_LOAD_TILE_DISTANCE*TILESIZE):
                 sprite.kill()
 
-    def erase_dead_sprites(self,id):
+    def erase_dead_sprites(self, id):
         for sprite in self.sprites():
-            if sprite.id ==id:
+            if sprite.id == id:
                 sprite.kill()
 
+    def bullet_move(self):
+        for sprite in self.sprites():
+            print(sprite.need_to_stop)
+            if sprite.need_to_stop:
+                sprite.update()
+            else:
+                sprite.kill()
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
 
+#    def
     def item_picking(self,player):
         copy_items = self.sprites().copy()
         if player.can_pick_item:

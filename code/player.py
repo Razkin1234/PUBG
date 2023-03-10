@@ -4,10 +4,10 @@ from support import import_folder
 from entity import Entity
 from debug import debug
 import math
-
+from bullet import Bullets
 
 class Player(Entity):
-    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic):
+    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group):
         super().__init__(groups)
         #server conection
         self.id = 0 #need to get id
@@ -27,7 +27,7 @@ class Player(Entity):
         self.attack_time = None
         self.place_to_go = None
         self.obstacle_sprites = obstacle_sprites
-
+        self.a = None #need to delete
         #weapon
         self.create_attack = create_attack
         self.weapon_index = 0 #the offset of the weapons
@@ -37,11 +37,12 @@ class Player(Entity):
         self.can_switch_weapon = True #that we will switch only one weapon every time we press {
         self.weapon_switch_time = None
         self.switch_duration_cooldown = 200 #}
+        self.bullet_group = bullet_group
 
         self.objects_on = {
             'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0 , 'weapon_index': 0},
             'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1, 'weapon_index': 1},
-            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2},
+            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2}
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
             'backpack': {'name': 'backpack','ui':1},
@@ -81,7 +82,7 @@ class Player(Entity):
         #damage timer
         self.vulnerable =True
         self.hurt_time =None
-        self.invulnerability_duration =500
+        self.invulnerability_duration = 500
 
         #ui button cooldown + is pressed
         self.can_press_i = True  # that we will switch only one weapon every time we press {
@@ -140,10 +141,17 @@ class Player(Entity):
         keys = pygame.key.get_pressed()
          #attack input
         if keys[pygame.K_SPACE] and not self.attacking:
-            self.attacking = True
-            self.attack_time = pygame.time.get_ticks()
-            self.create_attack()
-
+            if self.weapon == 'axe':
+                self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
+            else:
+                self.attacking = True
+                self.attack_time = pygame.time.get_ticks()
+                self.create_attack()
+        try:
+            debug(self.a.direction)
+            print(self.a.rect)
+        except:
+            pass
         #magic input
         if keys[pygame.K_LCTRL] and not self.attacking:
             #the magic we will use:
@@ -170,64 +178,6 @@ class Player(Entity):
                 self.can_press_i = False
                 if self.i_pressed: self.i_pressed =False
                 else: self.i_pressed = True
-
-        if keys[pygame.K_e] and self.can_switch_magic:
-            self.can_switch_magic = False
-            self.magic_switch_time = pygame.time.get_ticks()
-
-            if self.magic_index < len(list(magic_data.keys())) - 1:
-                self.magic_index += 1 #new weapon
-            else:
-                self.magic_index = 0
-            self.magic = list(magic_data.keys())[self.magic_index]  # the weapon we are using
-
-    def input(self):  # checks the input from the player, for now it is the arrows
-        keys = pygame.key.get_pressed()
-        # movement input
-        if keys[pygame.K_UP]:
-            self.direction.y = -1
-            self.status = 'up'
-        elif keys[pygame.K_DOWN]:
-            self.direction.y = +1
-            self.status = 'down'
-        else:
-            self.direction.y = 0
-        if keys[pygame.K_RIGHT]:
-            self.direction.x = +1
-            self.status = 'right'
-        elif keys[pygame.K_LEFT]:
-            self.direction.x = -1
-            self.status = 'left'
-        else:
-            self.direction.x = 0
-        #attack input
-        if keys[pygame.K_SPACE] and not self.attacking:
-            self.attacking = True
-            self.attack_time = pygame.time.get_ticks()
-            self.create_attack()
-
-        #magic input
-        if keys[pygame.K_LCTRL] and not self.attacking:
-            self.attacking = True
-            self.attack_time = pygame.time.get_ticks()
-            #the magic we will use:
-            style = list(magic_data.keys())[self.magic_index]
-            strength =  list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
-            cost = list(magic_data.values())[self.magic_index]['cost']
-            self.create_magic(style,strength,cost)
-
-
-        if keys[pygame.K_q] and self.can_switch_weapon:
-            self.can_switch_weapon = False
-            self.weapon_switch_time = pygame.time.get_ticks()
-
-            if self.weapon_index < len(list(weapon_data.keys())) - 1:
-                self.weapon_index += 1 #new weapon
-            else:
-                self.weapon_index = 0
-            self.weapon = list(weapon_data.keys())[self.weapon_index]  # the weapon we are using
-
-
 
         if keys[pygame.K_e] and self.can_switch_magic:
             self.can_switch_magic = False
