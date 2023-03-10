@@ -15,6 +15,7 @@ class Incoming_packets:
         self.__server_ip = server_ip
         self.__client_id = client_id # it can be null
 
+
     def set_packet_after_filter(self, packet):
         self.__packet = packet
 
@@ -35,7 +36,7 @@ class Incoming_packets:
         return self.__packet
 
     def check_if_id_matches_ip_port(self):
-        return (self.__src_ip, self.__src_port) in (self.__server_ip, 56789)
+        return (self.__src_ip, self.__src_port) in (self._server_ip, 56789)
 
     def handle_login_status(self, login_status):
         if login_status == 'fail':
@@ -46,15 +47,15 @@ class Incoming_packets:
             return False, 'someone already logged in'
         return True, login_status  # returning the id of the client is given
 
-    def handle_first_inventory(self, first_inventory,player):
+    def handle_first_inventory(self, first_inventory, player):
         # to add it to the inventory
-            items = first_inventory.split(", ")
-            weapons = first_inventory.split("/")[0]
-            for weapon in weapons:
-                if weapon in weapon_data:
-                    player.objects_on[weapon] = weapon_data[weapon]
-                for item in items:
-                    pass
+        items = first_inventory.split(", ")
+        weapons = first_inventory.split("/")[0]
+        for weapon in weapons:
+            if weapon in weapon_data:
+                player.objects_on[weapon] = weapon_data[weapon]
+            for item in items:
+                pass
 
     def handle_register_status(self, register_status):
         if register_status == 'taken':
@@ -67,7 +68,7 @@ class Incoming_packets:
             return True, None
             pass
 
-    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites): #maybe done
+    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -90,7 +91,8 @@ class Incoming_packets:
         pass
 
 
-    def handle_dead(self, dead_id,visble_sprites): #dont need
+    def handle_dead(self, dead_id, visble_sprites):  # dont need
+
         # remove the dead id from your list
         visble_sprites.erase_dead_sprites(int(dead_id))
 
@@ -100,3 +102,8 @@ class Incoming_packets:
 
     def handle_server_shutdown(self):
         pass
+
+    def handle_disconnect(self):
+        # remove a player from your list don't print him anymore
+        pass
+
