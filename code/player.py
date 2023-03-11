@@ -345,4 +345,4 @@ class Player(Entity):
             self.speed = self.stats['speed'] + 2
         else:
             self.speed = self.stats['speed']
-
+        debug(self.rect.center)

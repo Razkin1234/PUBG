@@ -73,8 +73,10 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
-            - enemy_player_place_image_type_hit: [id_enemy],([the X coordinate],[the Y coordinate]),[type_of_enemy],[Yes or No(if hitting)] [only server sends]  |
-            - hit_an_enemy: [id_of_enemy]                                                                                          [only clients sends]      |
+            - enemy_player_place_type_hit: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...[only server sends] |
+              [between every different enemy there is '-']                                                                                                   |
+            - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
+            - dead_enemy: [id_of_enemy]                                                                                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -94,6 +96,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
 from cryptography.fernet import Fernet
 from random import randint, choice
+import pygame
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -142,12 +145,12 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 
 # ------------------------ Objects
 DEFAULT_WEAPONS = 'stick'  #
-DEFAULT_AMMO = 0           #
-DEFAULT_MED_KITS = 0       # DEFAULT
-DEFAULT_BACKPACK = 0       # AMOUNTS
-DEFAULT_PLASTERS = 0       #
-DEFAULT_SHOES = 0          #
-DEFAULT_EXP = 0            #
+DEFAULT_AMMO = 0  #
+DEFAULT_MED_KITS = 0  # DEFAULT
+DEFAULT_BACKPACK = 0  # AMOUNTS
+DEFAULT_PLASTERS = 0  #
+DEFAULT_SHOES = 0  #
+DEFAULT_EXP = 0  #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -173,32 +176,145 @@ OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters
 
 # ------------------------ Players
 # The optional respawn places on the map as (X,Y)   [X and Y are str]
-RESPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
+#  not relevant anymore - RESPAWN_SPOTS = [('970', '845'), ('4560', '1079'), ('4641', '2310'), ('2664', '10049'), ('1074', '8066'), ('987', '10608'), ('1243', '12186'), ('3091', '15116'), ('5756', '18119'), ('11562', '20786'), ('13521', '19441'), ('16336', '13778'), ('20954', '12318'), ('18726', '7382'), ('16862', '3020'), ('13932', '2570'), ('26725', '3343'), ('35613', '3539'), ('22162', '7687'), ('28685', '13014'), ('38160', '12112'), ('40048', '15695'), ('42723', '20759'), ('49082', '21329'), ('49170', '27214'), ('44448', '27471'), ('33346', '27327'), ('21780', '26875'), ('16233', '25088'), ('7275', '26761')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
+LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN = [[736, 2784, 718, 6578], [736, 3488, 7182, 10610], [3488, 15392, 718, 10610],
+                                       [18080, 22496, 2190, 7922], [24672, 50464, 718, 9138],
+                                       [26912, 47968, 12878, 28082], [14560, 26912, 12878, 20786],
+                                       [736, 14432, 11406, 20786], [7264, 16992, 24846, 28594]]
 # IPs, PORTs, IDs and user names of all clients as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 CLIENTS_ID_IP_PORT_NAME = []
 # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
+# ------------------------- Enemy
+squid = 0  # 25
+raccoon = 0  # 10
+spirit = 0  # 25
+bamboo = 0  # 40
+# list like [[id_enemy],[place_of_enemy],[[id_of_player_locked]],[number_of_lives_enemy],[type_enemy]]
+ENEMY_BY_ID = []
+# -------------------------
+
 # ------------------------- General
-# List of all of the IDs of enemy [ID1,ID2,ID3,....]
-SAVE_ID_FOR_ENEMY = []
-# Dictionary that the key is the id of enemy like ID:[[place_of_enemy],[[id_of_player_locked]],[number_of_lives_enemy],[type_enemy]]
-ENEMY_BY_ID = {}
 # Opening for server's packets (after this are the headers)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
+
+
 # -------------------------
 
 
-def handle_locking_on_enemy(enemy_id, player_id):
+def move(enemy_x, enemy_y, direction, speed, enemy):  # moves the player around
+    global ENEMY_BY_ID
+    if direction.magnitude() != 0:
+        direction = direction.normalize()  # making the speed good when we are gowing 2 diractions
+    enemy_x += direction.x * speed  # making the player move horizontaly
+    enemy_y += direction.y * speed  # making the player move verticaly
+    enemy[1][0] = str(enemy_x)
+    enemy[1][1] = str(enemy_y)
+
+
+def moving_enemies():
+    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID
+    creating_enemies()
+    place_enemy = str(ENEMY_BY_ID[0][1]).replace("'", '').replace(' ', '')
+    packet = f'enemy_player_place_type_hit: {ENEMY_BY_ID[0][0]}/{place_enemy}/{ENEMY_BY_ID[0][4]}/No'
+    # here all the code for moving the enemies
+    for enemy in ENEMY_BY_ID:
+        direction = pygame.math.Vector2()
+        enemy_x = enemy[1][0]
+        enemy_x = int(enemy)
+        enemy_y = enemy[1][1]
+        enemy_y = int(enemy)
+        player_id = enemy[2]
+        player_place = PLAYER_PLACES_BY_ID[player_id]
+        player_x = int(player_place[0])
+        player_y = int(player_place[1])
+        if enemy_x >= player_x:
+            direction.x = -1 * (enemy_x - player_x)
+        else:
+            direction.x = (player_x - enemy_x)
+        if enemy_x >= player_x:
+            direction.y = -1 * (enemy_y - player_y)
+        else:
+            direction.y = (player_y - enemy_y)
+        move(enemy_x, enemy_y, direction, 5, enemy)
+        # here sending all of the new places of the enemies
+        place_enemy = str(enemy[1]).replace("'", '').replace(' ', '')
+        packet += f'-{enemy[0]}/{place_enemy}/{enemy[4]}/No'
+    packet += '\r\n'
+    return packet
+
+
+def random_pos_for_enemy():
+    """
+    giving a random pos
+    :return: the random place i am returning it in String
+    """
+    global LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN
+    # place1[minx = 736, max_x = 2784, min_y = 718, max_y = 6578], place2[minx = 736, max_x = 3488, min_y = 7182, max_y = 10610], place3[minx = 3488, max_x = 15392, min_y = 718, max_y = 10610], place4[minx = 18080, max_x = 22496, min_y = 2190, max_y = 7922], place5[minx = 24672, max_x = 50464, min_y = 718, max_y = 9138], place6[minx = 26912, max_x = 47968, min_y = 12878, max_y = 28082], place7[minx = 14560, max_x = 26912, min_y = 12878, max_y = 20786], place8[minx = 736, max_x = 14432, min_y = 11406, max_y = 20786], place9[minx = 7264, max_x = 16992, min_y = 24846, max_y = 28594]
+    number = randint(0, 8)
+    place_chosen = LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN[number]
+    x = randint(place_chosen[0], place_chosen[1])
+    y = randint(place_chosen[2], place_chosen[3])
+    return str(x), str(y)
+
+
+def creating_enemies():
+    """
+    making sure there are 100 enemies on screen
+    :return:
+    """
+    global squid, raccoon, spirit, bamboo, ENEMY_BY_ID, CLIENTS_ID_IP_PORT_NAME
+    if squid != 25:
+        i = 25 - squid
+        squid = 25
+        for j in range(i):
+            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 100,
+                               'squid')
+    if spirit != 25:
+        i = 25 - spirit
+        spirit = 25
+        for j in range(i):
+            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 100,
+                               'spirit')
+    if raccoon != 10:
+        i = 10 - raccoon
+        raccoon = 10
+        for j in range(i):
+            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 300,
+                               'raccoon')
+    if bamboo != 40:
+        i = 40 - bamboo
+        bamboo = 40
+        for j in range(i):
+            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 70,
+                               'bamboo')
+
+
+def handle_hit_an_enemy(enemy_id, player_id, hp):
     """
     changing the enemy who got shot to locked on the one who shot him
+    :param hp: how much to take off the current hp
     :param player_id:
     :param enemy_id:
-    :return: none
+    :return: if there is a dead enemy so returning his place and type
     """
+    hp = int(hp)
     global ENEMY_BY_ID
-    ENEMY_BY_ID[enemy_id][1] = player_id
+    for enemy in ENEMY_BY_ID:
+        if enemy[0] == enemy_id:
+            if (enemy[3] - hp) > 0:
+                enemy[2] = player_id
+                enemy[3] = enemy[3] - hp
+                return ''
+            else:
+                ENEMY_BY_ID.remove(enemy)
+                return f'dead_enemy: {enemy[0]}\r\n'
 
 
 def first_player_locked_on():
@@ -206,11 +322,11 @@ def first_player_locked_on():
     i am checking if there is only one player on the map. if there
     so i am setting all of the enemies to be locked on him
     """
-    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, SAVE_ID_FOR_ENEMY
+    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME
     if len(PLAYER_PLACES_BY_ID) == 1:
         client_id = CLIENTS_ID_IP_PORT_NAME[0][0]
-        for id_enemy in SAVE_ID_FOR_ENEMY:
-            ENEMY_BY_ID[id_enemy][1] = client_id
+        for enemy in ENEMY_BY_ID:
+            enemy[2] = client_id
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -562,7 +678,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                         f'   User port number - {client_port}\n'
                         f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
 
-        return 'login_status: ' + given_id + '\r\n' + 'first_objects_position: ' + objects_position + '\r\n'\
+        return 'login_status: ' + given_id + '\r\n' + 'first_objects_position: ' + objects_position + '\r\n' \
                + f'first_inventory: ' \
                  f"{plaintext_inventory[0].replace(',', '/')}," \
                  f'{plaintext_inventory[1]},' \
@@ -609,7 +725,8 @@ def create_new_id(client_ip_port_name: tuple) -> str:
                 found = True
 
     # the smallest free ID is in last_id
-    CLIENTS_ID_IP_PORT_NAME.append((str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+    CLIENTS_ID_IP_PORT_NAME.append(
+        (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
     return str(last_id)
 
 
@@ -959,9 +1076,10 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         elif line_parts[0] == 'hit_an_enemy:':
             if id_cache == '':
                 id_cache = lines[0].split()[1]
-            handle_locking_on_enemy(line_parts[1], id_cache)
+                info1 = line_parts[1].split(',')
+            reply_rotshild_layer += handle_hit_an_enemy(info1[0], id_cache, info1[1])
         # --------------
-
+    reply_rotshild_layer += moving_enemies()
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT_NAME:
@@ -1081,7 +1199,7 @@ def check_user_input_thread(server_socket: socket):
     :param server_socket: <Socket> the server socket object.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION,\
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, \
         CLOSING_THREADS_EVENT, SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
@@ -1205,8 +1323,9 @@ def check_user_input_thread(server_socket: socket):
             # -------------------
             if commend == 'shutdown':
                 print(">> ", end='')
-                print_ansi(text=f'Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                           color='blue')
+                print_ansi(
+                    text=f'Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                    color='blue')
 
                 # setting the shutdown trigger event.
                 SHUTDOWN_TRIGGER_EVENT.set()
@@ -1350,8 +1469,9 @@ def check_user_input_thread(server_socket: socket):
                         print_ansi(text=f' -------------------------> failed [{ex}]', color='red', italic=True)
 
                     # creating a new empty DB
-                    print_ansi(text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
-                               new_line=False, color='cyan')
+                    print_ansi(
+                        text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
+                        new_line=False, color='cyan')
                     sys.stdout.flush()  # force flushing the buffer to the terminal
                     initialize_sqlite_rdb()
                     print_ansi(text=' ------> completed', color='green', italic=True)
@@ -1471,7 +1591,7 @@ def retrieve_fernet_key_from_keyring():
     If there is no match it create a new random key with these identifiers and saving it with 5 more fake ones.
     """
 
-    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3,\
+    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3, \
         FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5, SERVICE_NAME
 
     keyring = MyKeyring.MyKeyring()  # initializing a MyKeyring object in th same directory as the script
@@ -1723,10 +1843,10 @@ def set_first_objects_position():
     Setting the position of the objects on the map at the beginning of the game (saving to global OBJECTS_PLACES)
     """
 
-    global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE,\
-        MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE,\
-        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE,\
-        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE,\
+    global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE, \
+        MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE, \
+        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE, \
+        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
         MIN_SIZE_FOR_WEAPONS_PACKAGE
 
     # for each object type
@@ -1814,7 +1934,7 @@ def store_all_respawn_places():
 
 
 def main():
-    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, \
         SHUTDOWN_INFORMING_EVENT, CLOSING_THREADS_EVENT
 
     executor = None
@@ -1858,12 +1978,12 @@ def main():
         print(">> ", end='')
         print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
         print_ansi(text="   - 'shutdown': To shutdown the server.\n"
-                   "   - 'get clients': To show all clients registered on this server and their info.\n"
-                   "   - 'delete <user_name>': To delete a client from the server.\n"
-                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                   "      and the number of active players at the moments.\n"
-                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                   "   - 'help': To show optional UI commends.\n",
+                        "   - 'get clients': To show all clients registered on this server and their info.\n"
+                        "   - 'delete <user_name>': To delete a client from the server.\n"
+                        "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                        "      and the number of active players at the moments.\n"
+                        "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                        "   - 'help': To show optional UI commends.\n",
                    color='cyan')
         # --------------------------------------------------
 
@@ -1872,15 +1992,15 @@ def main():
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            first_player_locked_on()                                                                              # !!
-            try:                                                                                                  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
+            # first_player_locked_on()  # !!
+            try:  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:                                                                                # !!
-                continue                                                                                          # !!
-                                                                                                                  # !!
+            except socket_timeout:  # !!
+                continue  # !!
+                # !!
             # verify the packet in a different thread and if all good then handling it in another thread          # !!
-            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)                 # !!
+            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)  # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1893,11 +2013,12 @@ def main():
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                       "    Make sure the port is available and is not already in use by another service and run again.",
+                            "    Make sure the port is available and is not already in use by another service and run again.",
                        color='red')
             print(">> ", end='')
-            print_ansi(text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                       color='blue')
+            print_ansi(
+                text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                color='blue')
             # don't have clients to inform so setting the event
             SHUTDOWN_INFORMING_EVENT.set()
         else:
@@ -1905,8 +2026,9 @@ def main():
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
             print(">> ", end='')
-            print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                       color='blue')
+            print_ansi(
+                text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                color='blue')
             inform_active_clients_about_shutdown(server_socket, 'error')
 
     except Exception as ex:

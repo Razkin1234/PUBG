@@ -37,5 +37,11 @@ class Connection_to_server:
     def add_header_disconnect(self, id_of_player):
         self.__packet += f'disconnect: {id_of_player}\r\n'
 
+    def add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked):
+        self.__packet += f'object_update: {pick_drop}-{type_object}-{place}-{amount}'
+        for i in range(how_many_dropped_picked-1):
+            self.__packet += f'/{pick_drop}-{type_object}-{place}-{amount}'
+        self.__packet += '\r\n'
+
     def get_packet(self):
         return self.__packet

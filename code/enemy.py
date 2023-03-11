@@ -1,4 +1,3 @@
-
 import pygame
 from settings import *
 from entity import Entity
@@ -75,26 +74,26 @@ class Enemy(Entity):
         else:
             self.status = 'idle'
 
-    def actions(self,player):
+    def actions(self, player):
         if self.status == 'attack':
             self.attack_time = pygame.time.get_ticks()
-            self.damage_player(self.attack_damage,self.attack_type)
+            self.damage_player(self.attack_damage, self.attack_type)
         elif self.status == 'move':
             self.direction = self.get_player_distance_direction(player)[1]
         else:
-            self.direction = pygame.math.Vector2() #the bot will not move
+            self.direction = pygame.math.Vector2()  # the bot will not move
 
     def animate(self):
-        animation = self.animations[self.status] #the animations photo
+        animation = self.animations[self.status]  # the animations photo
 
         self.frame_index += self.animation_speed
-        if self.frame_index >= len(animation) :
+        if self.frame_index >= len(animation):
             if self.status == 'attack':
-                self.can_attack =False
+                self.can_attack = False
             self.frame_index = 0
 
         self.image = animation[int(self.frame_index)]
-        self.rect = self.image.get_rect(center = self.hitbox.center)
+        self.rect = self.image.get_rect(center=self.hitbox.center)
 
         if not self.vulnerable:
             alpha = self.wave_value()
@@ -108,7 +107,7 @@ class Enemy(Entity):
             if current_time - self.attack_time >= self.attack_cooldown:
                 self.can_attack = True
 
-        if not self.vulnerable: #chack if the timer is equal or higher than 'self.invincibility_duration'
+        if not self.vulnerable:  # chack if the timer is equal or higher than 'self.invincibility_duration'
             if current_time - self.hit_time >= self.invincibility_duration:
                 self.vulnerable = True
 
@@ -136,8 +135,7 @@ class Enemy(Entity):
         """
         if self.health <= 0:
             self.kill()
-            self.trigger_death_particles(self.rect.center,self.monster_name)
-
+            self.trigger_death_particles(self.rect.center, self.monster_name)
 
     def hit_reaction(self):
         """
@@ -154,6 +152,6 @@ class Enemy(Entity):
         self.cooldown()
         self.chack_death()
 
-    def enemy_update(self,player):
+    def enemy_update(self, player):
         self.get_status(player)
         self.actions(player)

@@ -91,6 +91,84 @@ class Incoming_packets:
     def handle_server_shutdown(self):
         pass
 
+
+    def handle_object_update(self, header_info):
+        changes = header_info.split('/')
+        for each_change in changes:
+            each_change = each_change.split('-')
+            if each_change[0] == 'pick':
+                # so delete the object that is on the screen, you have the type in each_change[1] and the place in each_change[2]
+                pass
+            else:
+                # print the object on the screen, you have the type in each_change[1] and the place in each_change[2]
+                pass
+
+
+    def handle_first_objects_position(self, header_info):
+        changes = header_info.split('/')
+        for each_change in changes:
+            each_change1 = each_change.split('-')
+            if each_change1[0] == 'weapons':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'Weapons':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'Weapons':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'Weapons':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'ammo':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'med_kits':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'backpacks':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'plasters':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+            elif each_change1[0] == 'shoes':
+                how_many = each_change1[1].split(';')
+                for screen in how_many:
+                    place_number = screen.split('|')
+                    for i in range(place_number[1]):
+                        # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
+    def handle_dead_enemy(self, id):
+        # delete enemy from your list
+        pass
+    # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
+    def handle_enemy_player_place_type_hit(self, header_info):
+        each_info = header_info.split('/')
+        # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
     def handle_disconnect(self):
         # remove a player from your list don't print him anymore
         pass

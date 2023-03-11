@@ -280,5 +280,5 @@ class Level:
         self.ui.display(self.player)
         if self.player.i_pressed:
             self.ui.ui_screen(self.player)
-
+        debug(self.player.rect.center)
 
