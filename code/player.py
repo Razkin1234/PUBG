@@ -37,9 +37,9 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
 
         self.objects_on = {
-            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1, 'graphics_num': 0 , 'weapon_index': 0},
-            'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2, 'graphics_num': 1, 'weapon_index': 1},
-            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3, 'graphics_num': 3, 'weapon_index': 2},
+            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1},
+            'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2},
+            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3},
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
             'backpack': {'name': 'backpack','ui':1},

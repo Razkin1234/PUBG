@@ -13,6 +13,7 @@ from typing import Dict
 from particles import AnimationPlayer
 from magic import MagicPlayer
 from item import Item
+from weapon_item import Weapon_item
 
 class Level:
     def __init__(self):
@@ -25,6 +26,7 @@ class Level:
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
+        self.weapon_sprites = YsortCameraGroup()
 
         # attack sprites
         self.current_attack = None
@@ -169,6 +171,8 @@ class Level:
         Item((1100, 1200), self.item_sprites, "medkit")  # item create
         Item((1100, 1300), self.item_sprites, "medkit")  # item create
 
+        Weapon_item((1100, 1400), self.weapon_sprites, "rapier")
+
 
         #printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -270,8 +274,10 @@ class Level:
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
         self.item_sprites.custom_draw(self.camera)
+        self.weapon_sprites.custom_draw(self.camera)
 
         self.item_sprites.item_picking(self.player)
+        self.weapon_sprites.weapon_picking(self.player)
 
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
