@@ -1,3 +1,5 @@
+# The Server was written for python 3.8.0 64-bit interpreter
+
 """
 ====================================================PROTOCOL=================================================================================================|                                                                                                                |
 * It's a textual protocol                                                                                                                                    |
@@ -165,8 +167,6 @@ MIN_SIZE_FOR_SHOES_PACKAGE = 1
 MAX_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 MIN_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 
-# The optional spawn places for objects on the map as (X,Y)   [X and Y are str]
-OBJECTS_SPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
 # the current existing objects on the map as {str:{(str,str):int,},}
 # for each object type (key) it will be like {(X,Y):amount, (X,Y):amount...}       [X, Y are str and amount is int]
 OBJECTS_PLACES = {'ammo': {}, 'med_kits': {}, 'backpacks': {}, 'plasters': {}, 'shoes': {}, 'exp': {}}
@@ -175,12 +175,6 @@ OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters
 # ------------------------
 
 # ------------------------ Players
-# The optional respawn places on the map as (X,Y)   [X and Y are str]
-#  not relevant anymore - RESPAWN_SPOTS = [('970', '845'), ('4560', '1079'), ('4641', '2310'), ('2664', '10049'), ('1074', '8066'), ('987', '10608'), ('1243', '12186'), ('3091', '15116'), ('5756', '18119'), ('11562', '20786'), ('13521', '19441'), ('16336', '13778'), ('20954', '12318'), ('18726', '7382'), ('16862', '3020'), ('13932', '2570'), ('26725', '3343'), ('35613', '3539'), ('22162', '7687'), ('28685', '13014'), ('38160', '12112'), ('40048', '15695'), ('42723', '20759'), ('49082', '21329'), ('49170', '27214'), ('44448', '27471'), ('33346', '27327'), ('21780', '26875'), ('16233', '25088'), ('7275', '26761')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
-LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN = [[736, 2784, 718, 6578], [736, 3488, 7182, 10610], [3488, 15392, 718, 10610],
-                                       [18080, 22496, 2190, 7922], [24672, 50464, 718, 9138],
-                                       [26912, 47968, 12878, 28082], [14560, 26912, 12878, 20786],
-                                       [736, 14432, 11406, 20786], [7264, 16992, 24846, 28594]]
 # IPs, PORTs, IDs and user names of all clients as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 CLIENTS_ID_IP_PORT_NAME = []
 # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
@@ -199,8 +193,16 @@ ENEMY_BY_ID = []
 # ------------------------- General
 # Opening for server's packets (after this are the headers)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
-
-
+# The borders of the areas in the map. each sublist is [min X, max X, min Y, max Y]
+BORDERS_OF_EACH_AREA_ON_MAP = [[736, 2784, 718, 6578],
+                               [736, 3488, 7182, 10610],
+                               [3488, 15392, 718, 10610],
+                               [18080, 22496, 2190, 7922],
+                               [24672, 50464, 718, 9138],
+                               [26912, 47968, 12878, 28082],
+                               [14560, 26912, 12878, 20786],
+                               [736, 14432, 11406, 20786],
+                               [7264, 16992, 24846, 28594]]
 # -------------------------
 
 
@@ -460,7 +462,7 @@ def handle_object_update(header_data: str, sender_id: str) -> str:
                 if OBJECTS_PLACES[object_type][place] == 0:
                     del OBJECTS_PLACES[object_type][place]
                 # generating a new place to spawn this object in
-                spawn_place = random_spawn_place('object')
+                spawn_place = random_spawn_place()
                 # saving the new place
                 if spawn_place in OBJECTS_PLACES[object_type]:
                     OBJECTS_PLACES[object_type][spawn_place] += amount
@@ -730,19 +732,21 @@ def create_new_id(client_ip_port_name: tuple) -> str:
     return str(last_id)
 
 
-def random_spawn_place(for_what: str) -> tuple:
+def random_spawn_place() -> tuple:
     """
-    Random a spawn spot from the RESPAWN_SPOTS global list or from the OBJECTS_SPAWN_SPOTS (according to for_what arg).
-    :param for_what: <String> what do you want to random for? ('player' or 'object')
-    :return: <Tuple> the random spawn place as (X,Y).  [X and Y are str]
+    Giving a random place on the map.
+    :return: <Tuple> The random place as a tuple of strings (X, Y)  [X and Y are str]
     """
 
-    global RESPAWN_SPOTS, OBJECTS_SPAWN_SPOTS
+    global BORDERS_OF_EACH_AREA_ON_MAP
 
-    if for_what == 'player':
-        return RESPAWN_SPOTS[randint(0, len(RESPAWN_SPOTS) - 1)]
-    if for_what == 'object':
-        return OBJECTS_SPAWN_SPOTS[randint(0, len(OBJECTS_SPAWN_SPOTS) - 1)]
+    # random an area on the map (we have 9)
+    area_number = randint(0, 8)
+    chosen_area = BORDERS_OF_EACH_AREA_ON_MAP[area_number]
+    # random coordinates in the chosen area
+    x = randint(chosen_area[0], chosen_area[1])
+    y = randint(chosen_area[2], chosen_area[3])
+    return str(x), str(y)
 
 
 def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
@@ -770,7 +774,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         return 'register_status: taken\r\n'
 
     # random a spawn location
-    spawn_place = random_spawn_place('player')
+    spawn_place = random_spawn_place()
 
     # encrypting the data to be saved (and hashing the password)
     hashed_password = sha512_hash(password.encode('utf-8'))
@@ -860,7 +864,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             break
 
     # random a new respawn location
-    respawn_place = random_spawn_place('player')
+    respawn_place = random_spawn_place()
 
     # encrypting the data to be saved (and hashing the password)
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
@@ -1763,9 +1767,13 @@ def print_start_info_and_running_status():
                , color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='NOTE: ', new_line=False, color='magenta', italic=True, bold=True)
-    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, and checked only'
-                    ' on Windows.\n         We can only be sure it works the best on Windows, any other platform wasnt '
-                    'checked.\n', color='magenta', italic=True)
+    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, of 64-bit '
+                    'version only, and was tested only on Windows.\n'
+                    '         A machine with 32-bit processor or 32-bit Operating System wont be able to run it '
+                    'properly.\n'
+                    '         We can only be sure it works the best on a 64-bit Windows platform. Any other platform '
+                    'of 64-bit should work, but wasnt tested, so might have an unexpected behavior.\n',
+               color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
     if my_public_ip == "[Your public IP (our system couldn't find it)]":
@@ -1856,7 +1864,7 @@ def set_first_objects_position():
         if object_type == 'ammo':
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_AMMO_PACKAGE, MAX_SIZE_FOR_AMMO_PACKAGE)
@@ -1868,7 +1876,7 @@ def set_first_objects_position():
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_MEDKITS_PACKAGE)
@@ -1880,7 +1888,7 @@ def set_first_objects_position():
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE)
@@ -1892,7 +1900,7 @@ def set_first_objects_position():
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_PLASTERS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE)
@@ -1904,7 +1912,7 @@ def set_first_objects_position():
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_SHOES_PACKAGE)
@@ -1992,15 +2000,15 @@ def main():
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
-            # first_player_locked_on()  # !!
-            try:  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
+            # first_player_locked_on()                                                                            # !!
+            try:                                                                                                  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:  # !!
-                continue  # !!
-                # !!
+            except socket_timeout:                                                                                # !!
+                continue                                                                                          # !!
+                                                                                                                  # !!
             # verify the packet in a different thread and if all good then handling it in another thread          # !!
-            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)  # !!
+            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)                 # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2013,8 +2021,8 @@ def main():
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                            "    Make sure the port is available and is not already in use by another service and run again.",
-                       color='red')
+                       "    Make sure the port is available and is not already in use by another service and run again."
+                       , color='red')
             print(">> ", end='')
             print_ansi(
                 text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
