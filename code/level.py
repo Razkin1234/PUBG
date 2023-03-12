@@ -58,7 +58,7 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites)
+        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites,self.weapon_sprites)
 
         self.item = Item
 

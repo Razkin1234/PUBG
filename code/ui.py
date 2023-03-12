@@ -1,12 +1,14 @@
 import pygame
 from settings import *
 from item import Item
+from weapon_item import Weapon_item
 class UI:
-    def __init__(self,objects_on,items_on,item_sprites):
+    def __init__(self,objects_on,items_on,item_sprites,weapon_sprites):
         #general
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
         self.item_sprites = item_sprites
+        self.weapon_sprites = weapon_sprites
 
         #bar setup
         self.health_bar_rect = pygame.Rect(10,10,HEALTH_BAR_WIDTH,BAR_HEIGHT)
@@ -215,7 +217,12 @@ class UI:
                     for weapon, weapon_value in objects_copy.items():
                         if weapon_value['ui'] == self.box_on[1]:
                             if len(list(player.objects_on.keys()))> 1:
+                                player.can_pick_item = False
+                                player.drop_item_time = pygame.time.get_ticks()
+                                Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
                                 del player.objects_on[weapon]
+
+
                                 if player.weapon_index < len(list(player.objects_on.keys())) - 1:
                                     player.weapon_index += 1  # new weapon
                                 else:
