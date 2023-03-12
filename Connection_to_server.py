@@ -39,9 +39,12 @@ class Connection_to_server:
 
     def add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked):
         self.__packet += f'object_update: {pick_drop}-{type_object}-{place}-{amount}'
-        for i in range(how_many_dropped_picked-1):
+        for i in range(how_many_dropped_picked - 1):
             self.__packet += f'/{pick_drop}-{type_object}-{place}-{amount}'
         self.__packet += '\r\n'
+
+    def add_hit_an_enemy(self, id_of_enemy, hp_to_sub):
+        self.__packet += f'hit_an_enemy: {id_of_enemy},{hp_to_sub}'
 
     def get_packet(self):
         return self.__packet

@@ -108,7 +108,7 @@ class Incoming_packets:
         changes = header_info.split('/')
         for each_change in changes:
             each_change1 = each_change.split('-')
-            if each_change1[0] == 'weapons':
+            if each_change1[0] == 'sword':
                 how_many = each_change1[1].split(';')
                 for screen in how_many:
                     place_number = screen.split('|')
@@ -167,8 +167,10 @@ class Incoming_packets:
         pass
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
     def handle_enemy_player_place_type_hit(self, header_info):
-        each_info = header_info.split('/')
-        # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
+        info = header_info.split('-')
+        for each_info in info:
+            each_info = header_info.split('/')
+            # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
     def handle_disconnect(self):
         # remove a player from your list don't print him anymore
         pass

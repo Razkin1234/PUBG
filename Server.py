@@ -223,9 +223,9 @@ def moving_enemies():
     for enemy in ENEMY_BY_ID:
         direction = pygame.math.Vector2()
         enemy_x = enemy[1][0]
-        enemy_x = int(enemy)
+        enemy_x = int(enemy_x)
         enemy_y = enemy[1][1]
-        enemy_y = int(enemy)
+        enemy_y = int(enemy_y)
         player_id = enemy[2]
         player_place = PLAYER_PLACES_BY_ID[player_id]
         player_x = int(player_place[0])
@@ -234,7 +234,7 @@ def moving_enemies():
             direction.x = -1 * (enemy_x - player_x)
         else:
             direction.x = (player_x - enemy_x)
-        if enemy_x >= player_x:
+        if enemy_y >= player_y:
             direction.y = -1 * (enemy_y - player_y)
         else:
             direction.y = (player_y - enemy_y)
@@ -827,12 +827,23 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     :param shooter_id: <String> the ID of the shooter client.
     :return: <String> Rotshild headers to describe the shot status - shot_place, hit_hp, shooter_id.
     """
-
+    global ENEMY_BY_ID
     # now the shot_place it a tuple of strings, and when casting it to str it will be like - "('1', '1')".
     # So changing it to be '(1,1)'
+    shot_for_checking = (int(shot_place[0]), int(shot_place[1]))
+    for enemy in ENEMY_BY_ID:
+        enemy_place_for_checking = (int(enemy[1][0]), int(enemy[1][0]))
+        if shot_for_checking == enemy_place_for_checking:
+            if (enemy[3] - hp) > 0:
+                enemy[2] = shooter_id
+                enemy[3] = enemy[3] - hp
+                return ''
+            else:
+                ENEMY_BY_ID.remove(enemy)
+                return f'dead_enemy: {enemy[0]}\r\n'
     place = f'({shot_place[0]},{shot_place[1]})'
 
-    return f'shot_place: {shot_place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
+    return f'shot_place: {place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
