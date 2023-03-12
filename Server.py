@@ -75,7 +75,7 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
-            - enemy_player_place_type_hit: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...[only server sends] |
+            - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
               [between every different enemy there is '-']                                                                                                   |
             - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
             - dead_enemy: [id_of_enemy]                                                                                            [only server sends]       |
@@ -92,13 +92,13 @@ import re
 import threading
 import colorama
 import MyKeyring  # my module (not the external library)
+import pygame
 from prettytable import PrettyTable
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
 from cryptography.fernet import Fernet
 from random import randint, choice
-import pygame
 
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
@@ -147,12 +147,12 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 
 # ------------------------ Objects
 DEFAULT_WEAPONS = 'stick'  #
-DEFAULT_AMMO = 0  #
-DEFAULT_MED_KITS = 0  # DEFAULT
-DEFAULT_BACKPACK = 0  # AMOUNTS
-DEFAULT_PLASTERS = 0  #
-DEFAULT_SHOES = 0  #
-DEFAULT_EXP = 0  #
+DEFAULT_AMMO = 0           #
+DEFAULT_MED_KITS = 0       # DEFAULT
+DEFAULT_BACKPACK = 0       # AMOUNTS
+DEFAULT_PLASTERS = 0       #
+DEFAULT_SHOES = 0          #
+DEFAULT_EXP = 0            #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -182,12 +182,33 @@ PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
 # ------------------------- Enemy
-squid = 0  # 25
-raccoon = 0  # 10
-spirit = 0  # 25
-bamboo = 0  # 40
-# list like [[id_enemy],[place_of_enemy],[[id_of_player_locked]],[number_of_lives_enemy],[type_enemy]]
-ENEMY_BY_ID = []
+SQUID_AMOUNT = 0     # AMOUNTS OF
+RACCOON_AMOUNT = 0   # EACH ENEMY
+SPIRIT_AMOUNT = 0    # AT THE
+BAMBOO_AMOUNT = 0    # MOMENT
+
+SHOULD_BE_SQUID = 25    # AMOUNTS OF
+SHOULD_BE_RACCOON = 10  # EACH ENEMY
+SHOULD_BE_SPIRIT = 25   # THAT SHOULD
+SHOULD_BE_BAMBOO = 40   # BE
+
+SQUID_HP = 100     #
+RACCOON_HP = 300   # HP OF
+SPIRIT_HP = 100    # EACH ENEMY
+BAMBOO_HP = 70     #
+
+SQUID_SPEED = 3     #
+RACCOON_SPEED = 2   # SPEED OF
+SPIRIT_SPEED = 4    # EACH ENEMY
+BAMBOO_SPEED = 3    #
+
+
+# list of enemies data. its a list of lists of each enemy data.
+# the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type]
+# [enemy_id, id_of_target_player and enemy_type are str.
+# place_of_enemy is a tuple of strs, like (X,Y).
+# enemy_hp_amount is int]
+ENEMY_DATA = []
 # -------------------------
 
 # ------------------------- General
@@ -203,132 +224,147 @@ BORDERS_OF_EACH_AREA_ON_MAP = [[736, 2784, 718, 6578],
                                [14560, 26912, 12878, 20786],
                                [736, 14432, 11406, 20786],
                                [7264, 16992, 24846, 28594]]
+# A set with all the active IDs (both clients and enemies) as str
+ACTIVE_ID_SET = {}
 # -------------------------
 
 
-def move(enemy_x, enemy_y, direction, speed, enemy):  # moves the player around
-    global ENEMY_BY_ID
-    if direction.magnitude() != 0:
-        direction = direction.normalize()  # making the speed good when we are gowing 2 diractions
+def move(enemy_x: int, enemy_y: int, direction: pygame.math.Vector2, speed: int, enemy_data: list):
+    """
+    Moves an enemy 1 step in the global data list.
+    :param enemy_x: <Int> The current X coordinate of the enemy.
+    :param enemy_y: <Int> The current Y coordinate of the enemy.
+    :param direction: <pygame.math.Vector2> the direction vector of the movement.
+    :param speed: <Int> The movement speed.
+    :param enemy_data: <List> The data list of the enemy (like described in ENEMY_DATA global var).
+    """
+
+    global ENEMY_DATA
+
+    if direction.magnitude() != 0:  # if the movement is not horizontal or vertical
+        direction = direction.normalize()  # making the speed good when we are going in 2 dimensions (X and Y)
     enemy_x += direction.x * speed  # making the player move horizontaly
     enemy_y += direction.y * speed  # making the player move verticaly
-    enemy[1][0] = str(enemy_x)
-    enemy[1][1] = str(enemy_y)
+    # updating the enemy place in the data list
+    enemy_data[1][0] = str(enemy_x)
+    enemy_data[1][1] = str(enemy_y)
 
 
 def moving_enemies():
-    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID
+    """
+    Making sure there are enough enemies on the map and moving all the enemies 1 step.
+    :return: <String> enemy_update header.
+    """
+
+    global ENEMY_DATA, PLAYER_PLACES_BY_ID, SQUID_SPEED, RACCOON_SPEED, SPIRIT_SPEED, BAMBOO_SPEED
+
+    # Making sure there are enough enemies. if some died - spawning new ones
     creating_enemies()
-    place_enemy = str(ENEMY_BY_ID[0][1]).replace("'", '').replace(' ', '')
-    packet = f'enemy_player_place_type_hit: {ENEMY_BY_ID[0][0]}/{place_enemy}/{ENEMY_BY_ID[0][4]}/No'
-    # here all the code for moving the enemies
-    for enemy in ENEMY_BY_ID:
+
+    enemy_place = str(ENEMY_DATA[0][1]).replace("'", '').replace(' ', '')
+    header = f'enemy_update: {ENEMY_DATA[0][0]}/{enemy_place}/{ENEMY_DATA[0][4]}/No'
+
+    # iterate over all the enemies and move 1 step
+    for enemy in ENEMY_DATA:
         direction = pygame.math.Vector2()
-        enemy_x = enemy[1][0]
-        enemy_x = int(enemy)
-        enemy_y = enemy[1][1]
-        enemy_y = int(enemy)
-        player_id = enemy[2]
-        player_place = PLAYER_PLACES_BY_ID[player_id]
-        player_x = int(player_place[0])
-        player_y = int(player_place[1])
-        if enemy_x >= player_x:
-            direction.x = -1 * (enemy_x - player_x)
+        enemy_x = int(enemy[1][0])
+        enemy_y = int(enemy[1][1])
+        target_player_id = enemy[2]
+        target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
+        target_player_x = int(target_player_place[0])
+        target_player_y = int(target_player_place[1])
+        # setting the direction  to the target player
+        if enemy_x >= target_player_x:
+            direction.x = -1 * (enemy_x - target_player_x)
         else:
-            direction.x = (player_x - enemy_x)
-        if enemy_x >= player_x:
-            direction.y = -1 * (enemy_y - player_y)
+            direction.x = target_player_x - enemy_x
+        if enemy_y >= target_player_y:
+            direction.y = -1 * (enemy_y - target_player_y)
         else:
-            direction.y = (player_y - enemy_y)
-        move(enemy_x, enemy_y, direction, 5, enemy)
-        # here sending all of the new places of the enemies
-        place_enemy = str(enemy[1]).replace("'", '').replace(' ', '')
-        packet += f'-{enemy[0]}/{place_enemy}/{enemy[4]}/No'
-    packet += '\r\n'
-    return packet
-
-
-def random_pos_for_enemy():
-    """
-    giving a random pos
-    :return: the random place i am returning it in String
-    """
-    global LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN
-    # place1[minx = 736, max_x = 2784, min_y = 718, max_y = 6578], place2[minx = 736, max_x = 3488, min_y = 7182, max_y = 10610], place3[minx = 3488, max_x = 15392, min_y = 718, max_y = 10610], place4[minx = 18080, max_x = 22496, min_y = 2190, max_y = 7922], place5[minx = 24672, max_x = 50464, min_y = 718, max_y = 9138], place6[minx = 26912, max_x = 47968, min_y = 12878, max_y = 28082], place7[minx = 14560, max_x = 26912, min_y = 12878, max_y = 20786], place8[minx = 736, max_x = 14432, min_y = 11406, max_y = 20786], place9[minx = 7264, max_x = 16992, min_y = 24846, max_y = 28594]
-    number = randint(0, 8)
-    place_chosen = LIMIT_OF_EACH_PLACE_ON_MAP_TO_SPAWN[number]
-    x = randint(place_chosen[0], place_chosen[1])
-    y = randint(place_chosen[2], place_chosen[3])
-    return str(x), str(y)
+            direction.y = target_player_y - enemy_y
+        # moving the enemy one step
+        if enemy[4] == 'squid':
+            move(enemy_x, enemy_y, direction, SQUID_SPEED, enemy)
+        elif enemy[4] == 'spirit':
+            move(enemy_x, enemy_y, direction, SPIRIT_SPEED, enemy)
+        elif enemy[4] == 'raccoon':
+            move(enemy_x, enemy_y, direction, RACCOON_SPEED, enemy)
+        elif enemy[4] == 'bamboo':
+            move(enemy_x, enemy_y, direction, BAMBOO_SPEED, enemy)
+        # add the new places of the enemy to the header
+        enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
+        header += f'-{enemy[0]}/{enemy_place}/{enemy[4]}/No'
+    header += '\r\n'
+    return header
 
 
 def creating_enemies():
     """
-    making sure there are 100 enemies on screen
-    :return:
+    Making sure there are 100 alive enemies.
     """
-    global squid, raccoon, spirit, bamboo, ENEMY_BY_ID, CLIENTS_ID_IP_PORT_NAME
-    if squid != 25:
-        i = 25 - squid
-        squid = 25
-        for j in range(i):
-            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 100,
-                               'squid')
-    if spirit != 25:
-        i = 25 - spirit
-        spirit = 25
-        for j in range(i):
-            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 100,
-                               'spirit')
-    if raccoon != 10:
-        i = 10 - raccoon
-        raccoon = 10
-        for j in range(i):
-            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 300,
-                               'raccoon')
-    if bamboo != 40:
-        i = 40 - bamboo
-        bamboo = 40
-        for j in range(i):
-            number = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_BY_ID.append(create_new_id(), random_pos_for_enemy(), CLIENTS_ID_IP_PORT_NAME[number][0], 70,
-                               'bamboo')
+
+    global SQUID_AMOUNT, RACCOON_AMOUNT, SPIRIT_AMOUNT, BAMBOO_AMOUNT, ENEMY_DATA, CLIENTS_ID_IP_PORT_NAME, \
+        SHOULD_BE_SQUID, SHOULD_BE_RACCOON, SHOULD_BE_SPIRIT, SHOULD_BE_BAMBOO, SQUID_HP, RACCOON_HP, SPIRIT_HP, \
+        BAMBOO_HP
+
+    if SQUID_AMOUNT != SHOULD_BE_SQUID:
+        i = SHOULD_BE_SQUID - SQUID_AMOUNT
+        SQUID_AMOUNT = SHOULD_BE_SQUID
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
+                              'squid')
+
+    if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
+        i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
+        SPIRIT_AMOUNT = SHOULD_BE_SPIRIT
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
+                              'spirit')
+
+    if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
+        i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
+        RACCOON_AMOUNT = SHOULD_BE_RACCOON
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
+                              'raccoon')
+
+    if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
+        i = SHOULD_BE_BAMBOO - BAMBOO_AMOUNT
+        BAMBOO_AMOUNT = SHOULD_BE_BAMBOO
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
+                              'bamboo')
 
 
-def handle_hit_an_enemy(enemy_id, player_id, hp):
+def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
     """
-    changing the enemy who got shot to locked on the one who shot him
-    :param hp: how much to take off the current hp
-    :param player_id:
-    :param enemy_id:
-    :return: if there is a dead enemy so returning his place and type
+    Changing the enemy who got hit to target on the one who shot him and taking down hp.
+    :param hp: <String> how much to take off?
+    :param shooter_id: <String> the shooter's ID.
+    :param enemy_id: <String> the ID og the enemy.
+    :return: <String> if there is a dead enemy so returning a dead_enemy header.
     """
+
+    global ENEMY_DATA, ACTIVE_ID_SET
+
     hp = int(hp)
-    global ENEMY_BY_ID
-    for enemy in ENEMY_BY_ID:
+    for enemy in ENEMY_DATA:
         if enemy[0] == enemy_id:
-            if (enemy[3] - hp) > 0:
-                enemy[2] = player_id
+            if enemy[3] - hp > 0:
+                # the enemy didn't die
+                enemy[2] = shooter_id
                 enemy[3] = enemy[3] - hp
                 return ''
             else:
-                ENEMY_BY_ID.remove(enemy)
-                return f'dead_enemy: {enemy[0]}\r\n'
-
-
-def first_player_locked_on():
-    """
-    i am checking if there is only one player on the map. if there
-    so i am setting all of the enemies to be locked on him
-    """
-    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME
-    if len(PLAYER_PLACES_BY_ID) == 1:
-        client_id = CLIENTS_ID_IP_PORT_NAME[0][0]
-        for enemy in ENEMY_BY_ID:
-            enemy[2] = client_id
+                # the enemy died
+                ENEMY_DATA.remove(enemy)
+                ACTIVE_ID_SET.remove(enemy_id)
+                return f'dead_enemy: {enemy_id}\r\n'
+        return ''
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -511,8 +547,8 @@ def handle_object_update(header_data: str, sender_id: str) -> str:
 
 def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list and saving its place to
-    the DB for respawn.
+    Deleting the client from PLAYER_PLACES_BY_ID dict, CLIENTS_ID_IP_PORT_NAME list and ACTIVE_ID_SET set, and
+    saving its place to the DB for respawn.
     :param client_id: <String> the ID of the clients who is disconnecting.
     :param user_name: <String> the user name of the client.
     :param connector: the connection object to the DB.
@@ -520,7 +556,7 @@ def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     :return: <String> disconnect header with the ID of the disconnected clients.
     """
 
-    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
+    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Store current place to DB and delete the client from the PLAYER_PLACES_BY_ID dict
     if client_id in PLAYER_PLACES_BY_ID:
@@ -537,6 +573,9 @@ def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
         if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
+
+    # Deleting the client from the ACTIVE_ID_SET set
+    ACTIVE_ID_SET.remove(client_id)
 
     print(">> ", end='')
     print_ansi(text='Client manually disconnected from game server', color='red', bold=True, underline=True)
@@ -695,40 +734,48 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         return 'login_status: fail\r\n'
 
 
-def create_new_id(client_ip_port_name: tuple) -> str:
+def create_new_id(client_ip_port_name: tuple = None) -> str:
     """
-    Creating a new ID for a client, saving it with its IP and PORT in the CLIENTS_ID_IP_PORT_NAME list, and returning it
+    Creating a new ID for a client or an enemy.
+    If its a client then saving it with its IP and PORT in the CLIENTS_ID_IP_PORT_NAME list, and returning it.
+    If its an enemy then just returning it.
+    (in any case adding it to the ACTIVE_ID_SET global set)
     :param client_ip_port_name: <Tuple> the IP, PORT and user name of the new client as (IP, PORT, NAME).
                                                                                         [IP, PORT and NAME are str]
+            If didn't mention this parameter it will be None - indicating the ID is for an enemy.
     :return: <String> the ID given to the client.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME
+    global CLIENTS_ID_IP_PORT_NAME, ACTIVE_ID_SET
 
-    # checking if the list is empty
-    if not CLIENTS_ID_IP_PORT_NAME:
+    # checking if the set is empty
+    if not ACTIVE_ID_SET:
         # giving ID = 1
-        CLIENTS_ID_IP_PORT_NAME.append(('1', client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+        if client_ip_port_name is not None:
+            CLIENTS_ID_IP_PORT_NAME.append(
+                ('1', client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+            ACTIVE_ID_SET.add('1')
         return '1'
 
     last_id = 0  # the last active id we know we have at the moment
-    found = False  # flag
-    while found is False:  # Running till a free id found
+    found = True  # flag
+    while True:
         last_id += 1  # Checking the next id
 
-        for client in CLIENTS_ID_IP_PORT_NAME:  # Running for each client
-            if client[0] == str(last_id):
-                # if got here then there is a client with the id in last_id
+        for id in ACTIVE_ID_SET:  # iterating over the active IDs
+            if id == str(last_id):
+                # if got here then the id in last_id is taken
+                found = False
                 break
 
-            # checking if we passed all active clients
-            elif client[0] == CLIENTS_ID_IP_PORT_NAME[len(CLIENTS_ID_IP_PORT_NAME) - 1][0]:
-                # if got here then there is no client with the id in last_id
-                found = True
+        if found is True:
+            break
 
     # the smallest free ID is in last_id
-    CLIENTS_ID_IP_PORT_NAME.append(
-        (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+    if client_ip_port_name is not None:
+        CLIENTS_ID_IP_PORT_NAME.append(
+            (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+        ACTIVE_ID_SET.add(str(last_id))
     return str(last_id)
 
 
@@ -836,12 +883,12 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     # So changing it to be '(1,1)'
     place = f'({shot_place[0]},{shot_place[1]})'
 
-    return f'shot_place: {shot_place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
+    return f'shot_place: {place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list,
+    Deleting the dead client from PLAYER_PLACES_BY_ID dict, CLIENTS_ID_IP_PORT_NAME list, and ACTIVE_ID_SET set,
     and initializing the inventory (the DB values but for user_name and password) to default.
     :param dead_id: <String> the ID of the dead client
     :param user_name: <String> the uesr name of the dead client.
@@ -851,7 +898,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
 
     global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, \
-        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION
+        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -862,6 +909,9 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
         if client_addr[0] == dead_id:  # client_addr[0] is the ID of the client
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
+
+    # Deleting the dead client from the ACTIVE_ID_SET set
+    ACTIVE_ID_SET.remove(dead_id)
 
     # random a new respawn location
     respawn_place = random_spawn_place()
@@ -1015,6 +1065,14 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
 
         # --------------
+        elif line_parts[0] == 'hit_an_enemy:':
+            if id_cache == '':
+                id_cache = lines[0].split()[1]
+                enemy_id, hit_hp = line_parts[1].split(',')
+            reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
+        # --------------
+
+        # --------------
         elif line_parts[0] == 'inventory_update:':
             # open db connector and cursor if not open already
             if not (connector and cursor):
@@ -1076,20 +1134,13 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
         # --------------
 
-        # --------------
-        elif line_parts[0] == 'hit_an_enemy:':
-            if id_cache == '':
-                id_cache = lines[0].split()[1]
-                info1 = line_parts[1].split(',')
-            reply_rotshild_layer += handle_hit_an_enemy(info1[0], id_cache, info1[1])
-        # --------------
-    reply_rotshild_layer += moving_enemies()
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT_NAME:
             server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
 
     else:
+        reply_rotshild_layer += moving_enemies()
         # sending the reply to the specific client
         server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
 
@@ -1204,7 +1255,7 @@ def check_user_input_thread(server_socket: socket):
     """
 
     global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, \
-        CLOSING_THREADS_EVENT, SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID
+        CLOSING_THREADS_EVENT, SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID, ACTIVE_ID_SET
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -1408,6 +1459,9 @@ def check_user_input_thread(server_socket: socket):
                                 if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
                                     CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
                                     break
+
+                            # Deleting the client from the ACTIVE_ID_SET set
+                            ACTIVE_ID_SET.remove(client_id)
 
                             # informing all other clients
                             layer = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'disconnect: ' + client_id + '\r\n'
@@ -1986,12 +2040,12 @@ def main():
         print(">> ", end='')
         print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
         print_ansi(text="   - 'shutdown': To shutdown the server.\n"
-                        "   - 'get clients': To show all clients registered on this server and their info.\n"
-                        "   - 'delete <user_name>': To delete a client from the server.\n"
-                        "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                        "      and the number of active players at the moments.\n"
-                        "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                        "   - 'help': To show optional UI commends.\n",
+                   "   - 'get clients': To show all clients registered on this server and their info.\n"
+                   "   - 'delete <user_name>': To delete a client from the server.\n"
+                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                   "      and the number of active players at the moments.\n"
+                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                   "   - 'help': To show optional UI commends.\n",
                    color='cyan')
         # --------------------------------------------------
 
@@ -2001,7 +2055,6 @@ def main():
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
         while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            # first_player_locked_on()                                                                            # !!
             try:                                                                                                  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
             except socket_timeout:                                                                                # !!
