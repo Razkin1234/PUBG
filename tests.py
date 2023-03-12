@@ -155,7 +155,7 @@ def test_object_update(header_info: str, id: str):
 
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
-#test_login_request('user2', 'password2')
+#test_login_request('user1', 'password1')
 #test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1')
 #test_disconnect('1')
@@ -163,4 +163,6 @@ def test_object_update(header_info: str, id: str):
 #test_player_place('(1,2)', 'image_name', '1')
 #test_object_update('drop-ammo-(32845,25492)-7', '1')
 #wait_for_reply()
+# while True:
+#     wait_for_reply()
 # -------------------------------------------------
