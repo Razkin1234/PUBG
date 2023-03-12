@@ -8,7 +8,7 @@
 * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
                                                                                                                                                              |
 structure - 'Rotshild <ID>\r\n\r\n<headers>'                                                                                                                 |
-[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register request there is no ID]     |
+[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register/login request no ID]        |
 [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
                                                                                                                                                              |
 ------------------------------------------------------------------                                                                                           |
@@ -93,7 +93,9 @@ import threading
 import colorama
 import MyKeyring  # my module (not the external library)
 import pygame
+from time import sleep
 from prettytable import PrettyTable
+from collections import deque
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
@@ -225,7 +227,12 @@ BORDERS_OF_EACH_AREA_ON_MAP = [[736, 2784, 718, 6578],
                                [7264, 16992, 24846, 28594]]
 # A set with all the active IDs (both clients and enemies) as str
 ACTIVE_ID_SET = set()
-FPS = 60  # the Frames Per Second of the game (like in the client code)
+# The Frames Per Second of the game (like in the client code)
+FPS = 60
+# A queue of packets that are waiting to be handled
+# (will hold tuples with the payloads as bytestring and the src address as a tuple of (IP, PORT))
+# each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
+PACKETS_TO_HANDLE_QUEUE = deque()
 # -------------------------
 
 
@@ -656,6 +663,8 @@ def create_new_id(client_ip_port_name: tuple = None) -> str:
                 # if got here then the id in last_id is taken
                 found = False
                 break
+            else:
+                found = True
 
         if found is True:
             break
@@ -1067,33 +1076,41 @@ def rotshild_filter(payload: bytes) -> bool:
     return payload[:len(expected)] == expected
 
 
-def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
+def verify_and_handle_packet_thread(server_socket: socket):
     """
+    Taking payloads from the PACKET_TO_HANDLE_QUEUE and handling it.
     Checking on encoded data if it's a Rotshild protocol packet.
-    Then (if not register request) verifies match of src IP-PORT-ID.
+    Then (if not register/login request) verifies match of src IP-PORT-ID.
     If all good then handling the packet.
-    :param payload: <Bytes> the payload received.
-    :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
     :param server_socket: <Socket> the socket object of the server.
     """
 
-    global PRIVATE_KEY, SERVER_SOCKET_TIMEOUT
+    global PRIVATE_KEY, SERVER_SOCKET_TIMEOUT, PACKETS_TO_HANDLE_QUEUE, SHUTDOWN_TRIGGER_EVENT
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
     try:
-        if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
-            plaintext = payload.decode('utf-8')
-            # handling packet if ID-IP-PORT matches or if register request
-            if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                                                   src_addr[0],
-                                                                   str(src_addr[1])):
-                packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            # pop a packet to handle
+            if len(PACKETS_TO_HANDLE_QUEUE) > 0:
+                payload, src_addr = PACKETS_TO_HANDLE_QUEUE.popleft()
+            else:
+                sleep(0.1)  # to avoid waisting CPU cycles
+                continue
+
+            if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
+                plaintext = payload.decode('utf-8')
+                # handling packet if ID-IP-PORT matches or if register/login request
+                if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                                       src_addr[0],
+                                                                       str(src_addr[1])):
+                    packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on a packet thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (on a packet handle thread)... This is the error message: {ex}",
+                   color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1145,8 +1162,8 @@ def move(enemy_x: int, enemy_y: int, direction: pygame.math.Vector2, speed: int,
     enemy_x += direction.x * speed  # making the player move horizontaly
     enemy_y += direction.y * speed  # making the player move verticaly
     # updating the enemy place in the data list
-    enemy_data[1][0] = str(enemy_x)
-    enemy_data[1][1] = str(enemy_y)
+    place = (str(enemy_x), str(enemy_y))
+    enemy_data[1] = place
 
 
 def creating_enemies():
@@ -1163,32 +1180,32 @@ def creating_enemies():
         SQUID_AMOUNT = SHOULD_BE_SQUID
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
-                              'squid')
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
+                              'squid'])
 
     if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
         i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
         SPIRIT_AMOUNT = SHOULD_BE_SPIRIT
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
-                              'spirit')
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
+                              'spirit'])
 
     if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
         i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
         RACCOON_AMOUNT = SHOULD_BE_RACCOON
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
-                              'raccoon')
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
+                              'raccoon'])
 
     if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
         i = SHOULD_BE_BAMBOO - BAMBOO_AMOUNT
         BAMBOO_AMOUNT = SHOULD_BE_BAMBOO
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-            ENEMY_DATA.append(create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
-                              'bamboo')
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
+                              'bamboo'])
 
 
 def moving_enemies_thread(server_socket: socket):
@@ -1203,8 +1220,13 @@ def moving_enemies_thread(server_socket: socket):
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
     try:
-        clock = pygame.time.Clock  # Generating a clock object to count and fir the FPS of the game
+        clock = pygame.time.Clock()  # Generating a clock object to count and fit the FPS of the game
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            # waiting for clients to enter
+            if not CLIENTS_ID_IP_PORT_NAME:
+                sleep(0.1)  # to avoid waisting CPU cycles
+                continue
+
             # Making sure there are enough enemies. if some died - spawning new ones
             creating_enemies()
 
@@ -1254,7 +1276,8 @@ def moving_enemies_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (on the bots controlling thread)... This is the error message: {ex}",
+                   color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -2022,7 +2045,7 @@ def store_all_respawn_places():
 
 def main():
     global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, \
-        SHUTDOWN_INFORMING_EVENT
+        SHUTDOWN_INFORMING_EVENT, PACKETS_TO_HANDLE_QUEUE
 
     executor = None
     server_socket = None
@@ -2074,11 +2097,14 @@ def main():
                    color='cyan')
         # --------------------------------------------------
 
+        # -------------------------------------------------- Starting worker threads
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
-
         # setting a thread to handle the enemies (bots) behavior
         executor.submit(moving_enemies_thread, server_socket)
+        # setting a thread to handle incomig packets from the queue
+        executor.submit(verify_and_handle_packet_thread, server_socket)
+        # ---------------------------------------------------
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
@@ -2088,8 +2114,8 @@ def main():
             except socket_timeout:                                                                                # !!
                 continue                                                                                          # !!
                                                                                                                   # !!
-            # verify the packet in a different thread and if all good then handling it in another thread          # !!
-            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)                 # !!
+            # adds the payload to the queue to wait for being handled                                             # !!
+            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))                                                # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
