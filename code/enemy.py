@@ -18,6 +18,7 @@ class Enemy(Entity):
         self.rect = self.image.get_rect(topleft = pos)
         self.hitbox = self.rect.inflate(0,-10)
         self.obstacle_sprites = obstacle_sprites
+        self.direction = pygame.math.Vector2()
 
         #stats
         self.monster_name = monster_name
@@ -74,26 +75,26 @@ class Enemy(Entity):
         else:
             self.status = 'idle'
 
-    def actions(self, player):
+    def actions(self,player):
         if self.status == 'attack':
             self.attack_time = pygame.time.get_ticks()
-            self.damage_player(self.attack_damage, self.attack_type)
+            self.damage_player(self.attack_damage,self.attack_type)
         elif self.status == 'move':
             self.direction = self.get_player_distance_direction(player)[1]
         else:
-            self.direction = pygame.math.Vector2()  # the bot will not move
+            self.direction = pygame.math.Vector2() #the bot will not move
 
     def animate(self):
-        animation = self.animations[self.status]  # the animations photo
+        animation = self.animations[self.status] #the animations photo
 
         self.frame_index += self.animation_speed
-        if self.frame_index >= len(animation):
+        if self.frame_index >= len(animation) :
             if self.status == 'attack':
-                self.can_attack = False
+                self.can_attack =False
             self.frame_index = 0
 
         self.image = animation[int(self.frame_index)]
-        self.rect = self.image.get_rect(center=self.hitbox.center)
+        self.rect = self.image.get_rect(center = self.hitbox.center)
 
         if not self.vulnerable:
             alpha = self.wave_value()
@@ -107,7 +108,7 @@ class Enemy(Entity):
             if current_time - self.attack_time >= self.attack_cooldown:
                 self.can_attack = True
 
-        if not self.vulnerable:  # chack if the timer is equal or higher than 'self.invincibility_duration'
+        if not self.vulnerable: #chack if the timer is equal or higher than 'self.invincibility_duration'
             if current_time - self.hit_time >= self.invincibility_duration:
                 self.vulnerable = True
 
@@ -135,7 +136,8 @@ class Enemy(Entity):
         """
         if self.health <= 0:
             self.kill()
-            self.trigger_death_particles(self.rect.center, self.monster_name)
+            self.trigger_death_particles(self.rect.center,self.monster_name)
+
 
     def hit_reaction(self):
         """
@@ -145,6 +147,26 @@ class Enemy(Entity):
         if not self.vulnerable:
             self.direction *= -self.resistance
 
+    def move(self, speed):  # moves the player around
+        if self.direction.magnitude() != 0:
+            self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
+        self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
+        self.collision('horizontal')
+        self.hitbox.y += self.direction.y * speed  # making the player move verticaly
+        self.collision('vertical')
+        self.rect.center = self.hitbox.center
+
+    def collision(self, direction):  # checking for collisions
+        if direction == 'horizontal':
+            for sprite in self.obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.x > 0:  # when we are moving right
+                        self.hitbox.right = sprite.hitbox.left
+                    if self.direction.x < 0:  # when we are moving left
+                        self.hitbox.left = sprite.hitbox.right
+                    self.direction.x = 0
+                    self.direction.y = 0
+
     def update(self):
         self.hit_reaction()
         self.move(self.speed)
@@ -152,6 +174,6 @@ class Enemy(Entity):
         self.cooldown()
         self.chack_death()
 
-    def enemy_update(self, player):
+    def enemy_update(self,player):
         self.get_status(player)
         self.actions(player)

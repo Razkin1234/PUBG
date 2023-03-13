@@ -1,4 +1,3 @@
-
 import pygame, sys
 from settings import *
 from tile import Tile
@@ -12,7 +11,98 @@ from player import Player
 from typing import Dict
 from particles import AnimationPlayer
 from magic import MagicPlayer
+import socket
+from Incoming_packets import Incoming_packets
 from item import Item
+from Connection_to_server import Connection_to_server
+
+"""""
+    לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
+"""""
+def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits):
+    lines = packet.get_packet().split('\r\n')
+    while '' in lines:
+        lines.remove('')
+    for line in lines:
+        line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+
+        # --------------
+        # in this header clients should check the moved_player_id so they wont print their own movement twice.
+        if line_parts[0] == 'player_place:':
+            # looking for image header
+            for l in lines:
+                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                if l_parts[0] == 'image:':
+                    # looking for moved player id
+                    for l2 in lines:
+                        l2_parts = l2.split()
+                        if l2_parts[0] == 'moved_player_id:':
+                            if packet.get_id != '# add player id':
+                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1], player.rect,
+                                                           visibale_sprites,obstecal_sprits)
+
+                            break
+                    break
+                    # here calling the function
+        # --------------
+
+        # --------------
+        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+        elif line_parts[0] == 'shot_place:':
+            # looking for the hit_hp header
+            for l in lines:
+                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                if l_parts[0] == 'shooter_id:':
+                    if l_parts[1] != '# id of client':
+                        packet.handle_shot_place(line_parts[1])
+                    break
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'dead:':
+            packet.handle_dead(line_parts[1])
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'first_inventory:':
+            packet.handle_first_inventory(line_parts[1],player)
+        # --------------
+
+        # --------------
+        # clients will get chats of themselves too.
+        # so they should print only what comes from the server and don't print their own messages just after sending it.
+        elif line_parts[0] == 'chat:':
+            for l in lines:
+                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                if l_parts[0] == 'user_name:':
+                    message = packet.handle_chat(line_parts[1], l_parts[1])  # getting in answer the message to print
+                    break
+        elif line_parts[0] == 'server_shutdown:':
+            pass
+
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'first_objects_position:':
+            packet.handle_first_objects_position(line_parts[1])
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'object_update:':
+            l_parts = line_parts[1].split('?')
+            if l_parts[0] != player.id:
+                packet.handle_object_update(l_parts[1])
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'dead_enemy:':
+            packet.handle_dead_enemy(line_parts[1])
+        # --------------
+
+        # --------------
+        elif line_parts[0] == 'enemy_player_place_type_hit:':
+            packet.handle_enemy_player_place_type_hit(line_parts[1])
+
 
 class Level:
     def __init__(self):
@@ -24,7 +114,10 @@ class Level:
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
         self.floor_sprites = YsortCameraGroup()
+        self.bullet_group = YsortCameraGroup()
+        self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
+
 
         # attack sprites
         self.current_attack = None
@@ -47,6 +140,7 @@ class Level:
         #particals
         self.animation_player = AnimationPlayer()
         self.magic_player = MagicPlayer(self.animation_player)
+
 
         # sprite setup
         self.create_map()
@@ -142,8 +236,6 @@ class Level:
 
 
 
-
-
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
         """
@@ -153,7 +245,7 @@ class Level:
 
         # Create player with starting position
         self.player = Player((1000, 1000), self.visble_sprites,
-                             self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic)
+                    self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic,self.bullet_group)
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
@@ -232,7 +324,7 @@ class Level:
             self.player.hurt_time = pygame.time.get_ticks()
             self.animation_player.create_particles(attack_type, self.player.rect.center, [self.visble_sprites])
 
-    def player_attack_logic(self):
+    def player_attack_logic(self,packet_to_send):
         """
         chack if the player hits an enemy and delete it for the screen
         :return: nothing
@@ -244,7 +336,7 @@ class Level:
                 if collision_sprites:
                     for target_sprite in collision_sprites:
                         if target_sprite.sprite_type == 'enemy':
-                            target_sprite.get_damage(self.player, attack_sprite.sprite_type)
+                            target_sprite.get_damage(self.player, attack_sprite.sprite_type, packet_to_send)
 
     def trigger_death_particles(self, pos, particles_type):
         """
@@ -255,15 +347,19 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self):  # update and draw the game
+    def run(self,server_ip,user_name,passward,packet,packet_to_send):  # update and draw the game
 
-        #self.cooldown()
+        if packet.rotshild_filter():
+            handeler_of_incoming_packets(packet, self.visble_sprites, self.player,self.obstacle_sprites)
+
+        self.cooldown()
         self.camera.x = self.player.rect.centerx#updating the camera location
         self.camera.y = self.player.rect.centery
 
         #for cleaning the exeptions of the tiles that have not bean earased
-        self.visble_sprites.earase_non_relevant_sprites(self.player)
+        #self.visble_sprites.earase_non_relevant_sprites(self.player)
         self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+
 
 
         self.floor_update()
@@ -271,14 +367,26 @@ class Level:
         self.floor_sprites.update()
         self.item_sprites.custom_draw(self.camera)
 
+        self.bullet_group.custom_draw(self.camera)
+        self.bullet_group.bullet_move()
         self.item_sprites.item_picking(self.player)
 
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
-        self.visble_sprites.enemy_update(self.player)
-        self.player_attack_logic()
+        #self.visble_sprites.enemy_update(self.player)
+        self.player_attack_logic(packet_to_send)
         self.ui.display(self.player)
         if self.player.i_pressed:
             self.ui.ui_screen(self.player)
-        debug(self.player.rect.center)
+        debug(self.player.rect)
+        if self.player.attack_for_moment:
+            image = self.player.weapon
+        else:
+            image = "no"
+        packet_to_send.add_header_player_place_and_image(self.player.rect.center, image)
+        self.bullet_group.bullet_record(packet_to_send)
 
+       # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
+        if self.player.health == 0:
+            packet_to_send.add_header_dead(self.player.id)
+        return packet_to_send

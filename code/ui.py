@@ -497,4 +497,3 @@ class UI:
       self.weapon_overlay(not player.can_switch_weapon,True, player)
       self.magic_overlay(player.magic_index, not player.can_switch_magic,player.can_shield)
 
-
