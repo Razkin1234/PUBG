@@ -1109,8 +1109,8 @@ def verify_and_handle_packet_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on a packet handle thread)... This is the error message: {ex}",
-                   color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on a packet handle "
+                        f"thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1230,9 +1230,7 @@ def moving_enemies_thread(server_socket: socket):
             # Making sure there are enough enemies. if some died - spawning new ones
             creating_enemies()
 
-            enemy_place = str(ENEMY_DATA[0][1]).replace("'", '').replace(' ', '')
-            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + \
-                f'enemy_update: {ENEMY_DATA[0][0]}/{enemy_place}/{ENEMY_DATA[0][4]}/No'
+            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'enemy_update: '
 
             # iterate over all the enemies and move 1 step
             for enemy in ENEMY_DATA:
@@ -1263,7 +1261,10 @@ def moving_enemies_thread(server_socket: socket):
                     move(enemy_x, enemy_y, direction, BAMBOO_SPEED, enemy)
                 # add the new places of the enemy to the header
                 enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
-                packet += f'-{enemy[0]}/{enemy_place}/{enemy[4]}/No'
+                packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+
+            # replacing the '-' trailer with a new CRLF characters
+            packet = packet[:-1]
             packet += '\r\n'
 
             # sending the packet to all clients
@@ -1276,8 +1277,8 @@ def moving_enemies_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on the bots controlling thread)... This is the error message: {ex}",
-                   color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on the bots "
+                        f"controlling thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1614,7 +1615,8 @@ def check_user_input_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on user input thread)"
+                        f"... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -2139,7 +2141,8 @@ def main():
         else:
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-            print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+            print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread).."
+                            f". This is the error message: {ex}", color='red')
             print(">> ", end='')
             print_ansi(
                 text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
@@ -2150,7 +2153,8 @@ def main():
         SHUTDOWN_TRIGGER_EVENT.set()  # setting the event of closing the server
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread)... "
+                        f"This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
