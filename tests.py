@@ -15,7 +15,7 @@ my_socket.connect((SERVER_IP, SERVER_PORT))
 
 def wait_for_reply():
     print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(4096)
+    ciphertext_reply = my_socket.recv(8192)
     encoded_reply = ciphertext_reply
     plaintext_reply = encoded_reply.decode('utf-8')
     print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
@@ -155,7 +155,11 @@ def test_object_update(header_info: str, id: str):
 
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
+<<<<<<< HEAD
 #test_login_request('user1', 'password1')
+=======
+test_login_request('user1', 'password1')
+>>>>>>> 10a5fc1be8a9579eeff88e70575e64bb948c1277
 #test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1')
 #test_disconnect('1')
@@ -163,4 +167,6 @@ def test_object_update(header_info: str, id: str):
 test_player_place('(1,2)', 'no', '1')
 #test_object_update('drop-ammo-(32845,25492)-7', '1')
 #wait_for_reply()
+while True:
+    wait_for_reply()
 # -------------------------------------------------
