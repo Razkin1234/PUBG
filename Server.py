@@ -1145,25 +1145,37 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
         SHUTDOWN_INFORMING_EVENT.set()
 
 
-def move(enemy_x: int, enemy_y: int, direction: pygame.math.Vector2, speed: int, enemy_data: list):
+def get_next_position(initial_pos: tuple, target_pos: tuple, speed: int) -> tuple:
     """
-    Moves an enemy 1 step in the global data list.
-    :param enemy_x: <Int> The current X coordinate of the enemy.
-    :param enemy_y: <Int> The current Y coordinate of the enemy.
-    :param direction: <pygame.math.Vector2> the direction vector of the movement.
-    :param speed: <Int> The movement speed.
-    :param enemy_data: <List> The data list of the enemy (like described in ENEMY_DATA global var).
+    Calculates the next position on the map, after one move in the specifies speed towards the target position.
+    :param initial_pos: <Tuple> the initial position as (X, Y)  [X and Y are int]
+    :param target_pos: <Tuple> the target position as (X, Y)  [X and Y are int]
+    :param speed: <Int> the movement speed
+    :return: <Tuple> the new position as (X, Y)  [X and Y are str]
     """
 
-    global ENEMY_DATA
+    if initial_pos == target_pos:
+        # shouldn't move, arrived to target point.
+        return initial_pos
 
-    if direction.magnitude() != 0:  # if the movement is not horizontal or vertical
-        direction = direction.normalize()  # making the speed good when we are going in 2 dimensions (X and Y)
-    enemy_x += direction.x * speed  # making the player move horizontaly
-    enemy_y += direction.y * speed  # making the player move verticaly
-    # updating the enemy place in the data list
-    place = (str(enemy_x), str(enemy_y))
-    enemy_data[1] = place
+    # creates a Vector2 object to represent the position
+    pos_vector = pygame.math.Vector2(initial_pos[0], initial_pos[1])
+    # creates a Vector2 object to represent the target position
+    target_pos_vector = pygame.math.Vector2(target_pos[0], target_pos[1])
+
+    # subtracts the position vector from the target position vector to get the distance vector between them
+    distance_to_target_vector = target_pos_vector - pos_vector
+    # calculate a unit direction vector to the target point
+    # (normalize returns a unit vector (length = 1) in the same direction as the original one)
+    direction_to_target_unit_vector = distance_to_target_vector.normalize()
+    # multiplies the direction unit vector by the speed to get the velocity vector
+    velocity_vector = direction_to_target_unit_vector * speed
+    # adds the velocity vector to the position vector to get the new position vector
+    # (after 1 move in the specified speed towards the target point)
+    pos_vector += velocity_vector
+
+    # converts the Vector2 object of the new position to a tuple of ints (X, Y) and returning it
+    return int(list(pos_vector)[0]), int(list(pos_vector)[1])
 
 
 def creating_enemies():
@@ -1234,31 +1246,29 @@ def moving_enemies_thread(server_socket: socket):
 
             # iterate over all the enemies and move 1 step
             for enemy in ENEMY_DATA:
-                direction = pygame.math.Vector2()
-                enemy_x = int(enemy[1][0])
-                enemy_y = int(enemy[1][1])
+                # get the enemy place as a tuple of ints
+                enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
+                # get the target player place as a tuple of ints
                 target_player_id = enemy[2]
                 target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
-                target_player_x = int(target_player_place[0])
-                target_player_y = int(target_player_place[1])
-                # setting the direction  to the target player
-                if enemy_x >= target_player_x:
-                    direction.x = -1 * (enemy_x - target_player_x)
-                else:
-                    direction.x = target_player_x - enemy_x
-                if enemy_y >= target_player_y:
-                    direction.y = -1 * (enemy_y - target_player_y)
-                else:
-                    direction.y = target_player_y - enemy_y
-                # moving the enemy one step
+                target_player_place = (int(target_player_place[0]), int(target_player_place[1]))
+
+                # get the next place of the enemy
                 if enemy[4] == 'squid':
-                    move(enemy_x, enemy_y, direction, SQUID_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, SQUID_SPEED)
                 elif enemy[4] == 'spirit':
-                    move(enemy_x, enemy_y, direction, SPIRIT_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, SPIRIT_SPEED)
                 elif enemy[4] == 'raccoon':
-                    move(enemy_x, enemy_y, direction, RACCOON_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, RACCOON_SPEED)
                 elif enemy[4] == 'bamboo':
-                    move(enemy_x, enemy_y, direction, BAMBOO_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, BAMBOO_SPEED)
+
+                # convert the place to a tuple of strings
+                enemy_place = (str(enemy_place[0]), str(enemy_place[1]))
+
+                # store the new place in the ENEMY_DATA list
+                enemy[1] = enemy_place
+
                 # add the new places of the enemy to the header
                 enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
                 packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
