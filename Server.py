@@ -30,9 +30,9 @@ Headers API:                                                                    
             - first_inventory: [[weapon_name1]/[weapon_name2]...],                                                                 [only server sends]       |
                                [how much ammo?],                                                                                                             |
                                [how much med kits?],                                                                                                         |
-                               [how much backpack?],                                                                                                         |
-                               [how much plasters?],                                                                                                         |
-                               [how much shoes?],                                                                                                            |
+                               [how much backpacks?],                                                                                                         |
+                               [how much bandages?],                                                                                                         |
+                               [how much boots?],                                                                                                            |
                                [how much exp?],                                                                                                              |
                                ([the X respawn coordinate]-[the Y respawn coordinate])               (*NOTE: all in 1 line)                                  |
             - register_request: [user name],[password]                                                                             [only clients send]       |
@@ -44,12 +44,12 @@ Headers API:                                                                    
                                  - ammo [how much?]                                                                                                          |
                                  + med_kits [how much?]                                                                                                      |
                                  - med_kits [how much?]                                                                                                      |
-                                 + backpack [how much?]                                                                                                      |
-                                 - backpack [how much?]                                                                                                      |
-                                 + plasters [how much?]                                                                                                      |
-                                 - plasters [how much?]                                                                                                      |
-                                 + shoes [how much?]                                                                                                         |
-                                 - shoes [how much?]                                                                                                         |
+                                 + backpacks [how much?]                                                                                                     |
+                                 - backpacks [how much?]                                                                                                     |
+                                 + bandages [how much?]                                                                                                      |
+                                 - bandages [how much?]                                                                                                      |
+                                 + boots [how much?]                                                                                                         |
+                                 - boots [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
@@ -67,6 +67,7 @@ Headers API:                                                                    
                             !!! the structure in the previous line is for when clients send.                                                                 |
                             !!! when server sends there is also the sender client ID and '?' in the beginning of the header regular info, see below.         |
                             [sender ID]?pick or drop-[object type]-([X],[Y])-[amount]/pick or drop-[object type]-([X],[Y])-[amount]...                       |
+                            !!! the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun                           |
               [between each change there is '/']                                                                                                             |
               [between each part in a single change there is '-']                                                                                            |
               [between the sender client ID and the regular header info (when server sends) there is '?']                                                    |
@@ -75,6 +76,7 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
+              [the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun]                                           |
             - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
               [between every different enemy there is '-']                                                                                                   |
             - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
@@ -147,13 +149,13 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ Objects
-DEFAULT_WEAPONS = 'stick'  #
-DEFAULT_AMMO = 0           #
-DEFAULT_MED_KITS = 0       # DEFAULT
-DEFAULT_BACKPACK = 0       # AMOUNTS
-DEFAULT_PLASTERS = 0       #
-DEFAULT_SHOES = 0          #
-DEFAULT_EXP = 0            #
+DEFAULT_WEAPONS = 'rapier'   #
+DEFAULT_AMMO = 0             # DEFAULT
+DEFAULT_MED_KITS = 0         # AMOUNTS
+DEFAULT_BACKPACKS = 0        # IN
+DEFAULT_BANDAGES = 0         # INVENTORY
+DEFAULT_BOOTS = 0            #
+DEFAULT_EXP = 0              #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -161,18 +163,39 @@ MAX_SIZE_FOR_MEDKITS_PACKAGE = 2
 MIN_SIZE_FOR_MEDKITS_PACKAGE = 1
 MAX_SIZE_FOR_BACKPACKS_PACKAGE = 1
 MIN_SIZE_FOR_BACKPACKS_PACKAGE = 1
-MAX_SIZE_FOR_PLASTERS_PACKAGE = 5
-MIN_SIZE_FOR_PLASTERS_PACKAGE = 1
-MAX_SIZE_FOR_SHOES_PACKAGE = 1
-MIN_SIZE_FOR_SHOES_PACKAGE = 1
+MAX_SIZE_FOR_BANDAGES_PACKAGE = 5
+MIN_SIZE_FOR_BANDAGES_PACKAGE = 1
+MAX_SIZE_FOR_BOOTS_PACKAGE = 1
+MIN_SIZE_FOR_BOOTS_PACKAGE = 1
 MAX_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 MIN_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 
 # the current existing objects on the map as {str:{(str,str):int,},}
 # for each object type (key) it will be like {(X,Y):amount, (X,Y):amount...}       [X, Y are str and amount is int]
-OBJECTS_PLACES = {'ammo': {}, 'med_kits': {}, 'backpacks': {}, 'plasters': {}, 'shoes': {}, 'exp': {}}
+OBJECTS_PLACES = {'ammo': {},
+                  'med_kit': {},
+                  'backpack': {},
+                  'bandage': {},
+                  'boots': {},
+                  'exp': {},
+                  'sword': {},
+                  'lance': {},
+                  'axe': {},
+                  'rapier': {},
+                  'sai': {},
+                  'gun': {}}
 # The amount of each object to be on the map every moment
-OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters': 120, 'shoes': 40}
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
+                         'med_kit': 80,
+                         'backpack': 50,
+                         'bandage': 120,
+                         'boots': 40,
+                         'sword': 15,
+                         'lance': 5,
+                         'axe': 7,
+                         'rapier': 20,
+                         'sai': 17,
+                         'gun': 2}
 # ------------------------
 
 # ------------------------ Players
@@ -549,6 +572,9 @@ def get_current_object_position_header() -> str:
 
     objects_position = ''
     for object_type in OBJECTS_PLACES:
+        if not OBJECTS_PLACES[object_type]:
+            # if there are no objects of this type (possible only with exp)
+            continue
         objects_position += object_type + '-'
         for place in OBJECTS_PLACES[object_type]:
             str_place = str(place).replace("'", '').replace(' ', '')
@@ -556,8 +582,6 @@ def get_current_object_position_header() -> str:
             objects_position += str_place + '|' + str_amount + ';'
         objects_position = objects_position[:-1] + '/'
     objects_position = objects_position[:-1]
-    if objects_position[-1] == 'p':  # if there is exp on the map at the moment
-        objects_position += '-'
 
     return objects_position
 
@@ -704,7 +728,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, \
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, \
         DEFAULT_EXP, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
@@ -726,9 +750,9 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_spawn_place = FERNET_ENCRYPTION.encrypt(str(spawn_place).replace("'", '').replace(' ', '')
                                                       .encode('utf-8'))
@@ -740,8 +764,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                   encrypted_default_ammo,
                   encrypted_default_med_kits,
                   encrypted_default_backpack,
-                  encrypted_default_plasters,
-                  encrypted_default_shoes,
+                  encrypted_default_bandages,
+                  encrypted_default_boots,
                   encrypted_default_exp,
                   encrypted_spawn_place)
     cursor.execute("INSERT INTO clients_info"
@@ -751,8 +775,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " ammo,"
                    " med_kits,"
                    " backpack,"
-                   " plasters,"
-                   " shoes,"
+                   " bandages,"
+                   " boots,"
                    " exp,"
                    " respawn_place)"
                    " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
@@ -796,7 +820,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
 
     global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, \
-        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
+        DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -818,9 +842,9 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
                                                         .encode('utf-8'))
@@ -830,8 +854,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                      encrypted_default_ammo,
                      encrypted_default_med_kits,
                      encrypted_default_backpack,
-                     encrypted_default_plasters,
-                     encrypted_default_shoes,
+                     encrypted_default_bandages,
+                     encrypted_default_boots,
                      encrypted_default_exp,
                      encrypted_respawn_place)
     cursor.execute("UPDATE clients_info"
@@ -839,8 +863,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " ammo = ?,"
                    " med_kits = ?,"
                    " backpack = ?,"
-                   " plasters = ?,"
-                   " shoes = ?,"
+                   " bandages = ?,"
+                   " boots = ?,"
                    " exp = ?,"
                    " respawn_place = ?"
                    " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
@@ -1745,8 +1769,8 @@ def initialize_sqlite_rdb():
                    " ammo BLOB,"
                    " med_kits BLOB,"
                    " backpack BLOB,"
-                   " plasters BLOB,"
-                   " shoes BLOB,"
+                   " bandages BLOB,"
+                   " boots BLOB,"
                    " exp BLOB,"
                    " respawn_place BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
@@ -1967,8 +1991,8 @@ def set_first_objects_position():
 
     global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE, \
         MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE, \
-        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE, \
-        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
+        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE, MIN_SIZE_FOR_BANDAGES_PACKAGE, \
+        MAX_SIZE_FOR_BOOTS_PACKAGE, MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
         MIN_SIZE_FOR_WEAPONS_PACKAGE
 
     # for each object type
@@ -1986,7 +2010,7 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'med_kits':
+        elif object_type == 'med_kit':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
@@ -1998,7 +2022,7 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'backpacks':
+        elif object_type == 'backpack':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
@@ -2010,31 +2034,102 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'plasters':
+        elif object_type == 'bandage':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
                     place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_PLASTERS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BANDAGES_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'shoes':
+        elif object_type == 'boots':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
                     place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_SHOES_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_BOOTS_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        # add here for each weapon!!!
+        elif object_type == 'sword':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'lance':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'axe':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'rapier':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'sai':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'gun':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
 
 
 def store_all_respawn_places():

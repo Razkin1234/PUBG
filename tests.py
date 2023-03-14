@@ -156,7 +156,7 @@ def test_object_update(header_info: str, id: str):
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')
-#test_update_inventory('+ weapons weapon_name1', '1')
+#test_update_inventory('- ammo 2', '1')
 #test_dead('1')
 #test_disconnect('1')
 #test_shot_place('(1,1)', '8', '1')
