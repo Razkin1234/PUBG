@@ -30,9 +30,9 @@ Headers API:                                                                    
             - first_inventory: [[weapon_name1]/[weapon_name2]...],                                                                 [only server sends]       |
                                [how much ammo?],                                                                                                             |
                                [how much med kits?],                                                                                                         |
-                               [how much backpack?],                                                                                                         |
-                               [how much plasters?],                                                                                                         |
-                               [how much shoes?],                                                                                                            |
+                               [how much backpacks?],                                                                                                         |
+                               [how much bandages?],                                                                                                         |
+                               [how much boots?],                                                                                                            |
                                [how much exp?],                                                                                                              |
                                ([the X respawn coordinate]-[the Y respawn coordinate])               (*NOTE: all in 1 line)                                  |
             - register_request: [user name],[password]                                                                             [only clients send]       |
@@ -44,12 +44,12 @@ Headers API:                                                                    
                                  - ammo [how much?]                                                                                                          |
                                  + med_kits [how much?]                                                                                                      |
                                  - med_kits [how much?]                                                                                                      |
-                                 + backpack [how much?]                                                                                                      |
-                                 - backpack [how much?]                                                                                                      |
-                                 + plasters [how much?]                                                                                                      |
-                                 - plasters [how much?]                                                                                                      |
-                                 + shoes [how much?]                                                                                                         |
-                                 - shoes [how much?]                                                                                                         |
+                                 + backpacks [how much?]                                                                                                     |
+                                 - backpacks [how much?]                                                                                                     |
+                                 + bandages [how much?]                                                                                                      |
+                                 - bandages [how much?]                                                                                                      |
+                                 + boots [how much?]                                                                                                         |
+                                 - boots [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
@@ -67,6 +67,7 @@ Headers API:                                                                    
                             !!! the structure in the previous line is for when clients send.                                                                 |
                             !!! when server sends there is also the sender client ID and '?' in the beginning of the header regular info, see below.         |
                             [sender ID]?pick or drop-[object type]-([X],[Y])-[amount]/pick or drop-[object type]-([X],[Y])-[amount]...                       |
+                            !!! the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun                           |
               [between each change there is '/']                                                                                                             |
               [between each part in a single change there is '-']                                                                                            |
               [between the sender client ID and the regular header info (when server sends) there is '?']                                                    |
@@ -75,6 +76,7 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
+              [the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun]                                           |
             - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
               [between every different enemy there is '-']                                                                                                   |
             - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
@@ -147,13 +149,13 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ Objects
-DEFAULT_WEAPONS = 'stick'  #
-DEFAULT_AMMO = 0           #
-DEFAULT_MED_KITS = 0       # DEFAULT
-DEFAULT_BACKPACK = 0       # AMOUNTS
-DEFAULT_PLASTERS = 0       #
-DEFAULT_SHOES = 0          #
-DEFAULT_EXP = 0            #
+DEFAULT_WEAPONS = 'rapier'  #
+DEFAULT_AMMO = 0  # DEFAULT
+DEFAULT_MED_KITS = 0  # AMOUNTS
+DEFAULT_BACKPACKS = 0  # IN
+DEFAULT_BANDAGES = 0  # INVENTORY
+DEFAULT_BOOTS = 0  #
+DEFAULT_EXP = 0  #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -161,18 +163,39 @@ MAX_SIZE_FOR_MEDKITS_PACKAGE = 2
 MIN_SIZE_FOR_MEDKITS_PACKAGE = 1
 MAX_SIZE_FOR_BACKPACKS_PACKAGE = 1
 MIN_SIZE_FOR_BACKPACKS_PACKAGE = 1
-MAX_SIZE_FOR_PLASTERS_PACKAGE = 5
-MIN_SIZE_FOR_PLASTERS_PACKAGE = 1
-MAX_SIZE_FOR_SHOES_PACKAGE = 1
-MIN_SIZE_FOR_SHOES_PACKAGE = 1
+MAX_SIZE_FOR_BANDAGES_PACKAGE = 5
+MIN_SIZE_FOR_BANDAGES_PACKAGE = 1
+MAX_SIZE_FOR_BOOTS_PACKAGE = 1
+MIN_SIZE_FOR_BOOTS_PACKAGE = 1
 MAX_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 MIN_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 
 # the current existing objects on the map as {str:{(str,str):int,},}
 # for each object type (key) it will be like {(X,Y):amount, (X,Y):amount...}       [X, Y are str and amount is int]
-OBJECTS_PLACES = {'ammo': {}, 'med_kits': {}, 'backpacks': {}, 'plasters': {}, 'shoes': {}, 'exp': {}}
+OBJECTS_PLACES = {'ammo': {},
+                  'med_kit': {},
+                  'backpack': {},
+                  'bandage': {},
+                  'boots': {},
+                  'exp': {},
+                  'sword': {},
+                  'lance': {},
+                  'axe': {},
+                  'rapier': {},
+                  'sai': {},
+                  'gun': {}}
 # The amount of each object to be on the map every moment
-OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters': 120, 'shoes': 40}
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
+                         'med_kit': 80,
+                         'backpack': 50,
+                         'bandage': 120,
+                         'boots': 40,
+                         'sword': 15,
+                         'lance': 5,
+                         'axe': 7,
+                         'rapier': 20,
+                         'sai': 17,
+                         'gun': 2}
 # ------------------------
 
 # ------------------------ Players
@@ -183,26 +206,25 @@ PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
 # ------------------------- Enemy
-SQUID_AMOUNT = 0     # AMOUNTS OF
-RACCOON_AMOUNT = 0   # EACH ENEMY
-SPIRIT_AMOUNT = 0    # AT THE
-BAMBOO_AMOUNT = 0    # MOMENT
+SQUID_AMOUNT = 0  # AMOUNTS OF
+RACCOON_AMOUNT = 0  # EACH ENEMY
+SPIRIT_AMOUNT = 0  # AT THE
+BAMBOO_AMOUNT = 0  # MOMENT
 
-SHOULD_BE_SQUID = 25    # AMOUNTS OF
+SHOULD_BE_SQUID = 25  # AMOUNTS OF
 SHOULD_BE_RACCOON = 10  # EACH ENEMY
-SHOULD_BE_SPIRIT = 25   # THAT SHOULD
-SHOULD_BE_BAMBOO = 40   # BE
+SHOULD_BE_SPIRIT = 25  # THAT SHOULD
+SHOULD_BE_BAMBOO = 40  # BE
 
-SQUID_HP = 100     #
-RACCOON_HP = 300   # HP OF
-SPIRIT_HP = 100    # EACH ENEMY
-BAMBOO_HP = 70     #
+SQUID_HP = 100  #
+RACCOON_HP = 300  # HP OF
+SPIRIT_HP = 100  # EACH ENEMY
+BAMBOO_HP = 70  #
 
-SQUID_SPEED = 3     #
-RACCOON_SPEED = 2   # SPEED OF
-SPIRIT_SPEED = 4    # EACH ENEMY
-BAMBOO_SPEED = 3    #
-
+SQUID_SPEED = 3  #
+RACCOON_SPEED = 2  # SPEED OF
+SPIRIT_SPEED = 4  # EACH ENEMY
+BAMBOO_SPEED = 3  #
 
 # list of enemies data. its a list of lists of each enemy data.
 # the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type]
@@ -235,6 +257,8 @@ FPS = 60
 # (will hold tuples with the payloads as bytestring and the src address as a tuple of (IP, PORT))
 # each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
 PACKETS_TO_HANDLE_QUEUE = deque()
+
+
 # -------------------------
 
 
@@ -245,12 +269,13 @@ def check_if_enemy_need_to_shot_or_to_stop():
     """
     global ENEMY_DATA, PLAYER_PLACES_BY_ID
     for enemy in ENEMY_DATA:
-        if enemy[4] ==  5:# write here the type of the enemy that shoots
+        if enemy[4] == 5:  # write here the type of the enemy that shoots
             pass
             current_time = pygame.time.get_ticks()
             # check here the radios from the player you are locked on in enemy[2]
-                # and here if it corrects so you have the place of the player in PLAYER_PLACES_BY_ID[enemy[2]] so create the shot and add it to the list
+            # and here if it corrects so you have the place of the player in PLAYER_PLACES_BY_ID[enemy[2]] so create the shot and add it to the list
     moving_the_bullets()
+
 
 def moving_the_bullets():
     """
@@ -582,6 +607,9 @@ def get_current_object_position_header() -> str:
 
     objects_position = ''
     for object_type in OBJECTS_PLACES:
+        if not OBJECTS_PLACES[object_type]:
+            # if there are no objects of this type (possible only with exp)
+            continue
         objects_position += object_type + '-'
         for place in OBJECTS_PLACES[object_type]:
             str_place = str(place).replace("'", '').replace(' ', '')
@@ -589,8 +617,6 @@ def get_current_object_position_header() -> str:
             objects_position += str_place + '|' + str_amount + ';'
         objects_position = objects_position[:-1] + '/'
     objects_position = objects_position[:-1]
-    if objects_position[-1] == 'p':  # if there is exp on the map at the moment
-        objects_position += '-'
 
     return objects_position
 
@@ -737,7 +763,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, \
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, \
         DEFAULT_EXP, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
@@ -759,9 +785,9 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_spawn_place = FERNET_ENCRYPTION.encrypt(str(spawn_place).replace("'", '').replace(' ', '')
                                                       .encode('utf-8'))
@@ -773,8 +799,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                   encrypted_default_ammo,
                   encrypted_default_med_kits,
                   encrypted_default_backpack,
-                  encrypted_default_plasters,
-                  encrypted_default_shoes,
+                  encrypted_default_bandages,
+                  encrypted_default_boots,
                   encrypted_default_exp,
                   encrypted_spawn_place)
     cursor.execute("INSERT INTO clients_info"
@@ -784,8 +810,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " ammo,"
                    " med_kits,"
                    " backpack,"
-                   " plasters,"
-                   " shoes,"
+                   " bandages,"
+                   " boots,"
                    " exp,"
                    " respawn_place)"
                    " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
@@ -829,7 +855,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
 
     global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, \
-        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
+        DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -851,9 +877,9 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
                                                         .encode('utf-8'))
@@ -863,8 +889,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                      encrypted_default_ammo,
                      encrypted_default_med_kits,
                      encrypted_default_backpack,
-                     encrypted_default_plasters,
-                     encrypted_default_shoes,
+                     encrypted_default_bandages,
+                     encrypted_default_boots,
                      encrypted_default_exp,
                      encrypted_respawn_place)
     cursor.execute("UPDATE clients_info"
@@ -872,8 +898,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " ammo = ?,"
                    " med_kits = ?,"
                    " backpack = ?,"
-                   " plasters = ?,"
-                   " shoes = ?,"
+                   " bandages = ?,"
+                   " boots = ?,"
                    " exp = ?,"
                    " respawn_place = ?"
                    " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
@@ -1142,8 +1168,8 @@ def verify_and_handle_packet_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on a packet handle thread)... This is the error message: {ex}",
-                   color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on a packet handle "
+                        f"thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1178,25 +1204,37 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
         SHUTDOWN_INFORMING_EVENT.set()
 
 
-def move(enemy_x: int, enemy_y: int, direction: pygame.math.Vector2, speed: int, enemy_data: list):
+def get_next_position(initial_pos: tuple, target_pos: tuple, speed: int) -> tuple:
     """
-    Moves an enemy 1 step in the global data list.
-    :param enemy_x: <Int> The current X coordinate of the enemy.
-    :param enemy_y: <Int> The current Y coordinate of the enemy.
-    :param direction: <pygame.math.Vector2> the direction vector of the movement.
-    :param speed: <Int> The movement speed.
-    :param enemy_data: <List> The data list of the enemy (like described in ENEMY_DATA global var).
+    Calculates the next position on the map, after one move in the specifies speed towards the target position.
+    :param initial_pos: <Tuple> the initial position as (X, Y)  [X and Y are int]
+    :param target_pos: <Tuple> the target position as (X, Y)  [X and Y are int]
+    :param speed: <Int> the movement speed
+    :return: <Tuple> the new position as (X, Y)  [X and Y are str]
     """
 
-    global ENEMY_DATA
+    if initial_pos == target_pos:
+        # shouldn't move, arrived to target point.
+        return initial_pos
 
-    if direction.magnitude() != 0:  # if the movement is not horizontal or vertical
-        direction = direction.normalize()  # making the speed good when we are going in 2 dimensions (X and Y)
-    enemy_x += direction.x * speed  # making the player move horizontaly
-    enemy_y += direction.y * speed  # making the player move verticaly
-    # updating the enemy place in the data list
-    place = (str(enemy_x), str(enemy_y))
-    enemy_data[1] = place
+    # creates a Vector2 object to represent the position
+    pos_vector = pygame.math.Vector2(initial_pos[0], initial_pos[1])
+    # creates a Vector2 object to represent the target position
+    target_pos_vector = pygame.math.Vector2(target_pos[0], target_pos[1])
+
+    # subtracts the position vector from the target position vector to get the distance vector between them
+    distance_to_target_vector = target_pos_vector - pos_vector
+    # calculate a unit direction vector to the target point
+    # (normalize returns a unit vector (length = 1) in the same direction as the original one)
+    direction_to_target_unit_vector = distance_to_target_vector.normalize()
+    # multiplies the direction unit vector by the speed to get the velocity vector
+    velocity_vector = direction_to_target_unit_vector * speed
+    # adds the velocity vector to the position vector to get the new position vector
+    # (after 1 move in the specified speed towards the target point)
+    pos_vector += velocity_vector
+
+    # converts the Vector2 object of the new position to a tuple of ints (X, Y) and returning it
+    return int(list(pos_vector)[0]), int(list(pos_vector)[1])
 
 
 def creating_enemies():
@@ -1214,7 +1252,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
-                              'squid'])
+                               'squid'])
 
     if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
         i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
@@ -1222,7 +1260,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
-                              'spirit'])
+                               'spirit'])
 
     if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
         i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
@@ -1230,7 +1268,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
-                              'raccoon'])
+                               'raccoon'])
 
     if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
         i = SHOULD_BE_BAMBOO - BAMBOO_AMOUNT
@@ -1238,7 +1276,20 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
-                              'bamboo'])
+                               'bamboo'])
+
+
+def calculate_distance(enemy_place: tuple, player_place: tuple):
+    """
+
+    :param enemy_place:
+    :param player_place:
+    :return:
+    """
+    enemy_pos_vector = pygame.math.Vector2(int(enemy_place[0]), int(enemy_place[1]))
+    player_pos_vector = pygame.math.Vector2(player_place[0], player_place[1])
+    distance = enemy_pos_vector.distance_to(player_pos_vector)
+    return distance
 
 
 def moving_enemies_thread(server_socket: socket):
@@ -1254,49 +1305,55 @@ def moving_enemies_thread(server_socket: socket):
     # not be cought in the main.
     try:
         clock = pygame.time.Clock()  # Generating a clock object to count and fit the FPS of the game
+        attacked_previous_frame = 0
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
             # waiting for clients to enter
             if not CLIENTS_ID_IP_PORT_NAME:
                 sleep(0.1)  # to avoid waisting CPU cycles
                 continue
-
             # Making sure there are enough enemies. if some died - spawning new ones
             creating_enemies()
 
-            enemy_place = str(ENEMY_DATA[0][1]).replace("'", '').replace(' ', '')
-            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + \
-                f'enemy_update: {ENEMY_DATA[0][0]}/{enemy_place}/{ENEMY_DATA[0][4]}/No'
+            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'enemy_update: '
 
             # iterate over all the enemies and move 1 step
             for enemy in ENEMY_DATA:
-                direction = pygame.math.Vector2()
-                enemy_x = int(enemy[1][0])
-                enemy_y = int(enemy[1][1])
+                # get the enemy place as a tuple of ints
+                enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
+                # get the target player place as a tuple of ints
                 target_player_id = enemy[2]
                 target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
-                target_player_x = int(target_player_place[0])
-                target_player_y = int(target_player_place[1])
-                # setting the direction  to the target player
-                if enemy_x >= target_player_x:
-                    direction.x = -1 * (enemy_x - target_player_x)
-                else:
-                    direction.x = target_player_x - enemy_x
-                if enemy_y >= target_player_y:
-                    direction.y = -1 * (enemy_y - target_player_y)
-                else:
-                    direction.y = target_player_y - enemy_y
-                # moving the enemy one step
+                target_player_place = (int(target_player_place[0]), int(target_player_place[1]))
+
+                # get the next place of the enemy
                 if enemy[4] == 'squid':
-                    move(enemy_x, enemy_y, direction, SQUID_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, SQUID_SPEED)
                 elif enemy[4] == 'spirit':
-                    move(enemy_x, enemy_y, direction, SPIRIT_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, SPIRIT_SPEED)
                 elif enemy[4] == 'raccoon':
-                    move(enemy_x, enemy_y, direction, RACCOON_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, RACCOON_SPEED)
                 elif enemy[4] == 'bamboo':
-                    move(enemy_x, enemy_y, direction, BAMBOO_SPEED, enemy)
+                    enemy_place = get_next_position(enemy_place, target_player_place, BAMBOO_SPEED)
+
+                # convert the place to a tuple of strings
+                enemy_place = (str(enemy_place[0]), str(enemy_place[1]))
+
+                # store the new place in the ENEMY_DATA list
+                enemy[1] = enemy_place
+
                 # add the new places of the enemy to the header
                 enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
-                packet += f'-{enemy[0]}/{enemy_place}/{enemy[4]}/No'
+                distance = calculate_distance(enemy_place, target_player_place)
+                if distance <= 30 and attacked_previous_frame == 0:
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
+                    attacked_previous_frame += 1
+                else:
+                    attacked_previous_frame += 1
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+                if attacked_previous_frame == 60:
+                    attacked_previous_frame = 0
+            # replacing the '-' trailer with a new CRLF characters
+            packet = packet[:-1]
             packet += '\r\n'
 
             # sending the packet to all clients
@@ -1309,8 +1366,8 @@ def moving_enemies_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on the bots controlling thread)... This is the error message: {ex}",
-                   color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on the bots "
+                        f"controlling thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1647,7 +1704,8 @@ def check_user_input_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on user input thread)"
+                        f"... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1766,8 +1824,8 @@ def initialize_sqlite_rdb():
                    " ammo BLOB,"
                    " med_kits BLOB,"
                    " backpack BLOB,"
-                   " plasters BLOB,"
-                   " shoes BLOB,"
+                   " bandages BLOB,"
+                   " boots BLOB,"
                    " exp BLOB,"
                    " respawn_place BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
@@ -1988,8 +2046,8 @@ def set_first_objects_position():
 
     global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE, \
         MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE, \
-        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE, \
-        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
+        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE, MIN_SIZE_FOR_BANDAGES_PACKAGE, \
+        MAX_SIZE_FOR_BOOTS_PACKAGE, MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
         MIN_SIZE_FOR_WEAPONS_PACKAGE
 
     # for each object type
@@ -2007,7 +2065,7 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'med_kits':
+        elif object_type == 'med_kit':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
@@ -2019,7 +2077,7 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'backpacks':
+        elif object_type == 'backpack':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
@@ -2031,31 +2089,102 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'plasters':
+        elif object_type == 'bandage':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
                     place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_PLASTERS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BANDAGES_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'shoes':
+        elif object_type == 'boots':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
                     place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_SHOES_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_BOOTS_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        # add here for each weapon!!!
+        elif object_type == 'sword':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'lance':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'axe':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'rapier':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'sai':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'gun':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
 
 
 def store_all_respawn_places():
@@ -2121,12 +2250,12 @@ def main():
         print(">> ", end='')
         print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
         print_ansi(text="   - 'shutdown': To shutdown the server.\n"
-                   "   - 'get clients': To show all clients registered on this server and their info.\n"
-                   "   - 'delete <user_name>': To delete a client from the server.\n"
-                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                   "      and the number of active players at the moments.\n"
-                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                   "   - 'help': To show optional UI commends.\n",
+                        "   - 'get clients': To show all clients registered on this server and their info.\n"
+                        "   - 'delete <user_name>': To delete a client from the server.\n"
+                        "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                        "      and the number of active players at the moments.\n"
+                        "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                        "   - 'help': To show optional UI commends.\n",
                    color='cyan')
         # --------------------------------------------------
 
@@ -2134,21 +2263,21 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        #executor.submit(moving_enemies_thread, server_socket)
+        # executor.submit(moving_enemies_thread, server_socket)
         # setting a thread to handle incomig packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            try:                                                                                                  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
+            try:  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:                                                                                # !!
-                continue                                                                                          # !!
-                                                                                                                  # !!
+            except socket_timeout:  # !!
+                continue  # !!
+                # !!
             # adds the payload to the queue to wait for being handled                                             # !!
-            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))                                                # !!
+            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))  # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2161,7 +2290,7 @@ def main():
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                       "    Make sure the port is available and is not already in use by another service and run again."
+                            "    Make sure the port is available and is not already in use by another service and run again."
                        , color='red')
             print(">> ", end='')
             print_ansi(
@@ -2172,7 +2301,8 @@ def main():
         else:
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-            print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+            print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread).."
+                            f". This is the error message: {ex}", color='red')
             print(">> ", end='')
             print_ansi(
                 text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
@@ -2183,7 +2313,8 @@ def main():
         SHUTDOWN_TRIGGER_EVENT.set()  # setting the event of closing the server
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread)... "
+                        f"This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')

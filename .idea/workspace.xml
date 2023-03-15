@@ -61,7 +61,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="temp_dtls_client" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="before_the_night" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="FinalProject" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -73,7 +73,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/temp_dtls_client.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/before_the_night.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -149,9 +149,9 @@
       <list>
         <item itemvalue="Python.tests" />
         <item itemvalue="Python.Server" />
+        <item itemvalue="Python.before_the_night" />
         <item itemvalue="Python.to_run" />
         <item itemvalue="Python.temp_dtls_server" />
-        <item itemvalue="Python.temp_dtls_client" />
       </list>
     </recent_temporary>
   </component>
@@ -223,11 +223,6 @@
           <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
           <line>122</line>
           <option name="timeStamp" value="46" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Server.py</url>
-          <line>1233</line>
-          <option name="timeStamp" value="97" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
