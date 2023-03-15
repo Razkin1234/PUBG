@@ -5,39 +5,39 @@ from button import Button
 import socket
 from Incoming_packets import Incoming_packets
 from Connection_to_server import Connection_to_server
-
-
+from concurrent.futures import ThreadPoolExecutor
 def handeler_of_incoming_packets(packet, screen):
-    lines = packet.get_packet.split('\r\n')
+    lines = packet.get_packet().split('\r\n')
     lines.remove('')
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
         # Recognize and handle each header
         # -------------
-        if line_parts[0] == 'login_status:':
-            answer = packet.handle_login_status(line_parts[1])  # returning a tuple (True/False, answer)
-            if not answer[0]:
-                # here print to the screen like what is in the value answer[1]
-                screen.fill('black')
-                text_surf = pygame.font.Font(UI_FONT, 150).render(answer[1], True, TEXT_COLOR)
-                text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
-                screen.blit(text_surf, text_rect)
-                return -1, False
-            else:
-                # here convert what is in answer[1] to integer because it's your new id and put it in your player object
-                return answer[1], True
+        if packet.get_packet() != "":
+            if line_parts[0] == 'login_status:':
+                answer = packet.handle_login_status(line_parts[1])  # returning a tuple (True/False, answer)
+                if not answer[0]:
+                    # here print to the screen like what is in the value answer[1]
+                    screen.fill('black')
+                    text_surf = pygame.font.Font(UI_FONT, 150).render(answer[1], True, TEXT_COLOR)
+                    text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
+                    screen.blit(text_surf, text_rect)
+                    return -1, False
+                else:
+                    # here convert what is in answer[1] to integer because it's your new id and put it in your player object
+                    return answer[1], True
 
-        elif line_parts[0] == 'register_status:':
-            answer = packet.handle_register_status(line_parts[1])
-            if not answer[0]:
-                screen.fill('black')
-                text_surf = pygame.font.Font(UI_FONT, 150).render(answer[1], True, TEXT_COLOR)
-                text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
-                screen.blit(text_surf, text_rect)
-                return False
-            else:
-                return True
+            elif line_parts[0] == 'register_status:':
+                answer = packet.handle_register_status(line_parts[1])
+                if not answer[0]:
+                    screen.fill('black')
+                    text_surf = pygame.font.Font(UI_FONT, 150).render(answer[1], True, TEXT_COLOR)
+                    text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
+                    screen.blit(text_surf, text_rect)
+                    return False
+                else:
+                    return True
         # go back to opening page
         # --------------
 
@@ -65,6 +65,10 @@ class Game:
        # self.my_socket.bind(('0.0.0.0', 62227))
     # -------------------
 
+    def handle_of_incoming_packets(self):
+        server_reply = self.my_socket.recv(8192)
+        packet = Incoming_packets(server_reply, self.server_ip, self.player_id)
+        packets_to_handle_queue.append(packet)
     def main_menu(self):
         """
 		the main menu screen creator
@@ -185,53 +189,54 @@ class Game:
                             # FOR REGISTER RECUEST
                             ####################################################################################################################
                             if sign_in:
-                           #     try:
-#                                   print(self.server_ip)
-#                                   print(type(self.server_ip))
-#                                   self.my_socket.connect((self.server_ip, SERVER_PORT))
-#                                   print("connected")
-#                                   send_packet = Connection_to_server(None)
-#                                   send_packet.add_header_register_request(self.user_name, self.passward)
-#                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'))
-#                                   print(send_packet.get_packet())
-#                                   print("sand")
-#                                   # here the tttttl
-#                                   server_reply, addres = self.my_socket.recv(1024)
-#                                   print("recive")
-#                                   packet = Incoming_packets(server_reply, addres, self.server_ip, None)
+                                # try:
+                                   print(self.server_ip)
+                                   print(type(self.server_ip))
+                                   self.my_socket.connect((self.server_ip, SERVER_PORT))
+                                   print("connected")
+                                   send_packet = Connection_to_server(None)
+                                   send_packet.add_header_register_request(self.user_name, self.passward)
+                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'))
+                                   print(send_packet.get_packet())
+                                   print("sand")
+                                   # here the tttttl
+                                   server_reply= self.my_socket.recv(8192)
+                                   print("recive")
+                                   print(server_reply)
+                                   packet = Incoming_packets(server_reply, self.server_ip, None)
 
-#                                   if packet.rotshild_filter():
-#                                       check = handeler_of_incoming_packets(packet, self.display_surface)
-#                                   if not check:
-#                                       sign_in = False
-#                                       log_in = False
-#                                       while event.type == pygame.K_SPACE:
-#                                           pass
-#                               except Exception as e:
-#                                   print(e)
-#                                   sign_in = False
-#                                   log_in = False
-#                           ####################################################################################################################
-#                           # FOR LOGIN RECUEST
-#                           ####################################################################################################################
-#                           if (sign_in or log_in) and check:
-#                               try:
-#                                   if log_in:
-#                                       self.my_socket.connect((self.server_ip, SERVER_PORT))
-#                                   send_packet = Connection_to_server(None, "")
-#                                   send_packet.add_header_login_request(self.user_name, self.passward)
-#                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'),
-#                                                         (self.server_ip, int(SERVER_PORT)))
-#                                   # here the tttttl
-#                                   server_reply, addres = self.my_socket.recv(1024)
-#                                   packet = Incoming_packets(server_reply, addres, self.server_ip, None)
-
-#                                   if packet.rotshild_filter():
-#                                       self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
-#                                   if check:
-                                    self.play(1) #packet
-                               # except Exception as e:
+                                   if packet.rotshild_filter():
+                                       check = handeler_of_incoming_packets(packet, self.display_surface)
+                                   if not check:
+                                       sign_in = False
+                                       log_in = False
+                                       while event.type == pygame.K_SPACE:
+                                           pass
+                                # except Exception as e:
                                 #    print(e)
+                                #    sign_in = False
+                                #    log_in = False
+                            ####################################################################################################################
+                            # FOR LOGIN RECUEST
+                            ####################################################################################################################
+                            if (sign_in or log_in) and check:
+                               # try:
+                                   if log_in:
+                                       self.my_socket.connect((self.server_ip, SERVER_PORT))
+                                   send_packet = Connection_to_server(None)
+                                   send_packet.add_header_login_request(self.user_name, self.passward)
+                                   self.my_socket.send(send_packet.get_packet().encode('utf-8'))
+                                   # here the tttttl
+                                   server_reply = self.my_socket.recv(8192)
+                                   print("a")
+                                   packet = Incoming_packets(server_reply, self.server_ip, None)
+
+                                   if packet.rotshild_filter():
+                                       self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
+                                   if check:
+                                    self.play(packet) #packet
+                               # except Exception as e:
+                               #      print(e)
 
             if log_in or sign_in:
                 server_text_surface = self.font.render(self.server_ip, True, text_color)
@@ -263,23 +268,31 @@ class Game:
     def play(self, packet):
         pygame.display.set_caption('PUBG')
         self.screen.fill('black')
-       # packet.set_playe_id(self.player_id)
-        self.level.run(self.server_ip, self.user_name, self.passward, packet)
+
+        packet.set_player_id(self.player_id)
+        packet_to_send = Connection_to_server(self.player_id)
+        self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
+        self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+
         pygame.display.update()
         self.clock.tick(FPS)
-        while True:
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+        with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
+            executor.submit(self.handle_of_incoming_packets)
 
-         #   server_reply, addres = self.my_socket.recv(1024)
-         #  packet = Incoming_packets(server_reply, addres, self.server_ip, self.player_id)
+            while True:
 
-            self.level.run(self.server_ip, self.user_name, self.passward, packet)
-            pygame.display.update()
-            self.clock.tick(FPS)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
+                packet_to_send = Connection_to_server(self.player_id)
+
+                packet_to_send = self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
+                self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                pygame.display.update()
+                self.clock.tick(FPS)
 
     def run(self):
 

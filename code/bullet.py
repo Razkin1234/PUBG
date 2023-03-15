@@ -7,14 +7,14 @@ class Bullets(Entity):
 
     def __init__(self, pos, groups, obstacle_sprites, mouse_pos):
         super().__init__(groups)
-        self.image = pygame.Surface((10, 50))
+        self.image = pygame.Surface((10, 10))
         self.image.fill((255, 0, 0))
         self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.rect.inflate(0, -26)
         self.obstacle_sprites = obstacle_sprites
         self.bullet_timer = pygame.time.get_ticks()
         self.need_to_stop = True
-        self.bullet_duration = 200
+        self.bullet_duration = 500
 
         if MIDDLE_SCREEN[0] >= mouse_pos[0]:  # chack if its behaind the middle or else it's after the middle
             self.direction.x = -(MIDDLE_SCREEN[0] - mouse_pos[0])

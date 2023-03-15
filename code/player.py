@@ -5,12 +5,12 @@ from entity import Entity
 from debug import debug
 import math
 from bullet import Bullets
-
+from Connection_to_server import Connection_to_server
 class Player(Entity):
-    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group):
+    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id):
         super().__init__(groups)
         #server conection
-        self.id = 0 #need to get id
+        self.id = id #need to get id
 
         self.animations = None
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
@@ -22,6 +22,7 @@ class Player(Entity):
         self.status = 'down'
 
         # movement
+        self.attack_for_moment = False
         self.attacking = False
         self.attack_cooldown = 400
         self.attack_time = None
@@ -144,14 +145,10 @@ class Player(Entity):
             if self.weapon == 'axe':
                 self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
             else:
+                self.attack_for_moment = True
                 self.attacking = True
                 self.attack_time = pygame.time.get_ticks()
                 self.create_attack()
-        try:
-            debug(self.a.direction)
-            print(self.a.rect)
-        except:
-            pass
         #magic input
         if keys[pygame.K_LCTRL] and not self.attacking:
             #the magic we will use:
@@ -212,6 +209,7 @@ class Player(Entity):
 
         # attacking cooldown
         if self.attacking:
+            self.attack_for_moment = False
             if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
                 self.attacking = False
                 self.destroy_attack()
@@ -291,6 +289,7 @@ class Player(Entity):
         self.get_status()
         self.animate()
         self.move(self.speed)  # making the player move
+
         self.stop()
 
 

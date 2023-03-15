@@ -18,6 +18,7 @@ class Entity(pygame.sprite.Sprite):
         self.rect.center = self.hitbox.center
 
 
+
     def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
             for sprite in self.obstacle_sprites:

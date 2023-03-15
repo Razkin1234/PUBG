@@ -4,12 +4,13 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
-    def __init__(self, monster_name, pos, groups, obstacle_sprites,damage_player,trigger_death_particles):
+    def __init__(self, monster_name,id, pos, groups, obstacle_sprites, hit):
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
-
+        self.id = id
         #graphics setup
+        monster_name= 'bamboo'
         self.import_graphics(monster_name)
         self.status = 'idle'
         self.image = self.animations[self.status][self.frame_index]
@@ -18,7 +19,7 @@ class Enemy(Entity):
         self.rect = self.image.get_rect(topleft = pos)
         self.hitbox = self.rect.inflate(0,-10)
         self.obstacle_sprites = obstacle_sprites
-        self.direction = pygame.math.Vector2()
+        #self.direction = pygame.math.Vector2()
 
         #stats
         self.monster_name = monster_name
@@ -36,8 +37,8 @@ class Enemy(Entity):
         self.can_attack = True
         self.attack_time = None
         self.attack_cooldown = 400
-        self.damage_player = damage_player
-        self.trigger_death_particles = trigger_death_particles
+       # self.damage_player = damage_player
+       # self.trigger_death_particles = trigger_death_particles
 
         #invincibility timer
         self.vulnerable = True
@@ -112,7 +113,7 @@ class Enemy(Entity):
             if current_time - self.hit_time >= self.invincibility_duration:
                 self.vulnerable = True
 
-    def get_damage(self, player, attack_type):
+    def get_damage(self, player, attack_type, packet_to_send):
         """
 
         :param player: the player
@@ -120,9 +121,8 @@ class Enemy(Entity):
         :return:nothing
         """
         if self.vulnerable:
-            self.direction = self.get_player_distance_direction(player)[1]
             if attack_type == 'weapon':
-                self.health -= player.get_full_weapon_damege()
+                packet_to_send.add_hit_an_enemy(self, self.id, player.get_full_weapon_damege())
             else:
                 pass
                 # away_damage
