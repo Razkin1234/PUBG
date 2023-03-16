@@ -155,8 +155,6 @@ def test_object_update(header_info: str, id: str):
 
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
-<<<<<<< HEAD
-<<<<<<< HEAD
 #test_login_request('user1', 'password1')
 =======
 test_login_request('user1', 'password1')
@@ -167,13 +165,18 @@ test_login_request('user1', 'password1')
 #test_shot_place('(1,1)', '8', '1')
 test_player_place('(1,2)', 'no', '1')
 =======
+=======
+>>>>>>> da28b58a34a7621a1bd45ed9244bfd41cde874f1
 #test_login_request('user1', 'password1')
 #test_update_inventory('- ammo 2', '1')
 #test_dead('1')
 #test_disconnect('1')
 #test_shot_place('(1,1)', '8', '1')
 #test_player_place('(1344,800)', 'no', '1')
+<<<<<<< HEAD
 >>>>>>> 198cdb337b57a480a28c863e5bfd1bea6e3d1727
+=======
+>>>>>>> da28b58a34a7621a1bd45ed9244bfd41cde874f1
 #test_object_update('drop-ammo-(32845,25492)-7', '1')
 #wait_for_reply()
 # while True:

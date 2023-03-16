@@ -5,6 +5,7 @@ from debug import debug
 from YsortCameraGroup import *
 from support import *
 from weapon import Weapon
+from weapon_item import Weapon_item
 from ui import UI
 from enemy import Enemy
 from player import Player
@@ -14,6 +15,7 @@ from magic import MagicPlayer
 import socket
 from Incoming_packets import Incoming_packets
 from item import Item
+
 from Connection_to_server import Connection_to_server
 
 """""
@@ -126,6 +128,7 @@ class Level:
         self.bullet_group = YsortCameraGroup()
         self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
+        self.weapon_sprites = YsortCameraGroup()
 
 
         # attack sprites
@@ -159,7 +162,7 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites)
+        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites,self.weapon_sprites)
 
         self.item = Item
 
@@ -270,6 +273,8 @@ class Level:
         Item((1100, 1200), self.item_sprites, "medkit")  # item create
         Item((1100, 1300), self.item_sprites, "medkit")  # item create
 
+        Weapon_item((1100, 1400), self.weapon_sprites, "rapier")
+
 
         #printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -377,6 +382,11 @@ class Level:
             self.floor_sprites.custom_draw(self.camera)
             self.floor_sprites.update()
             self.item_sprites.custom_draw(self.camera)
+            self.weapon_sprites.custom_draw(self.camera)
+
+            self.item_sprites.item_picking(self.player)
+            self.weapon_sprites.weapon_picking(self.player)
+
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()

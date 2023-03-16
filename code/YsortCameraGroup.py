@@ -136,3 +136,31 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict.clear()
                                     sprite.kill()
 
+
+    def weapon_picking(self, player):
+        copy_items = self.sprites().copy()
+        if player.can_pick_item:
+            for sprite in copy_items:
+                if sprite.rect.colliderect(player.hitbox):
+                    if sprite.sprite_type not in player.objects_on:
+                        count = 6
+                        for i in range(1, count):
+                            flag = True
+                            for item, item_value in player.objects_on.items():
+                                if item_value['ui'] == i:
+                                    flag = False
+                                    break
+                            if flag:  # we will put the item in this slott
+                                temp_dict = weapon_data[sprite.sprite_type].copy()
+                                temp_dict['ui'] = i
+                                player.objects_on[str(sprite.sprite_type)] = temp_dict.copy()
+                                temp_dict.clear()
+                                sprite.kill()
+                                break
+
+
+
+
+
+
+
