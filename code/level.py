@@ -23,103 +23,14 @@ from Connection_to_server import Connection_to_server
 """""
 
 
-def handeler_of_incoming_packets(packet, visibale_sprites, player, obstecal_sprits, item_sprites):
-    lines = packet.get_packet().split('\r\n')
-    while '' in lines:
-        lines.remove('')
-    for line in lines:
-        line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-
-        # --------------
-        # in this header clients should check the moved_player_id so they wont print their own movement twice.
-        if line_parts[0] == 'player_place:':
-            # looking for image header
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'image:':
-                    # looking for moved player id
-                    for l2 in lines:
-                        l2_parts = l2.split()
-                        if l2_parts[0] == 'moved_player_id:':
-                            if packet.get_id() != l2_parts[1]:
-                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1], player.rect.center,
-                                                           visibale_sprites, obstecal_sprits)
-
-                            break
-                    break
-                    # here calling the function
-        # --------------
-
-        # --------------
-        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
-        elif line_parts[0] == 'shot_place:':
-            # looking for the hit_hp header
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'shooter_id:':
-                    if l_parts[1] != packet.get_id():
-                        packet.handle_shot_place(line_parts[1])
-                    break
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'dead:':
-            packet.handle_dead(int(line_parts[1]), visibale_sprites)
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'first_inventory:':
-            packet.handle_first_inventory(line_parts[1], player)
-        # --------------
-
-        # --------------
-        # clients will get chats of themselves too.
-        # so they should print only what comes from the server and don't print their own messages just after sending it.
-        elif line_parts[0] == 'chat:':
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    message = packet.handle_chat(line_parts[1], l_parts[1])  # getting in answer the message to print
-                    break
-        elif line_parts[0] == 'server_shutdown:':
-            pass
-
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'disconnect:':
-            packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
-
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'first_objects_position:':
-            packet.handle_first_objects_position(line_parts[1], item_sprites)
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'object_update:':
-            l_parts = line_parts[1].split('?')
-            if l_parts[0] != player.id:
-                packet.handle_object_update(l_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'dead_enemy:':
-            packet.handle_dead_enemy(line_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'enemy_player_place_type_hit:':
-            packet.handle_enemy_player_place_type_hit(line_parts[1])
 
 
 class Level:
-    def __init__(self):
+    def __init__(self, place_to_start):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
-
+        self.place_to_start = place_to_start
         # server_things
         self.player_id = ''
 
@@ -165,6 +76,101 @@ class Level:
         self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites)
 
         self.item = Item
+
+    def handeler_of_incoming_packets(self, packet, visibale_sprites, player, obstecal_sprits, item_sprites):
+        lines = packet.get_packet().split('\r\n')
+        while '' in lines:
+            lines.remove('')
+        for line in lines:
+            line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+
+            # --------------
+            # in this header clients should check the moved_player_id so they wont print their own movement twice.
+            if line_parts[0] == 'player_place:':
+                # looking for image header
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'image:':
+                        # looking for moved player id
+                        for l2 in lines:
+                            l2_parts = l2.split()
+                            if l2_parts[0] == 'moved_player_id:':
+                                if packet.get_id() != l2_parts[1]:
+                                    packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
+                                                               player.rect.center,
+                                                               visibale_sprites, obstecal_sprits)
+
+                                break
+                        break
+                        # here calling the function
+            # --------------
+
+            # --------------
+            # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+            elif line_parts[0] == 'shot_place:':
+                # looking for the hit_hp header
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'shooter_id:':
+                        if l_parts[1] != packet.get_id():
+                            packet.handle_shot_place(line_parts[1], self.bullet_group, self.obstacle_sprites)
+                        break
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'dead:':
+                packet.handle_dead(int(line_parts[1]), visibale_sprites)
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'first_inventory:':
+                packet.handle_first_inventory(line_parts[1], player)
+            # --------------
+
+            # --------------
+            # clients will get chats of themselves too.
+            # so they should print only what comes from the server and don't print their own messages just after sending it.
+            elif line_parts[0] == 'chat:':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        message = packet.handle_chat(line_parts[1],
+                                                     l_parts[1])  # getting in answer the message to print
+                        break
+            elif line_parts[0] == 'server_shutdown:':
+                pass
+
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'disconnect:':
+                packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'first_objects_position:':
+                packet.handle_first_objects_position(line_parts[1], item_sprites)
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'object_update:':
+                l_parts = line_parts[1].split('?')
+                if l_parts[0] != player.id:
+                    packet.handle_object_update(l_parts[1])
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'dead_enemy:':
+                packet.handle_dead_enemy(line_parts[1])
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'enemy_player_place_type_hit:':
+                packet.handle_enemy_player_place_type_hit(line_parts[1])
+
+    def get_place_to_start(self, place_to_start):
+        self.place_to_start = place_to_start
 
     def cooldown(self):
         current_time = pygame.time.get_ticks()
@@ -249,25 +255,13 @@ class Level:
         """
 
         # Create player with starting position
-        self.player = Player((1000, 1000), self.visble_sprites,
+        self.player = Player(self.place_to_start, self.visble_sprites,
                              self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
                              self.bullet_group, self.player_id)
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
         self.camera.y = self.player.rect.centery
-
-        Item((1100, 1000), self.item_sprites, "medkit")  # item create
-        Item((1300, 1000), self.item_sprites, "backpack")  # item create
-        Item((1400, 1000), self.item_sprites, "boots")  # item create
-        Item((1500, 1000), self.item_sprites, "medkit")  # item create
-        Item((1600, 1000), self.item_sprites, "medkit")  # item create
-        Item((1700, 1000), self.item_sprites, "medkit")  # item create
-        Item((1100, 1100), self.item_sprites, "medkit")  # item create
-        Item((1100, 1200), self.item_sprites, "medkit")  # item create
-        Item((1100, 1300), self.item_sprites, "medkit")  # item create
-
-        Weapon_item((1100, 1400), self.weapon_sprites, "rapier")
 
         # printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -357,7 +351,7 @@ class Level:
             packet = packets_to_handle_queue.popleft()
             self.player_id = id
             if packet.rotshild_filter():
-                handeler_of_incoming_packets(packet, self.visble_sprites, self.player, self.obstacle_sprites,
+                self.handeler_of_incoming_packets(packet, self.visble_sprites, self.player, self.obstacle_sprites,
                                              self.item_sprites)
 
             self.cooldown()
