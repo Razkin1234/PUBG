@@ -19,7 +19,7 @@ from Connection_to_server import Connection_to_server
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
-def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits):
+def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits, item_sprites):
     lines = packet.get_packet().split('\r\n')
     while '' in lines:
         lines.remove('')
@@ -53,19 +53,19 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits)
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                 if l_parts[0] == 'shooter_id:':
-                    if l_parts[1] != '# id of client':
+                    if l_parts[1] != packet.get_id():
                         packet.handle_shot_place(line_parts[1])
                     break
         # --------------
 
         # --------------
         elif line_parts[0] == 'dead:':
-            packet.handle_dead(line_parts[1])
+            packet.handle_dead(int(line_parts[1]), visibale_sprites)
         # --------------
 
         # --------------
         elif line_parts[0] == 'first_inventory:':
-            packet.handle_first_inventory(line_parts[1],player)
+            packet.handle_first_inventory(line_parts[1], player)
         # --------------
 
         # --------------
@@ -83,8 +83,14 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits)
         # --------------
 
         # --------------
+        elif line_parts[0] == 'disconnect:':
+            packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+
+        # --------------
+
+        # --------------
         elif line_parts[0] == 'first_objects_position:':
-            packet.handle_first_objects_position(line_parts[1])
+            packet.handle_first_objects_position(line_parts[1], item_sprites)
         # --------------
 
         # --------------
@@ -355,7 +361,7 @@ class Level:
             packet = packets_to_handle_queue.popleft()
             self.player_id = id
             if packet.rotshild_filter():
-                handeler_of_incoming_packets(packet, self.visble_sprites, self.player,self.obstacle_sprites)
+                handeler_of_incoming_packets(packet, self.visble_sprites, self.player,self.obstacle_sprites, self.item_sprites)
 
             self.cooldown()
             self.camera.x = self.player.rect.centerx#updating the camera location

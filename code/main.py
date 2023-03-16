@@ -8,7 +8,8 @@ from Connection_to_server import Connection_to_server
 from concurrent.futures import ThreadPoolExecutor
 def handeler_of_incoming_packets(packet, screen):
     lines = packet.get_packet().split('\r\n')
-    lines.remove('')
+    while '' in lines:
+        lines.remove('')
     for line in lines:
         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
@@ -66,9 +67,10 @@ class Game:
     # -------------------
 
     def handle_of_incoming_packets(self):
-        server_reply = self.my_socket.recv(4096)
-        packet = Incoming_packets(server_reply, self.server_ip, self.player_id)
-        packets_to_handle_queue.append(packet)
+        while True:
+            server_reply = self.my_socket.recv(8192)
+            packet = Incoming_packets(server_reply, self.server_ip, self.player_id)
+            packets_to_handle_queue.append(packet)
     def main_menu(self):
         """
 		the main menu screen creator
@@ -200,7 +202,7 @@ class Game:
                                    print(send_packet.get_packet())
                                    print("sand")
                                    # here the tttttl
-                                   server_reply= self.my_socket.recv(1024)
+                                   server_reply= self.my_socket.recv(8192)
                                    print("recive")
                                    print(server_reply)
                                    packet = Incoming_packets(server_reply, self.server_ip, None)
@@ -220,23 +222,24 @@ class Game:
                             # FOR LOGIN RECUEST
                             ####################################################################################################################
                             if (sign_in or log_in) and check:
-                               # try:
+                                #try:
                                    if log_in:
                                        self.my_socket.connect((self.server_ip, SERVER_PORT))
                                    send_packet = Connection_to_server(None)
                                    send_packet.add_header_login_request(self.user_name, self.passward)
                                    self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                    # here the tttttl
-                                   server_reply = self.my_socket.recv(4096)
+                                   server_reply = self.my_socket.recv(20000)
                                    print("a")
                                    packet = Incoming_packets(server_reply, self.server_ip, None)
-
+                                   packet_to_save = Incoming_packets(server_reply, self.server_ip, None)
+                                   packets_to_handle_queue.append(packet_to_save)
                                    if packet.rotshild_filter():
                                        self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
                                    if check:
                                     self.play(packet) #packet
-                               # except Exception as e:
-                               #      print(e)
+                                #except Exception as e:
+                                     #print(e)
 
             if log_in or sign_in:
                 server_text_surface = self.font.render(self.server_ip, True, text_color)
@@ -278,16 +281,18 @@ class Game:
         self.clock.tick(FPS)
 
         with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
-            executor.submit(handeler_of_incoming_packets)
+            executor.submit(self.handle_of_incoming_packets)
 
             while True:
+                packet_to_send = Connection_to_server(self.player_id)
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
+                        packet_to_send.add_header_disconnect(self.player_id)
+                        self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                        # ask shamen if to close the connection
                         pygame.quit()
                         sys.exit()
-
-                packet_to_send = Connection_to_server(self.player_id)
 
                 packet_to_send = self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
                 self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
