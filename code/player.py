@@ -87,6 +87,9 @@ class Player(Entity):
         self.i_pressed_cooldown = 100  # }
         self.i_pressed = False
 
+        #chat stuff:
+        self.chat_input = False
+
 
 
     def import_player_assets(self):
@@ -135,49 +138,51 @@ class Player(Entity):
                 self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
         #debug(self.place_to_go)
         #debug2(self.hitbox.center)
-        keys = pygame.key.get_pressed()
-         #attack input
-        if keys[pygame.K_SPACE] and not self.attacking:
-            self.attacking = True
-            self.attack_time = pygame.time.get_ticks()
-            self.create_attack()
 
-        #magic input
-        if keys[pygame.K_LCTRL] and not self.attacking:
-            #the magic we will use:
-            style = list(magic_data.keys())[self.magic_index]
-            strength = list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
-            cost = list(magic_data.values())[self.magic_index]['cost']
-            self.create_magic(style,strength,cost)
+        if not self.chat_input:
+            keys = pygame.key.get_pressed()
+             #attack input
+            if keys[pygame.K_SPACE] and not self.attacking:
+                self.attacking = True
+                self.attack_time = pygame.time.get_ticks()
+                self.create_attack()
+
+            #magic input
+            if keys[pygame.K_LCTRL] and not self.attacking:
+                #the magic we will use:
+                style = list(magic_data.keys())[self.magic_index]
+                strength = list(magic_data.values())[self.magic_index]['strength'] + self.stats['magic'] #the strength of the magic + our player power
+                cost = list(magic_data.values())[self.magic_index]['cost']
+                self.create_magic(style,strength,cost)
 
 
-        if keys[pygame.K_q] and self.can_switch_weapon:
-            self.can_switch_weapon = False
-            self.weapon_switch_time = pygame.time.get_ticks()
+            if keys[pygame.K_q] and self.can_switch_weapon:
+                self.can_switch_weapon = False
+                self.weapon_switch_time = pygame.time.get_ticks()
 
-            if self.weapon_index < len(list(self.objects_on.keys())) - 1:
-                self.weapon_index += 1 #new weapon
-            else:
-                self.weapon_index = 0
-            self.weapon = list(self.objects_on.keys())[self.weapon_index]  # the weapon we are using
+                if self.weapon_index < len(list(self.objects_on.keys())) - 1:
+                    self.weapon_index += 1 #new weapon
+                else:
+                    self.weapon_index = 0
+                self.weapon = list(self.objects_on.keys())[self.weapon_index]  # the weapon we are using
 
-        #for the ui screen
-        if keys[pygame.K_i]:
-            if self.can_press_i:
-                self.i_pressed_time = pygame.time.get_ticks()
-                self.can_press_i = False
-                if self.i_pressed: self.i_pressed =False
-                else: self.i_pressed = True
+            #for the ui screen
+            if keys[pygame.K_i]:
+                if self.can_press_i:
+                    self.i_pressed_time = pygame.time.get_ticks()
+                    self.can_press_i = False
+                    if self.i_pressed: self.i_pressed =False
+                    else: self.i_pressed = True
 
-        if keys[pygame.K_e] and self.can_switch_magic:
-            self.can_switch_magic = False
-            self.magic_switch_time = pygame.time.get_ticks()
+            if keys[pygame.K_e] and self.can_switch_magic:
+                self.can_switch_magic = False
+                self.magic_switch_time = pygame.time.get_ticks()
 
-            if self.magic_index < len(list(magic_data.keys())) - 1:
-                self.magic_index += 1 #new weapon
-            else:
-                self.magic_index = 0
-            self.magic = list(magic_data.keys())[self.magic_index]  # the weapon we are using
+                if self.magic_index < len(list(magic_data.keys())) - 1:
+                    self.magic_index += 1 #new weapon
+                else:
+                    self.magic_index = 0
+                self.magic = list(magic_data.keys())[self.magic_index]  # the weapon we are using
 
     def input(self):  # checks the input from the player, for now it is the arrows
         keys = pygame.key.get_pressed()
