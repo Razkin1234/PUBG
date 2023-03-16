@@ -15,7 +15,7 @@ import socket
 from Incoming_packets import Incoming_packets
 from item import Item
 from Connection_to_server import Connection_to_server
-
+from weapon_item import Weapon_item
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
@@ -104,6 +104,9 @@ def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits)
             packet.handle_enemy_player_place_type_hit(line_parts[1])
 
 
+
+
+
 class Level:
     def __init__(self):
         # get the display surface
@@ -120,6 +123,7 @@ class Level:
         self.bullet_group = YsortCameraGroup()
         self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
+        self.weapon_sprites = YsortCameraGroup()
 
 
         # attack sprites
@@ -153,7 +157,7 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites)
+        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites,self.weapon_sprites)
 
         self.item = Item
 
@@ -264,6 +268,8 @@ class Level:
         Item((1100, 1200), self.item_sprites, "medkit")  # item create
         Item((1100, 1300), self.item_sprites, "medkit")  # item create
 
+        Weapon_item((1100, 1400), self.weapon_sprites, "rapier")
+
 
         #printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
@@ -365,8 +371,6 @@ class Level:
             #self.visble_sprites.earase_non_relevant_sprites(self.player)
             self.obstacle_sprites.earase_non_relevant_sprites(self.player)
 
-
-
             self.floor_update()
             self.floor_sprites.custom_draw(self.camera)
             self.floor_sprites.update()
@@ -398,7 +402,6 @@ class Level:
             return packet_to_send
         else:
             self.player_id = id
-
 
             self.cooldown()
             self.camera.x = self.player.rect.centerx  # updating the camera location
