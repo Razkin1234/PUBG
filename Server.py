@@ -697,7 +697,7 @@ def create_new_id(client_ip_port_name: tuple = None) -> str:
     if client_ip_port_name is not None:
         CLIENTS_ID_IP_PORT_NAME.append(
             (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
-        ACTIVE_ID_SET.add(str(last_id))
+    ACTIVE_ID_SET.add(str(last_id))
     return str(last_id)
 
 
