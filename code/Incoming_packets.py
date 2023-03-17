@@ -46,6 +46,13 @@ class Incoming_packets:
             # here to add a message that the user is active in the game already
             return False, 'someone already logged in'
         return True, login_status  # returning the id of the client is given
+    def handle_first_place(self, first_inventory):
+        items = first_inventory.split(",")
+        place_to_start = items[-1]
+
+        place_to_start = tuple((place_to_start[1:-1].split('-')))  # converting the place from str to tuple
+        place_to_start = (int(place_to_start[0]), int(place_to_start[1]))
+        return place_to_start
 
     def handle_first_inventory(self, first_inventory, player):
         # to add it to the inventory
@@ -140,12 +147,13 @@ class Incoming_packets:
         except Exception as e:
             print(str(e) + f"line_{e.__traceback__.tb_lineno}")
 
-    def handle_shot_place(self, shot_place):
+    def handle_shot_place(self, shot_place, bullet, obsicales_sprites):
+        # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
         shot_place = tuple((shot_place[1:-1].split(',')))  # converting the place from str to tuple
         shot_place = (int(shot_place[0]), int(shot_place[1]))
-        pass
+
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 

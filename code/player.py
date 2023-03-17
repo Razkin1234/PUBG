@@ -42,16 +42,9 @@ class Player(Entity):
 
         self.objects_on = {
 
-            'sword': {'cooldown': 100, 'damage': 15, 'graphic': '../graphics/weapons/sword/full.png', 'ui': 1},
-            'lance': {'cooldown': 400, 'damage': 30, 'graphic': '../graphics/weapons/lance/full.png', 'ui': 2},
-            'axe': {'cooldown': 300, 'damage': 20, 'graphic': '../graphics/weapons/axe/full.png', 'ui': 3},
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
-            'backpack': {'name': 'backpack','ui':1},
-            'ammo': {'name': 'ammo','amount': 10,'ui':2},
-            'boots': {'name': 'boots','speed': 1,'ui':3},
-            'medkit': {'name': 'medkit','health': 50,'ui':4},
-            'bendage': {'name': 'bendage','health': 7,'ui':5}
+
         } #for all of the items we will have
 
         #items picking:
