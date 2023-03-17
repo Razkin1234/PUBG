@@ -4,15 +4,17 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
-    def __init__(self, monster_name,id, pos, groups, obstacle_sprites, hit):
+    def __init__(self, monster_name, id, pos, groups, obstacle_sprites, hit):
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
         self.id = id
         #graphics setup
-        monster_name= 'bamboo'
         self.import_graphics(monster_name)
-        self.status = 'idle'
+        if hit:
+            self.status = 'attack'
+        else:
+            self.status = 'move'
         self.image = self.animations[self.status][self.frame_index]
 
         #movement

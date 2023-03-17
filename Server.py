@@ -149,13 +149,13 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ Objects
-DEFAULT_WEAPONS = 'rapier'   #
-DEFAULT_AMMO = 0             # DEFAULT
-DEFAULT_MED_KITS = 0         # AMOUNTS
-DEFAULT_BACKPACKS = 0        # IN
-DEFAULT_BANDAGES = 0         # INVENTORY
-DEFAULT_BOOTS = 0            #
-DEFAULT_EXP = 0              #
+DEFAULT_WEAPONS = 'rapier'  #
+DEFAULT_AMMO = 0  # DEFAULT
+DEFAULT_MED_KITS = 0  # AMOUNTS
+DEFAULT_BACKPACKS = 0  # IN
+DEFAULT_BANDAGES = 0  # INVENTORY
+DEFAULT_BOOTS = 0  #
+DEFAULT_EXP = 0  #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -186,11 +186,11 @@ OBJECTS_PLACES = {'ammo': {},
                   'gun': {}}
 # The amount of each object to be on the map every moment
 OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
-                         'med_kit': 80,
-                         'backpack': 50,
-                         'bandage': 120,
-                         'boots': 40,
-                         'sword': 15,
+                         'med_kit': 980,
+                         'backpack': 7,
+                         'bandage': 1200,
+                         'boots': 3,
+                         'sword': 20,
                          'lance': 5,
                          'axe': 7,
                          'rapier': 20,
@@ -206,26 +206,25 @@ PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
 # ------------------------- Enemy
-SQUID_AMOUNT = 0     # AMOUNTS OF
-RACCOON_AMOUNT = 0   # EACH ENEMY
-SPIRIT_AMOUNT = 0    # AT THE
-BAMBOO_AMOUNT = 0    # MOMENT
+SQUID_AMOUNT = 0  # AMOUNTS OF
+RACCOON_AMOUNT = 0  # EACH ENEMY
+SPIRIT_AMOUNT = 0  # AT THE
+BAMBOO_AMOUNT = 0  # MOMENT
 
-SHOULD_BE_SQUID = 25    # AMOUNTS OF
+SHOULD_BE_SQUID = 25  # AMOUNTS OF
 SHOULD_BE_RACCOON = 10  # EACH ENEMY
-SHOULD_BE_SPIRIT = 25   # THAT SHOULD
-SHOULD_BE_BAMBOO = 40   # BE
+SHOULD_BE_SPIRIT = 25  # THAT SHOULD
+SHOULD_BE_BAMBOO = 40  # BE
 
-SQUID_HP = 100     #
-RACCOON_HP = 300   # HP OF
-SPIRIT_HP = 100    # EACH ENEMY
-BAMBOO_HP = 70     #
+SQUID_HP = 100  #
+RACCOON_HP = 300  # HP OF
+SPIRIT_HP = 100  # EACH ENEMY
+BAMBOO_HP = 70  #
 
-SQUID_SPEED = 3     #
-RACCOON_SPEED = 2   # SPEED OF
-SPIRIT_SPEED = 4    # EACH ENEMY
-BAMBOO_SPEED = 3    #
-
+SQUID_SPEED = 3  #
+RACCOON_SPEED = 2  # SPEED OF
+SPIRIT_SPEED = 4  # EACH ENEMY
+BAMBOO_SPEED = 3  #
 
 # list of enemies data. its a list of lists of each enemy data.
 # the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type]
@@ -233,6 +232,8 @@ BAMBOO_SPEED = 3    #
 # place_of_enemy is a tuple of strs, like (X,Y).
 # enemy_hp_amount is int]
 ENEMY_DATA = []
+# list of the shots with the cooldown of enemy be like [[(x,y),cooldown],(x1,y1),....]
+ENEMY_SHOTS = []
 # -------------------------
 
 # ------------------------- General
@@ -256,7 +257,41 @@ FPS = 60
 # (will hold tuples with the payloads as bytestring and the src address as a tuple of (IP, PORT))
 # each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
 PACKETS_TO_HANDLE_QUEUE = deque()
+
+
 # -------------------------
+
+
+def check_if_enemy_need_to_shot_or_to_stop():
+    """
+    checking if enemy needs to shoot. if yes so i am creating the shot, adding it to the list and the calling the function moving_the_bullets()
+    :return:
+    """
+    global ENEMY_DATA, PLAYER_PLACES_BY_ID
+    for enemy in ENEMY_DATA:
+        if enemy[4] == 5:  # write here the type of the enemy that shoots
+            pass
+            current_time = pygame.time.get_ticks()
+            # check here the radios from the player you are locked on in enemy[2]
+            # and here if it corrects so you have the place of the player in PLAYER_PLACES_BY_ID[enemy[2]] so create the shot and add it to the list
+    moving_the_bullets()
+
+
+def moving_the_bullets():
+    """
+    moving the shots of the enemys and sending to the clients
+    :return:
+    """
+    global ENEMY_SHOTS
+    shot_to_send = ''
+    for shot in ENEMY_SHOTS:
+        # here the code for moving the shots
+        enemy_shot = str(shot).replace("'", '').replace(' ', '')
+        shot_to_send += f'shot_place: {enemy_shot}-'
+    shot_to_send = shot_to_send[:-1]
+    shot_to_send += '\r\n'
+    shot_to_send += f'hit_hp : {str(3)}\r\n'
+    return shot_to_send
 
 
 def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
@@ -1217,7 +1252,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
-                              'squid'])
+                               'squid'])
 
     if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
         i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
@@ -1225,7 +1260,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
-                              'spirit'])
+                               'spirit'])
 
     if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
         i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
@@ -1233,7 +1268,7 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
-                              'raccoon'])
+                               'raccoon'])
 
     if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
         i = SHOULD_BE_BAMBOO - BAMBOO_AMOUNT
@@ -1241,7 +1276,20 @@ def creating_enemies():
         for _ in range(i):
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
-                              'bamboo'])
+                               'bamboo'])
+
+
+def calculate_distance(enemy_place: tuple, player_place: tuple):
+    """
+
+    :param enemy_place:
+    :param player_place:
+    :return:
+    """
+    enemy_pos_vector = pygame.math.Vector2(int(enemy_place[0]), int(enemy_place[1]))
+    player_pos_vector = pygame.math.Vector2(player_place[0], player_place[1])
+    distance = enemy_pos_vector.distance_to(player_pos_vector)
+    return distance
 
 
 def moving_enemies_thread(server_socket: socket):
@@ -1257,12 +1305,12 @@ def moving_enemies_thread(server_socket: socket):
     # not be cought in the main.
     try:
         clock = pygame.time.Clock()  # Generating a clock object to count and fit the FPS of the game
+        attacked_previous_frame = 0
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
             # waiting for clients to enter
             if not CLIENTS_ID_IP_PORT_NAME:
                 sleep(0.1)  # to avoid waisting CPU cycles
                 continue
-
             # Making sure there are enough enemies. if some died - spawning new ones
             creating_enemies()
 
@@ -1295,8 +1343,15 @@ def moving_enemies_thread(server_socket: socket):
 
                 # add the new places of the enemy to the header
                 enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
-                packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
-
+                distance = calculate_distance(enemy_place, target_player_place)
+                if distance <= 30 and attacked_previous_frame == 0:
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
+                    attacked_previous_frame += 1
+                else:
+                    attacked_previous_frame += 1
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+                if attacked_previous_frame == 60:
+                    attacked_previous_frame = 0
             # replacing the '-' trailer with a new CRLF characters
             packet = packet[:-1]
             packet += '\r\n'
@@ -2195,12 +2250,12 @@ def main():
         print(">> ", end='')
         print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
         print_ansi(text="   - 'shutdown': To shutdown the server.\n"
-                   "   - 'get clients': To show all clients registered on this server and their info.\n"
-                   "   - 'delete <user_name>': To delete a client from the server.\n"
-                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                   "      and the number of active players at the moments.\n"
-                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                   "   - 'help': To show optional UI commends.\n",
+                        "   - 'get clients': To show all clients registered on this server and their info.\n"
+                        "   - 'delete <user_name>': To delete a client from the server.\n"
+                        "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                        "      and the number of active players at the moments.\n"
+                        "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                        "   - 'help': To show optional UI commends.\n",
                    color='cyan')
         # --------------------------------------------------
 
@@ -2208,21 +2263,21 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        executor.submit(moving_enemies_thread, server_socket)
+        # executor.submit(moving_enemies_thread, server_socket)
         # setting a thread to handle incomig packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            try:                                                                                                  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
+            try:  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:                                                                                # !!
-                continue                                                                                          # !!
-                                                                                                                  # !!
+            except socket_timeout:  # !!
+                continue  # !!
+                # !!
             # adds the payload to the queue to wait for being handled                                             # !!
-            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))                                                # !!
+            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))  # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2235,7 +2290,7 @@ def main():
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                       "    Make sure the port is available and is not already in use by another service and run again."
+                            "    Make sure the port is available and is not already in use by another service and run again."
                        , color='red')
             print(">> ", end='')
             print_ansi(

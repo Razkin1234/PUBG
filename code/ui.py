@@ -102,6 +102,19 @@ class UI:
         self.c_pressed_time = None
         self.c_pressed_cooldown = 150
 
+        # chat:
+        self.user_text = ''  # the text that the user has used
+        self.chat_messages = [
+        'guy is fat'
+        ]  # the mesagges that we will show on the screen
+
+        # for the letters cooldown
+        self.can_write_letter = True
+        self.letter_pressed_time = None
+        self.letter_pressed_cooldown = 115
+
+        self.writing = False #for the graphics☺
+
     def ui_screen(self,player):
         self.items_weapons_box()
         self.ui_input(player)
@@ -109,6 +122,9 @@ class UI:
             self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = True
         elif self.box_on[0]=='item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = True
         else: self.backpack_items_box[f'{self.box_on[1]}']['onit'] = True
+
+        #chat:
+        self.chat_display()
 
         #weapons:
         for box,box_value in self.ui_weapon_boxes.items():
@@ -140,251 +156,386 @@ class UI:
 
         self.cooldown() #for the cooldown
 
+    def chat_display(self):
+        #chat box
+        bg_rect = pygame.Rect(7, 65, 400, 200)
+        pygame.draw.rect(self.display_surface, UI_BG_COLOR, bg_rect)
+        pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, bg_rect, 3)
+        #player input box
+        bg_rect = pygame.Rect(7, 262, 400, 35)
+        pygame.draw.rect(self.display_surface, 'gray', bg_rect)
+
+        #for the border of the chat box
+        if self.writing:
+            pygame.draw.rect(self.display_surface, 'blue', bg_rect, 3)
+        else:
+            pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, bg_rect, 3)
+
+        #printing the messages:
+        y = 70
+        x = 14
+        font = pygame.font.Font(None, 32)
+        for message in self.chat_messages:
+            text = font.render(message, True, (255, 255, 255))
+            self.display_surface.blit(text,(x,y))
+            y+= 27
+
+        #for the user text box
+        text = font.render(self.user_text, True, (0, 0, 0))
+        self.display_surface.blit(text, (17, 267))
+
     def ui_input(self,player):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            if self.can_press_w:
-                self.can_press_w = False
-                self.w_pressed_time = pygame.time.get_ticks()
-                if not (1<=self.box_on[1]<=3):
-                    if self.box_on[0] == 'weapon':
-                        self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
-                    elif self.box_on[0]== 'item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
-                    self.box_on[1] = self.box_on[1]-3
-                else:
-                    if self.box_on[0] == 'item':
-                        self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
-                        self.box_on[0] = 'weapon'
-                        self.box_on[1] += 3
-                    elif self.box_on[0] == 'backpack':
-                        self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
-                        self.box_on[0] = 'item'
-                        self.box_on[1] += 6
-
-        if keys[pygame.K_s]:
-            if self.can_press_s:
-                self.can_press_s = False
-                self.s_pressed_time = pygame.time.get_ticks()
-                if self.box_on[0] == 'weapon':
-                    self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
-                    if not (4 <= self.box_on[1] <= 6):
-                        self.box_on[1] = self.box_on[1] + 3
-                    else:
-                        self.box_on[0] = 'item'
+        if not player.chat_input: #if the chat is not on
+            if keys[pygame.K_v]: #making the chat value on
+                player.chat_input = True
+                self.letter_pressed_time = pygame.time.get_ticks()
+                self.can_write_letter = False
+            if keys[pygame.K_w]:
+                if self.can_press_w:
+                    self.can_press_w = False
+                    self.w_pressed_time = pygame.time.get_ticks()
+                    if not (1<=self.box_on[1]<=3):
+                        if self.box_on[0] == 'weapon':
+                            self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                        elif self.box_on[0]== 'item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
                         self.box_on[1] = self.box_on[1]-3
-                elif self.box_on[0] == 'item':
-                    self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
-                    if not (7 <= self.box_on[1] <= 9):
-                        self.box_on[1] = self.box_on[1] + 3
                     else:
-                        if 'backpack' in player.items_on:
-                            self.box_on[0] = 'backpack'
-                            self.box_on[1] -= 6
+                        if self.box_on[0] == 'item':
+                            self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                            self.box_on[0] = 'weapon'
+                            self.box_on[1] += 3
+                        elif self.box_on[0] == 'backpack':
+                            self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
+                            self.box_on[0] = 'item'
+                            self.box_on[1] += 6
 
-
-
-
-        if keys[pygame.K_a]:
-            if self.can_press_s:
-                self.can_press_s = False
-                self.s_pressed_time = pygame.time.get_ticks()
-                if (self.box_on[1]-1) % 3 != 0:
+            if keys[pygame.K_s]:
+                if self.can_press_s:
+                    self.can_press_s = False
+                    self.s_pressed_time = pygame.time.get_ticks()
                     if self.box_on[0] == 'weapon':
                         self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                        if not (4 <= self.box_on[1] <= 6):
+                            self.box_on[1] = self.box_on[1] + 3
+                        else:
+                            self.box_on[0] = 'item'
+                            self.box_on[1] = self.box_on[1]-3
                     elif self.box_on[0] == 'item':
                         self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
-                    else:
-                        self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
-                    self.box_on[1] -= 1
-
-        if keys[pygame.K_d]:
-            if self.can_press_d:
-                self.can_press_d = False
-                self.d_pressed_time = pygame.time.get_ticks()
-                if self.box_on[1] % 3 != 0:
-                    if self.box_on[0] == 'weapon':
-                        self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
-                    elif self.box_on[0]=='item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
-                    else: self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
-                    self.box_on[1] += 1
-
-        if keys[pygame.K_z]: #remove the item or weapon from the player
-            if self.can_press_z:
-                self.can_press_z = False
-                self.z_pressed_time = pygame.time.get_ticks()
-                if self.box_on[0] == 'weapon':
-                    objects_copy = player.objects_on.copy()
-                    for weapon, weapon_value in objects_copy.items():
-                        if weapon_value['ui'] == self.box_on[1]:
-                            if len(list(player.objects_on.keys()))> 1:
-                                player.can_pick_item = False
-                                player.drop_item_time = pygame.time.get_ticks()
-                                Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
-                                del player.objects_on[weapon]
-
-
-                                if player.weapon_index < len(list(player.objects_on.keys())) - 1:
-                                    player.weapon_index += 1  # new weapon
-                                else:
-                                    player.weapon_index = 0
-                                player.weapon = list(player.objects_on.keys())[player.weapon_index]  # the weapon we are using
-                elif self.box_on[0]=='item':
-                    objects_copy = player.items_on.copy()
-                    for weapon, weapon_value in objects_copy.items():
-                        if weapon_value['ui'] == self.box_on[1]:
-                            if weapon != 'backpack':
-                                player.can_pick_item = False
-                                player.drop_item_time = pygame.time.get_ticks()
-                                Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
-                                del player.items_on[weapon]
-                            else: #only for the backpack erasing
-                                items_copy = player.items_on.copy()
-                                del_flag = True
-                                for item , item_data in items_copy.items():
-                                    if 10 <= item_data['ui'] <= 12:
-                                        del_flag = False
-                                if del_flag:
-                                    player.can_pick_item = False
-                                    player.drop_item_time = pygame.time.get_ticks()
-                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
-                                    del player.items_on[weapon]
-
-                else: #for the backpack items
-                    objects_copy = player.items_on.copy()
-                    for weapon, weapon_value in objects_copy.items():
-                        if weapon_value['ui'] - 9 == self.box_on[1]:
-                            if weapon != 'backpack':
-                                player.can_pick_item = False
-                                player.drop_item_time = pygame.time.get_ticks()
-                                Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
-                                del player.items_on[weapon]
-                            else:  # only for the backpack erasing
-                                items_copy = player.items_on.copy()
-                                del_flag = True
-                                for item, item_data in items_copy.items():
-                                    if 9 <= item_data['ui'] <= 12:
-                                        del_flag = False
-                                if del_flag:
-                                    player.can_pick_item = False
-                                    player.drop_item_time = pygame.time.get_ticks()
-                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
-                                    del player.items_on[weapon]
-                                    self.box_on[0] = 'item'
-                                    self.box_on[1] += 6
-
-        if keys[pygame.K_c]: #to use an item
-            if self.can_press_c:
-                self.c_pressed_time = pygame.time.get_ticks()
-                self.can_press_c = False
-                if self.box_on[0] == 'item':
-                    items_copy = player.items_on.copy()
-                    for item , item_data in items_copy.items():
-                        if item_data['ui'] == self.box_on[1]:
-                            if item_data['name'] == 'medkit':
-                                self.plus_health(50,player)
-                                objects_copy = player.items_on.copy() #deletes the medkit after the use
-                                for weapon, weapon_value in objects_copy.items():
-                                    if weapon_value['ui'] == self.box_on[1]:
-                                        if len(list(player.items_on.keys())) > 0:
-                                            del player.items_on[weapon]
-                            if item_data['name'] == 'bendage':
-                                self.plus_health(10,player)
-                                objects_copy = player.items_on.copy() #deletes the medkit after the use
-                                for weapon, weapon_value in objects_copy.items():
-                                    if weapon_value['ui'] == self.box_on[1]:
-                                        if len(list(player.items_on.keys())) > 0:
-                                            del player.items_on[weapon]
-                elif self.box_on[0] == 'backpack': #for the backpack
-                    items_copy = player.items_on.copy()
-                    for item, item_data in items_copy.items():
-                        if item_data['ui'] == self.box_on[1] + 9:
-                            if item_data['name'] == 'medkit':
-                                self.plus_health(50, player)
-                                objects_copy = player.items_on.copy()  # deletes the medkit after the use
-                                for weapon, weapon_value in objects_copy.items():
-                                    if weapon_value['ui'] == self.box_on[1] + 9:
-                                        if len(list(player.items_on.keys())) > 0:
-                                            del player.items_on[weapon]
-                            if item_data['name'] == 'bendage':
-                                self.plus_health(10, player)
-                                objects_copy = player.items_on.copy()  # deletes the medkit after the use
-                                for weapon, weapon_value in objects_copy.items():
-                                    if weapon_value['ui'] == self.box_on[1] + 9:
-                                        if len(list(player.items_on.keys())) > 0:
-                                            del player.items_on[weapon]
-
-
-
-        if keys[pygame.K_x]:
-            if self.can_press_x:
-                self.x_pressed_time = pygame.time.get_ticks()
-                self.can_press_x = False
-                if self.box_on[0] == 'weapon':
-                    if len(self.replace_first_one) == 0:
-                        self.replace_first_one = self.box_on.copy()
-                        self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = False
-                    else:
-                        item_to_replace = None
-                        second_item_to_replace = None
-                        for weapon , weapon_value in player.objects_on.items():
-                            if self.replace_first_one[1] == weapon_value['ui']:
-                                item_to_replace = weapon
-                            if self.box_on[1] == weapon_value['ui']:
-                                second_item_to_replace = weapon
-                        if item_to_replace != None and second_item_to_replace != None:
-                            temp = player.objects_on[item_to_replace]['ui']
-                            player.objects_on[item_to_replace]['ui'] = player.objects_on[second_item_to_replace]['ui']
-                            player.objects_on[second_item_to_replace]['ui'] = temp
-                        elif item_to_replace != None and second_item_to_replace == None:
-                            player.objects_on[item_to_replace]['ui'] = self.box_on[1]
-                        elif item_to_replace == None and second_item_to_replace != None:
-                            player.objects_on[second_item_to_replace]['ui'] = self.replace_first_one[1]
-                        self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = True
-                        self.replace_first_one.clear()
-                else:
-                    if len(self.replace_first_item) == 0:
-                        self.replace_first_item = self.box_on.copy()
-                        if self.replace_first_item[0] == 'item':
-                            self.ui_item_boxes[f'{self.replace_first_item[1]}']['rep'] = False
+                        if not (7 <= self.box_on[1] <= 9):
+                            self.box_on[1] = self.box_on[1] + 3
                         else:
-                            self.backpack_items_box[f'{self.replace_first_item[1]}']['rep'] = False
-                    else:
-                        item_to_replace = None
-                        second_item_to_replace = None
-                        for weapon , weapon_value in player.items_on.items():
-                            if self.replace_first_item[0] == 'item':
-                                if self.replace_first_item[1] == weapon_value['ui']:
+                            if 'backpack' in player.items_on:
+                                self.box_on[0] = 'backpack'
+                                self.box_on[1] -= 6
+
+
+
+
+            if keys[pygame.K_a]:
+                if self.can_press_s:
+                    self.can_press_s = False
+                    self.s_pressed_time = pygame.time.get_ticks()
+                    if (self.box_on[1]-1) % 3 != 0:
+                        if self.box_on[0] == 'weapon':
+                            self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                        elif self.box_on[0] == 'item':
+                            self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                        else:
+                            self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
+                        self.box_on[1] -= 1
+
+            if keys[pygame.K_d]:
+                if self.can_press_d:
+                    self.can_press_d = False
+                    self.d_pressed_time = pygame.time.get_ticks()
+                    if self.box_on[1] % 3 != 0:
+                        if self.box_on[0] == 'weapon':
+                            self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = False
+                        elif self.box_on[0]=='item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = False
+                        else: self.backpack_items_box[f'{self.box_on[1]}']['onit'] = False
+                        self.box_on[1] += 1
+
+            if keys[pygame.K_z]: #remove the item or weapon from the player
+                if self.can_press_z:
+                    self.can_press_z = False
+                    self.z_pressed_time = pygame.time.get_ticks()
+                    if self.box_on[0] == 'weapon':
+                        objects_copy = player.objects_on.copy()
+                        for weapon, weapon_value in objects_copy.items():
+                            if weapon_value['ui'] == self.box_on[1]:
+                                if len(list(player.objects_on.keys()))> 1:
+                                    player.can_pick_item = False
+                                    player.drop_item_time = pygame.time.get_ticks()
+                                    Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
+                                    del player.objects_on[weapon]
+
+
+                                    if player.weapon_index < len(list(player.objects_on.keys())) - 1:
+                                        player.weapon_index += 1  # new weapon
+                                    else:
+                                        player.weapon_index = 0
+                                    player.weapon = list(player.objects_on.keys())[player.weapon_index]  # the weapon we are using
+                    elif self.box_on[0]=='item':
+                        objects_copy = player.items_on.copy()
+                        for weapon, weapon_value in objects_copy.items():
+                            if weapon_value['ui'] == self.box_on[1]:
+                                if weapon != 'backpack':
+                                    player.can_pick_item = False
+                                    player.drop_item_time = pygame.time.get_ticks()
+                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                    del player.items_on[weapon]
+                                else: #only for the backpack erasing
+                                    items_copy = player.items_on.copy()
+                                    del_flag = True
+                                    for item , item_data in items_copy.items():
+                                        if 10 <= item_data['ui'] <= 12:
+                                            del_flag = False
+                                    if del_flag:
+                                        player.can_pick_item = False
+                                        player.drop_item_time = pygame.time.get_ticks()
+                                        Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
+
+                    else: #for the backpack items
+                        objects_copy = player.items_on.copy()
+                        for weapon, weapon_value in objects_copy.items():
+                            if weapon_value['ui'] - 9 == self.box_on[1]:
+                                if weapon != 'backpack':
+                                    player.can_pick_item = False
+                                    player.drop_item_time = pygame.time.get_ticks()
+                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                    del player.items_on[weapon]
+                                else:  # only for the backpack erasing
+                                    items_copy = player.items_on.copy()
+                                    del_flag = True
+                                    for item, item_data in items_copy.items():
+                                        if 9 <= item_data['ui'] <= 12:
+                                            del_flag = False
+                                    if del_flag:
+                                        player.can_pick_item = False
+                                        player.drop_item_time = pygame.time.get_ticks()
+                                        Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
+                                        self.box_on[0] = 'item'
+                                        self.box_on[1] += 6
+
+            if keys[pygame.K_c]: #to use an item
+                if self.can_press_c:
+                    self.c_pressed_time = pygame.time.get_ticks()
+                    self.can_press_c = False
+                    if self.box_on[0] == 'item':
+                        items_copy = player.items_on.copy()
+                        for item , item_data in items_copy.items():
+                            if item_data['ui'] == self.box_on[1]:
+                                if item_data['name'] == 'medkit':
+                                    self.plus_health(50,player)
+                                    objects_copy = player.items_on.copy() #deletes the medkit after the use
+                                    for weapon, weapon_value in objects_copy.items():
+                                        if weapon_value['ui'] == self.box_on[1]:
+                                            if len(list(player.items_on.keys())) > 0:
+                                                del player.items_on[weapon]
+                                if item_data['name'] == 'bendage':
+                                    self.plus_health(10,player)
+                                    objects_copy = player.items_on.copy() #deletes the medkit after the use
+                                    for weapon, weapon_value in objects_copy.items():
+                                        if weapon_value['ui'] == self.box_on[1]:
+                                            if len(list(player.items_on.keys())) > 0:
+                                                del player.items_on[weapon]
+                    elif self.box_on[0] == 'backpack': #for the backpack
+                        items_copy = player.items_on.copy()
+                        for item, item_data in items_copy.items():
+                            if item_data['ui'] == self.box_on[1] + 9:
+                                if item_data['name'] == 'medkit':
+                                    self.plus_health(50, player)
+                                    objects_copy = player.items_on.copy()  # deletes the medkit after the use
+                                    for weapon, weapon_value in objects_copy.items():
+                                        if weapon_value['ui'] == self.box_on[1] + 9:
+                                            if len(list(player.items_on.keys())) > 0:
+                                                del player.items_on[weapon]
+                                if item_data['name'] == 'bendage':
+                                    self.plus_health(10, player)
+                                    objects_copy = player.items_on.copy()  # deletes the medkit after the use
+                                    for weapon, weapon_value in objects_copy.items():
+                                        if weapon_value['ui'] == self.box_on[1] + 9:
+                                            if len(list(player.items_on.keys())) > 0:
+                                                del player.items_on[weapon]
+
+
+
+            if keys[pygame.K_x]:
+                if self.can_press_x:
+                    self.x_pressed_time = pygame.time.get_ticks()
+                    self.can_press_x = False
+                    if self.box_on[0] == 'weapon':
+                        if len(self.replace_first_one) == 0:
+                            self.replace_first_one = self.box_on.copy()
+                            self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = False
+                        else:
+                            item_to_replace = None
+                            second_item_to_replace = None
+                            for weapon , weapon_value in player.objects_on.items():
+                                if self.replace_first_one[1] == weapon_value['ui']:
                                     item_to_replace = weapon
-                            else:
-                                if self.replace_first_item[1] == weapon_value['ui'] - 9:
-                                    item_to_replace = weapon
-                            if self.box_on[0] == 'item':
                                 if self.box_on[1] == weapon_value['ui']:
                                     second_item_to_replace = weapon
-                            else:
-                                if self.box_on[1] == weapon_value['ui'] - 9:
-                                    second_item_to_replace = weapon
-
-
-                        if item_to_replace != None and second_item_to_replace != None:
-                            temp = player.items_on[item_to_replace]['ui']
-                            player.items_on[item_to_replace]['ui'] = player.items_on[second_item_to_replace]['ui']
-                            player.items_on[second_item_to_replace]['ui'] = temp
-                        elif item_to_replace != None and second_item_to_replace == None:
-                            if self.box_on[0] == 'item':
-                                player.items_on[item_to_replace]['ui'] = self.box_on[1]
-                            else:  player.items_on[item_to_replace]['ui'] = self.box_on[1] + 9
-
-                        elif item_to_replace == None and second_item_to_replace != None:
+                            if item_to_replace != None and second_item_to_replace != None:
+                                temp = player.objects_on[item_to_replace]['ui']
+                                player.objects_on[item_to_replace]['ui'] = player.objects_on[second_item_to_replace]['ui']
+                                player.objects_on[second_item_to_replace]['ui'] = temp
+                            elif item_to_replace != None and second_item_to_replace == None:
+                                player.objects_on[item_to_replace]['ui'] = self.box_on[1]
+                            elif item_to_replace == None and second_item_to_replace != None:
+                                player.objects_on[second_item_to_replace]['ui'] = self.replace_first_one[1]
+                            self.ui_weapon_boxes[f'{self.replace_first_one[1]}']['rep'] = True
+                            self.replace_first_one.clear()
+                    else:
+                        if len(self.replace_first_item) == 0:
+                            self.replace_first_item = self.box_on.copy()
                             if self.replace_first_item[0] == 'item':
-                                player.items_on[second_item_to_replace]['ui'] = self.replace_first_item[1]
-                            else: player.items_on[second_item_to_replace]['ui'] = self.replace_first_item[1]+9
-                        if self.replace_first_item[0] == 'item':
-                            self.ui_item_boxes[f'{self.replace_first_item[1]}']['rep'] = True
-                        else: self.backpack_items_box[f'{self.replace_first_item[1]}']['rep'] = True
-                        self.replace_first_item.clear()
+                                self.ui_item_boxes[f'{self.replace_first_item[1]}']['rep'] = False
+                            else:
+                                self.backpack_items_box[f'{self.replace_first_item[1]}']['rep'] = False
+                        else:
+                            item_to_replace = None
+                            second_item_to_replace = None
+                            for weapon , weapon_value in player.items_on.items():
+                                if self.replace_first_item[0] == 'item':
+                                    if self.replace_first_item[1] == weapon_value['ui']:
+                                        item_to_replace = weapon
+                                else:
+                                    if self.replace_first_item[1] == weapon_value['ui'] - 9:
+                                        item_to_replace = weapon
+                                if self.box_on[0] == 'item':
+                                    if self.box_on[1] == weapon_value['ui']:
+                                        second_item_to_replace = weapon
+                                else:
+                                    if self.box_on[1] == weapon_value['ui'] - 9:
+                                        second_item_to_replace = weapon
 
 
+                            if item_to_replace != None and second_item_to_replace != None:
+                                temp = player.items_on[item_to_replace]['ui']
+                                player.items_on[item_to_replace]['ui'] = player.items_on[second_item_to_replace]['ui']
+                                player.items_on[second_item_to_replace]['ui'] = temp
+                            elif item_to_replace != None and second_item_to_replace == None:
+                                if self.box_on[0] == 'item':
+                                    player.items_on[item_to_replace]['ui'] = self.box_on[1]
+                                else:  player.items_on[item_to_replace]['ui'] = self.box_on[1] + 9
+
+                            elif item_to_replace == None and second_item_to_replace != None:
+                                if self.replace_first_item[0] == 'item':
+                                    player.items_on[second_item_to_replace]['ui'] = self.replace_first_item[1]
+                                else: player.items_on[second_item_to_replace]['ui'] = self.replace_first_item[1]+9
+                            if self.replace_first_item[0] == 'item':
+                                self.ui_item_boxes[f'{self.replace_first_item[1]}']['rep'] = True
+                            else: self.backpack_items_box[f'{self.replace_first_item[1]}']['rep'] = True
+                            self.replace_first_item.clear() #if n
+        else: #if the chat is on:
+            self.writing = True
+            if self.can_write_letter:
+                key_pressed = False
+                # it will send the message if we pass the letter limmit or pressed enter:
+                if keys[pygame.K_RETURN] or len(self.user_text) >= 22:
+                    key_pressed = True #for the cooldown
+                    self.writing = False
+                    player.chat_input = False
+                    self.chat_messages.append(self.user_text)
+                    self.user_text = ''
+                    #checking if we display to much messages:
+                    if len(self.chat_messages) > 7:
+                        self.chat_messages.pop(0)
+
+                elif keys[pygame.K_SPACE]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + ' '
+                elif keys[pygame.K_BACKSPACE]:
+                    key_pressed = True
+                    self.user_text = self.user_text[:-1]
+
+                elif keys[pygame.K_a]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'a'
+                elif keys[pygame.K_b]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'b'
+                elif keys[pygame.K_c]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'c'
+                elif keys[pygame.K_d]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'd'
+                elif keys[pygame.K_e]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'e'
+                elif keys[pygame.K_f]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'f'
+                elif keys[pygame.K_g]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'g'
+                elif keys[pygame.K_h]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'h'
+                elif keys[pygame.K_i]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'i'
+                elif keys[pygame.K_j]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'j'
+                elif keys[pygame.K_k]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'k'
+                elif keys[pygame.K_l]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'l'
+                elif keys[pygame.K_m]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'm'
+                elif keys[pygame.K_n]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'n'
+                elif keys[pygame.K_o]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'o'
+                elif keys[pygame.K_p]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'p'
+                elif keys[pygame.K_q]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'q'
+                elif keys[pygame.K_r]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'r'
+                elif keys[pygame.K_s]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 's'
+                elif keys[pygame.K_t]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 't'
+                elif keys[pygame.K_u]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'u'
+                elif keys[pygame.K_v]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'v'
+                elif keys[pygame.K_w]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'w'
+                elif keys[pygame.K_x]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'x'
+                elif keys[pygame.K_y]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'y'
+                elif keys[pygame.K_z]:
+                    key_pressed = True  # for the cooldown
+                    self.user_text = self.user_text + 'z'
+
+                if key_pressed:
+                    self.can_write_letter = False
+                    self.letter_pressed_time = pygame.time.get_ticks()
 
     def plus_health(self,heel,player):
         """
@@ -418,6 +569,10 @@ class UI:
         if not self.can_press_c:
             if current_time - self.c_pressed_time >= self.c_pressed_cooldown:
                 self.can_press_c = True
+
+        if not self.can_write_letter: #for the chat writing
+            if current_time - self.letter_pressed_time >= self.letter_pressed_cooldown:
+                self.can_write_letter = True
 
     def items_weapons_box(self):
         #the weapon box

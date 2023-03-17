@@ -5,6 +5,7 @@ from debug import debug
 from YsortCameraGroup import *
 from support import *
 from weapon import Weapon
+from weapon_item import Weapon_item
 from ui import UI
 from enemy import Enemy
 from player import Player
@@ -14,106 +15,23 @@ from magic import MagicPlayer
 import socket
 from Incoming_packets import Incoming_packets
 from item import Item
+
 from Connection_to_server import Connection_to_server
-from weapon_item import Weapon_item
+
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
-def handeler_of_incoming_packets(packet,visibale_sprites,player,obstecal_sprits):
-    lines = packet.get_packet().split('\r\n')
-    while '' in lines:
-        lines.remove('')
-    for line in lines:
-        line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-
-        # --------------
-        # in this header clients should check the moved_player_id so they wont print their own movement twice.
-        if line_parts[0] == 'player_place:':
-            # looking for image header
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'image:':
-                    # looking for moved player id
-                    for l2 in lines:
-                        l2_parts = l2.split()
-                        if l2_parts[0] == 'moved_player_id:':
-                            if packet.get_id() != l2_parts[1]:
-                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1], player.rect.center,
-                                                           visibale_sprites, obstecal_sprits)
-
-                            break
-                    break
-                    # here calling the function
-        # --------------
-
-        # --------------
-        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
-        elif line_parts[0] == 'shot_place:':
-            # looking for the hit_hp header
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'shooter_id:':
-                    if l_parts[1] != '# id of client':
-                        packet.handle_shot_place(line_parts[1])
-                    break
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'dead:':
-            packet.handle_dead(line_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'first_inventory:':
-            packet.handle_first_inventory(line_parts[1],player)
-        # --------------
-
-        # --------------
-        # clients will get chats of themselves too.
-        # so they should print only what comes from the server and don't print their own messages just after sending it.
-        elif line_parts[0] == 'chat:':
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'user_name:':
-                    message = packet.handle_chat(line_parts[1], l_parts[1])  # getting in answer the message to print
-                    break
-        elif line_parts[0] == 'server_shutdown:':
-            pass
-
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'first_objects_position:':
-            packet.handle_first_objects_position(line_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'object_update:':
-            l_parts = line_parts[1].split('?')
-            if l_parts[0] != player.id:
-                packet.handle_object_update(l_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'dead_enemy:':
-            packet.handle_dead_enemy(line_parts[1])
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'enemy_player_place_type_hit:':
-            packet.handle_enemy_player_place_type_hit(line_parts[1])
-
 
 
 
 
 class Level:
-    def __init__(self):
+    def __init__(self, place_to_start):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
-
-        #server_things
+        self.place_to_start = place_to_start
+        # server_things
         self.player_id = ''
 
         # sprite groups setup
@@ -125,7 +43,6 @@ class Level:
         self.item_sprites = YsortCameraGroup()
         self.weapon_sprites = YsortCameraGroup()
 
-
         # attack sprites
         self.current_attack = None
         self.attack_sprites = pygame.sprite.Group()
@@ -134,20 +51,19 @@ class Level:
         self.can_update_floor = False
         self.update_floor_cooldown = 1000
         self.floor_update_time = 0
-        self.player_first_location = (22*TILESIZE,33*TILESIZE)
-        self.layout :dict[str: list[list[int]]]={
+        self.player_first_location = (22 * TILESIZE, 33 * TILESIZE)
+        self.layout: dict[str: list[list[int]]] = {
             'floor': import_csv_layout('../map/map_Floor.csv'),
             'boundary': import_csv_layout('../map/map_FloorBlocks.csv')
-            #,'entities': import_csv_layout('../map/map_Entities.csv')
+            # ,'entities': import_csv_layout('../map/map_Entities.csv')
         }
         self.graphics: dict[str: dict[int: pygame.Surface]] = {
             'floor': import_folder('../graphics/tilessyber')
         }
 
-        #particals
+        # particals
         self.animation_player = AnimationPlayer()
         self.magic_player = MagicPlayer(self.animation_player)
-
 
         # sprite setup
         self.create_map()
@@ -157,12 +73,104 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on,self.player.items_on,self.item_sprites,self.weapon_sprites)
+        self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites)
 
         self.item = Item
 
+    def handeler_of_incoming_packets(self, packet, visibale_sprites, player, obstecal_sprits, item_sprites):
+        lines = packet.get_packet().split('\r\n')
+        while '' in lines:
+            lines.remove('')
+        for line in lines:
+            line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
+            # --------------
+            # in this header clients should check the moved_player_id so they wont print their own movement twice.
+            if line_parts[0] == 'player_place:':
+                # looking for image header
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'image:':
+                        # looking for moved player id
+                        for l2 in lines:
+                            l2_parts = l2.split()
+                            if l2_parts[0] == 'moved_player_id:':
+                                if packet.get_id() != l2_parts[1]:
+                                    packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
+                                                               player.rect.center,
+                                                               visibale_sprites, obstecal_sprits)
 
+                                break
+                        break
+                        # here calling the function
+            # --------------
+
+            # --------------
+            # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+            elif line_parts[0] == 'shot_place:':
+                # looking for the hit_hp header
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'shooter_id:':
+                        if l_parts[1] != packet.get_id():
+                            packet.handle_shot_place(line_parts[1], self.bullet_group, self.obstacle_sprites)
+                        break
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'dead:':
+                packet.handle_dead(int(line_parts[1]), visibale_sprites)
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'first_inventory:':
+                packet.handle_first_inventory(line_parts[1], player)
+            # --------------
+
+            # --------------
+            # clients will get chats of themselves too.
+            # so they should print only what comes from the server and don't print their own messages just after sending it.
+            elif line_parts[0] == 'chat:':
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'user_name:':
+                        message = packet.handle_chat(line_parts[1],
+                                                     l_parts[1])  # getting in answer the message to print
+                        break
+            elif line_parts[0] == 'server_shutdown:':
+                pass
+
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'disconnect:':
+                packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'first_objects_position:':
+                packet.handle_first_objects_position(line_parts[1], item_sprites)
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'object_update:':
+                l_parts = line_parts[1].split('?')
+                if l_parts[0] != player.id:
+                    packet.handle_object_update(l_parts[1])
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'dead_enemy:':
+                packet.handle_dead_enemy(line_parts[1])
+            # --------------
+
+            # --------------
+            elif line_parts[0] == 'enemy_player_place_type_hit:':
+                packet.handle_enemy_player_place_type_hit(line_parts[1])
+
+    def get_place_to_start(self, place_to_start):
+        self.place_to_start = place_to_start
 
     def cooldown(self):
         current_time = pygame.time.get_ticks()
@@ -174,18 +182,18 @@ class Level:
 
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
                                                                int(self.player.rect.y / TILESIZE))
-        self.player_move[0] = (player_tile.x - self.player_prev_location[0]//TILESIZE)
-        self.player_move[1] = (player_tile.y - self.player_prev_location[1]//TILESIZE)
+        self.player_move[0] = (player_tile.x - self.player_prev_location[0] // TILESIZE)
+        self.player_move[1] = (player_tile.y - self.player_prev_location[1] // TILESIZE)
 
-        if self.player_move[1] !=0:
+        if self.player_move[1] != 0:
             if self.player_move[1] > 0:
-                row_index_add = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE-1))
+                row_index_add = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE - 1))
                 row_index_remove = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE))
             else:
-                row_index_add = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE-1))
+                row_index_add = int(player_tile.y - (ROW_LOAD_TILE_DISTANCE - 1))
                 row_index_remove = int(player_tile.y + (ROW_LOAD_TILE_DISTANCE))
             self.floor_sprites.remove_sprites_in_rect((row_index_remove * TILESIZE), 1)
-            self.obstacle_sprites.remove_sprites_in_rect((row_index_remove * TILESIZE) , 1)
+            self.obstacle_sprites.remove_sprites_in_rect((row_index_remove * TILESIZE), 1)
 
             for style_index, (style, layout) in enumerate(self.layout.items()):
                 self.floor_sprites.remove_sprites_in_rect(row_index_remove * TILESIZE, 1)
@@ -199,8 +207,8 @@ class Level:
                             if col != '-1':  # -1 in csv means no tile, don't need to recreate the tile if it already exists
                                 x: int = col_index * TILESIZE
                                 y: int = row_index_add * TILESIZE
-                                self.floor_sprites.remove_sprites_in_rect(row_index_remove*TILESIZE, 1)
-                                self.obstacle_sprites.remove_sprites_in_rect(row_index_remove*TILESIZE, 1)
+                                self.floor_sprites.remove_sprites_in_rect(row_index_remove * TILESIZE, 1)
+                                self.obstacle_sprites.remove_sprites_in_rect(row_index_remove * TILESIZE, 1)
 
                                 if style == 'floor':
                                     tile_path = f'../graphics/tilessyber/{col}.png'
@@ -209,17 +217,15 @@ class Level:
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
 
-
-        if self.player_move[0] !=0:
+        if self.player_move[0] != 0:
             if self.player_move[0] > 0:
-                col_index_add = int(player_tile.x + (COL_LOAD_TILE_DISTANCE-1))
-                col_index_remove = int(player_tile.x - (COL_LOAD_TILE_DISTANCE ))
+                col_index_add = int(player_tile.x + (COL_LOAD_TILE_DISTANCE - 1))
+                col_index_remove = int(player_tile.x - (COL_LOAD_TILE_DISTANCE))
             else:
-                col_index_add = int(player_tile.x - (COL_LOAD_TILE_DISTANCE-1))
+                col_index_add = int(player_tile.x - (COL_LOAD_TILE_DISTANCE - 1))
                 col_index_remove = int(player_tile.x + (COL_LOAD_TILE_DISTANCE))
             self.floor_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
             self.obstacle_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
-
 
             for style_index, (style, layout) in enumerate(self.layout.items()):
                 for row_index in range(int(player_tile.y - ROW_LOAD_TILE_DISTANCE),
@@ -241,8 +247,6 @@ class Level:
 
         self.player_prev_location = self.player.rect[0:2]
 
-
-
     # here we will print every detail on the map (obstacles, players...)
     def create_map(self):
         """
@@ -251,27 +255,15 @@ class Level:
         """
 
         # Create player with starting position
-        self.player = Player((1000, 1000), self.visble_sprites,
-                    self.obstacle_sprites,self.create_attack,self.destroy_attack,self.create_magic,self.bullet_group,self.player_id)
+        self.player = Player(self.place_to_start, self.visble_sprites,
+                             self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
+                             self.bullet_group, self.player_id)
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
         self.camera.y = self.player.rect.centery
 
-        Item((1100,1000), self.item_sprites, "medkit") #item create
-        Item((1300,1000), self.item_sprites, "backpack") #item create
-        Item((1400, 1000), self.item_sprites, "boots")  # item create
-        Item((1500, 1000), self.item_sprites, "medkit")  # item create
-        Item((1600, 1000), self.item_sprites, "medkit")  # item create
-        Item((1700, 1000), self.item_sprites, "medkit")  # item create
-        Item((1100, 1100), self.item_sprites, "medkit")  # item create
-        Item((1100, 1200), self.item_sprites, "medkit")  # item create
-        Item((1100, 1300), self.item_sprites, "medkit")  # item create
-
-        Weapon_item((1100, 1400), self.weapon_sprites, "rapier")
-
-
-        #printing the area around the player:
+        # printing the area around the player:
         player_tile: pygame.math.Vector2 = pygame.math.Vector2(int(self.player.rect.x / TILESIZE),
                                                                int(self.player.rect.y / TILESIZE))
         for style_index, (style, layout) in enumerate(self.layout.items()):
@@ -294,8 +286,6 @@ class Level:
                                 elif style == 'boundary':
                                     Tile((x, y), [self.obstacle_sprites], 'barrier')
 
-
-
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
 
@@ -308,10 +298,10 @@ class Level:
         :return:
         """
         if style == 'heal':  # need to replace with 'teleport'
-            self.magic_player.teleport(self.player,cost)
-        if style == 'flame':  #highspeed
-            self.magic_player.highspeed(self.player,cost)
-        if style == 'shield': #shield
+            self.magic_player.teleport(self.player, cost)
+        if style == 'flame':  # highspeed
+            self.magic_player.highspeed(self.player, cost)
+        if style == 'shield':  # shield
             self.magic_player.shield(self.player, cost, [self.visble_sprites])
 
     def destroy_attack(self):
@@ -327,13 +317,13 @@ class Level:
         :param attack_type:
         :return:
         """
-        if self.player.vulnerable and self.player.can_shield:# chack if the player has shield on
+        if self.player.vulnerable and self.player.can_shield:  # chack if the player has shield on
             self.player.health -= amount
             self.player.vulnerable = False
             self.player.hurt_time = pygame.time.get_ticks()
             self.animation_player.create_particles(attack_type, self.player.rect.center, [self.visble_sprites])
 
-    def player_attack_logic(self,packet_to_send):
+    def player_attack_logic(self, packet_to_send):
         """
         chack if the player hits an enemy and delete it for the screen
         :return: nothing
@@ -356,25 +346,30 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self,server_ip,user_name,passward,packet_to_send, id):  # update and draw the game
+    def run(self, server_ip, user_name, passward, packet_to_send, id):  # update and draw the game
         if len(packets_to_handle_queue) > 0:
             packet = packets_to_handle_queue.popleft()
             self.player_id = id
             if packet.rotshild_filter():
-                handeler_of_incoming_packets(packet, self.visble_sprites, self.player,self.obstacle_sprites)
+                self.handeler_of_incoming_packets(packet, self.visble_sprites, self.player, self.obstacle_sprites,
+                                             self.item_sprites)
 
             self.cooldown()
-            self.camera.x = self.player.rect.centerx#updating the camera location
+            self.camera.x = self.player.rect.centerx  # updating the camera location
             self.camera.y = self.player.rect.centery
 
-            #for cleaning the exeptions of the tiles that have not bean earased
-            #self.visble_sprites.earase_non_relevant_sprites(self.player)
+            # for cleaning the exeptions of the tiles that have not bean earased
+            # self.visble_sprites.earase_non_relevant_sprites(self.player)
             self.obstacle_sprites.earase_non_relevant_sprites(self.player)
 
             self.floor_update()
             self.floor_sprites.custom_draw(self.camera)
             self.floor_sprites.update()
             self.item_sprites.custom_draw(self.camera)
+            self.weapon_sprites.custom_draw(self.camera)
+
+            self.item_sprites.item_picking(self.player)
+            self.weapon_sprites.weapon_picking(self.player)
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()
@@ -382,12 +377,11 @@ class Level:
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
-            #self.visble_sprites.enemy_update(self.player)
+            # self.visble_sprites.enemy_update(self.player)
             self.player_attack_logic(packet_to_send)
             self.ui.display(self.player)
             if self.player.i_pressed:
                 self.ui.ui_screen(self.player)
-            debug(self.player.rect)
 
             if self.player.attack_for_moment:
                 image = self.player.weapon
@@ -396,7 +390,7 @@ class Level:
             packet_to_send.add_header_player_place_and_image(self.player.rect.center, image)
             self.bullet_group.bullet_record(packet_to_send)
 
-           # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
+            # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
             if self.player.health == 0:
                 packet_to_send.add_header_dead(self.player.id)
             return packet_to_send

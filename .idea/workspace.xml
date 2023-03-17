@@ -4,20 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-
-    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="Merge branch 'master' of https://github.com/Razkin1234/PUBG&#10;&#10;# Conflicts:&#10;#&#9;.idea/workspace.xml&#10;#&#9;code/YsortCameraGroup.py&#10;#&#9;code/__pycache__/YsortCameraGroup.cpython-38.pyc&#10;#&#9;code/__pycache__/enemy.cpython-38.pyc&#10;#&#9;code/__pycache__/entity.cpython-38.pyc&#10;#&#9;code/__pycache__/level.cpython-38.pyc&#10;#&#9;code/__pycache__/player.cpython-38.pyc&#10;#&#9;code/__pycache__/settings.cpython-38.pyc&#10;#&#9;code/__pycache__/support.cpython-38.pyc&#10;#&#9;code/__pycache__/tile.cpython-38.pyc&#10;#&#9;code/__pycache__/ui.cpython-38.pyc&#10;#&#9;code/__pycache__/weapon.cpython-38.pyc&#10;#&#9;code/level.py&#10;#&#9;code/tile.py">
-      <change afterPath="$PROJECT_DIR$/code/other_players.py" afterDir="false" />
-
-
-    <list default="true" id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="">
-
+    <list default="true" id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/Incoming_packets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/My_Keyring.json" beforeDir="false" afterPath="$PROJECT_DIR$/My_Keyring.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Incoming_packets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/try1.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/try1.py" afterDir="false" />
     </list>
-
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -31,92 +27,34 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <excluded-from-favorite>
-      <branch-storage>
-        <map>
-          <entry type="LOCAL">
-            <value>
-              <list>
-                <branch-info repo="$PROJECT_DIR$" source="master" />
-              </list>
-            </value>
-          </entry>
-        </map>
-      </branch-storage>
-    </excluded-from-favorite>
-    <favorite-branches>
-      <branch-storage>
-        <map>
-          <entry type="LOCAL">
-            <value>
-              <list>
-                <branch-info repo="$PROJECT_DIR$" source="game" />
-              </list>
-            </value>
-          </entry>
-        </map>
-      </branch-storage>
-    </favorite-branches>
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="gamaking2" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="RESET_MODE" value="HARD" />
-  </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;
-  }
-}</component>
-  <component name="GithubPullRequestsUISettings">
-    <option name="selectedUrlAndAccountId">
-      <UrlAndAccount>
-        <option name="accountId" value="81482f05-ec04-42e1-ad21-01294f6fc477" />
-        <option name="url" value="https://github.com/Razkin1234/PUBG.git" />
-      </UrlAndAccount>
-    </option>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectId" id="2KbIqeBEWteWZp527UfvCNoe6LL" />
+  <component name="ProjectId" id="2MRwhHqMWHdx3J2mK59iv6xIjXv" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Networks/pubg&quot;
-  }
-}</component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Networks\pubg\test" />
-    </key>
+  <component name="PropertiesComponent">
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunManager" selected="Python.main">
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-
+    <configuration name="Server" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="pubg" />
-
-
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
+      <option name="SDK_HOME" value="C:\networks\Python3.8\python.exe" />
+      <option name="SDK_NAME" value="Python 3.8" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="" />
-      <option name="SCRIPT_NAME" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Server.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -125,30 +63,8 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="C:\networks\githubg\venv\Scripts\python.exe" />
-      <option name="SDK_NAME" value="Python 3.8 (githubg)" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/code" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/code/main.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="pubg" />
+    <configuration name="before_the_night" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="FinalProject" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -159,7 +75,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/before_the_night.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -168,7 +84,29 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="try1" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pubg" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\networks\Python3.8\python.exe" />
+      <option name="SDK_NAME" value="Python 3.8" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/code" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/code/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="tests" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="FinalProject" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -176,11 +114,32 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/code" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/code/try1.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="to_run" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="FinalProject" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/to_run.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -192,151 +151,47 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
-        <item itemvalue="Python.try1" />
-        <item itemvalue="Python.test" />
+        <item itemvalue="Python.Server" />
+        <item itemvalue="Python.tests" />
+        <item itemvalue="Python.before_the_night" />
+        <item itemvalue="Python.to_run" />
       </list>
     </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="b9e06b45-8eae-425c-9ede-2d3c4fc733d1" name="Changes" comment="" />
-      <created>1674237047696</created>
+      <changelist id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="" />
+      <created>1677743820380</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1674237047696</updated>
+      <updated>1677743820380</updated>
     </task>
-    <task id="LOCAL‎-00001" summary="סתם בשביל רז">
-      <created>1674471853995</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL‎-00001" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1674471853995</updated>
-    </task>
-    <task id="LOCAL‎-00002" summary="סתם בשביל רז">
-      <created>1674912242814</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL‎-00002" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1674912242814</updated>
-    </task>
-    <task id="LOCAL‎-00003" summary="change the movement to mouse instead of keyboard you son of a cow">
-      <created>1674912390038</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL‎-00003" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1674912390038</updated>
-    </task>
-    <task id="LOCAL‎-00004" summary="stop the player when he hits the border you son of a cow">
-      <created>1674936737519</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL‎-00004" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1674936737519</updated>
-    </task>
-    <task id="LOCAL‎-00005" summary="marge the mouse movement with raz's code you son of a cow">
-      <created>1675516128879</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL‎-00005" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1675516128879</updated>
-    </task>
-    <task id="LOCAL‎-00006" summary="marge the mouse movement with raz's code you son of a cow">
-      <created>1675516416426</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL‎-00006" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1675516416426</updated>
-    </task>
-    <task id="LOCAL‎-00007" summary="adding interaction between player and the enemy(need to continue) fucking bitch son of a hor">
-      <created>1675616860231</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL‎-00007" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1675616860231</updated>
-    </task>
-    <task id="LOCAL‎-00008" summary="noting">
-      <created>1675701773262</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL‎-00008" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1675701773262</updated>
-    </task>
-    <task id="LOCAL‎-00009" summary="interaction done">
-      <created>1675883408292</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL‎-00009" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1675883408292</updated>
-    </task>
-    <task id="LOCAL‎-00010" summary="done the particles stuf biatch ha ha">
-      <created>1676136069098</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL‎-00010" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1676136069098</updated>
-    </task>
-    <task id="LOCAL‎-00011" summary="still not dune the magic stuff what do you think im hogwortrs biatch ha ha">
-      <created>1676148526373</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL‎-00011" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1676148526373</updated>
-    </task>
-    <task id="LOCAL‎-00012" summary="still not done the magic stuff what do you think im hogwortrs biatch ha ha">
-      <created>1676149102548</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL‎-00012" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1676149102548</updated>
-    </task>
-    <task id="LOCAL‎-00013" summary="done the main menu biatch ha ha">
-      <created>1676748730854</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL‎-00013" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1676748730854</updated>
-    </task>
-    <task id="LOCAL‎-00014" summary="done the main menu biatch ha ha">
-      <created>1677012289101</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL‎-00014" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1677012289101</updated>
-    </task>
-    <task id="LOCAL‎-00015" summary="done the main menu biatch ha ha">
-      <created>1677012839615</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL‎-00015" />
-      <option name="project" value="LOCAL‎" />
-      <updated>1677012839615</updated>
-    </task>
-    <option name="localTasksCounter" value="16" />
     <servers />
-  </component>
-  <component name="Vcs.Log.History.Properties">
-    <option name="COLUMN_ID_ORDER">
-      <list>
-        <option value="Default.Root" />
-        <option value="Default.Author" />
-        <option value="Default.Date" />
-        <option value="Default.Subject" />
-        <option value="Space.CommitStatus" />
-      </list>
-    </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
       <map>
-        <entry key="MAIN">
+        <entry key="1">
           <value>
             <State>
+              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
               <option name="FILTERS">
                 <map>
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="gamemaking" />
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="roots">
+                    <value>
+                      <list>
+                        <option value="$PROJECT_DIR$" />
                       </list>
                     </value>
                   </entry>
@@ -345,54 +200,28 @@
             </State>
           </value>
         </entry>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
       </map>
     </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="סתם בשביל רז" />
-    <MESSAGE value="change the movement to mouse instead of keyboard you son of a cow" />
-    <MESSAGE value="stop the player when he hits the border you son of a cow" />
-    <MESSAGE value="marge the mouse movement with raz's code you son of a cow" />
-    <MESSAGE value="adding interaction between player and the enemy(need to continue) fucking bitch son of a hor" />
-    <MESSAGE value="noting" />
-    <MESSAGE value="interaction done" />
-    <MESSAGE value="done the particles stuf biatch ha ha" />
-    <MESSAGE value="still not dune the magic stuff what do you think im hogwortrs biatch ha ha" />
-    <MESSAGE value="still not done the magic stuff what do you think im hogwortrs biatch ha ha" />
-    <MESSAGE value="done the main menu biatch ha ha" />
-    <MESSAGE value="Merge branch 'master' of https://github.com/Razkin1234/PUBG&#10;&#10;# Conflicts:&#10;#&#9;.idea/workspace.xml&#10;#&#9;code/YsortCameraGroup.py&#10;#&#9;code/__pycache__/YsortCameraGroup.cpython-38.pyc&#10;#&#9;code/__pycache__/enemy.cpython-38.pyc&#10;#&#9;code/__pycache__/entity.cpython-38.pyc&#10;#&#9;code/__pycache__/level.cpython-38.pyc&#10;#&#9;code/__pycache__/player.cpython-38.pyc&#10;#&#9;code/__pycache__/settings.cpython-38.pyc&#10;#&#9;code/__pycache__/support.cpython-38.pyc&#10;#&#9;code/__pycache__/tile.cpython-38.pyc&#10;#&#9;code/__pycache__/ui.cpython-38.pyc&#10;#&#9;code/__pycache__/weapon.cpython-38.pyc&#10;#&#9;code/level.py&#10;#&#9;code/tile.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge branch 'master' of https://github.com/Razkin1234/PUBG&#10;&#10;# Conflicts:&#10;#&#9;.idea/workspace.xml&#10;#&#9;code/YsortCameraGroup.py&#10;#&#9;code/__pycache__/YsortCameraGroup.cpython-38.pyc&#10;#&#9;code/__pycache__/enemy.cpython-38.pyc&#10;#&#9;code/__pycache__/entity.cpython-38.pyc&#10;#&#9;code/__pycache__/level.cpython-38.pyc&#10;#&#9;code/__pycache__/player.cpython-38.pyc&#10;#&#9;code/__pycache__/settings.cpython-38.pyc&#10;#&#9;code/__pycache__/support.cpython-38.pyc&#10;#&#9;code/__pycache__/tile.cpython-38.pyc&#10;#&#9;code/__pycache__/ui.cpython-38.pyc&#10;#&#9;code/__pycache__/weapon.cpython-38.pyc&#10;#&#9;code/level.py&#10;#&#9;code/tile.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/test/player.py</url>
-          <line>42</line>
-          <option name="timeStamp" value="7" />
+          <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
+          <line>39</line>
+          <option name="timeStamp" value="45" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/level.py</url>
-          <line>280</line>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/main.py</url>
-          <line>129</line>
-          <option name="timeStamp" value="10" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/try1.py</url>
-          <option name="timeStamp" value="11" />
+          <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
+          <line>122</line>
+          <option name="timeStamp" value="46" />
         </line-breakpoint>
       </breakpoints>
-      <default-breakpoints>
-        <breakpoint type="python-exception">
-          <properties notifyOnTerminate="true" exception="BaseException">
-            <option name="notifyOnTerminate" value="true" />
-          </properties>
-        </breakpoint>
-      </default-breakpoints>
     </breakpoint-manager>
   </component>
 </project>

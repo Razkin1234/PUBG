@@ -81,8 +81,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                 sprite.hit_box.center = pos
                 sprite.hit = hit
                 return True
-            else:
-                return False
+        return False
 
 
     def check_if_bullet_hit_me(self,player):
@@ -158,4 +157,10 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 temp_dict.clear()
                                 sprite.kill()
                                 break
+
+
+
+
+
+
 
