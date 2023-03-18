@@ -2,10 +2,10 @@ from support import *
 from Connection_to_server import Connection_to_server
 import pygame
 from entity import Entity
-
+from settings import *
 class Players(Entity):
 
-    def __init__(self, image, pos, groups, obstacle_sprites, hit, id):
+    def __init__(self, image, pos, groups, obstacle_sprites, hit, id, damage_player):
         super().__init__(groups)
         # server conection
         self.id = id  # need to get id
@@ -14,12 +14,14 @@ class Players(Entity):
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
         self.hitbox = self.rect.inflate(0, -26)  # if i want to overlap itemes
-
+        self.hit = hit
         # graphics setup
         self.import_player_assets()
-        self.status = image
+        self.damage_player = damage_player
         self.obstacle_sprites = obstacle_sprites        # movement
-
+        if hit != 'no':
+            self.weapon = hit
+            self.status = image
         # stats
         self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 6}  # ma health , max energy
         self.health = self.stats['health'] - 60  # our current health
@@ -32,6 +34,11 @@ class Players(Entity):
         self.hurt_time = None
         self.invulnerability_duration = 500
 
+        # movement
+        self.attacking = False
+        self.attack_cooldown = 50
+        self.attack_time = None
+        self.place_to_go = None
         # ui button cooldown + is pressed
         self.can_press_i = True  # that we will switch only one weapon every time we press {
         self.i_pressed_time = None
@@ -69,6 +76,11 @@ class Players(Entity):
             if 'attack' in self.status:
                 self.status = self.status.replace('_attack', '')
 
+    def actions(self):
+        if self.hit != 'no':
+            self.attack_time = pygame.time.get_ticks()
+            self.damage_player(self.attack_damage, self.hit)
+
     def animate(self):  # shows us the animations
         animation = self.animations[self.status]
 
@@ -88,17 +100,16 @@ class Players(Entity):
         else:
             self.image.set_alpha(255)
 
-    def update(self):
+    def cooldowns(self):
+        current_time = pygame.time.get_ticks()
 
-        self.inputm()  # checking the input diraction
+        # attacking cooldown
+        if self.attacking:
+            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
+                self.attacking = False
+
+    def update(self, player):
         self.cooldowns()
+        self.actions(player)
         self.get_status()
         self.animate()
-        self.move(self.speed)  # making the player move
-
-        self.stop()
-
-        if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
-            self.speed = self.stats['speed'] + 2
-        else:
-            self.speed = self.stats['speed']

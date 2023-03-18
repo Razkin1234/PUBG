@@ -16,7 +16,6 @@ class Enemy(Entity):
         self.hit = hit
 
         #graphics setup
-        monster_name = 'bamboo'
         self.import_graphics(monster_name)
         if hit != 'no':
 

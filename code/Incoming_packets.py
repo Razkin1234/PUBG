@@ -8,7 +8,7 @@ from enemy import Enemy
 import pygame
 import sys
 
-from  bullet import Bullets
+from bullet import Bullets
 
 
 class Incoming_packets:
@@ -139,10 +139,12 @@ class Incoming_packets:
             player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
             player_place = (int(player_place[0]), int(player_place[1]))
 
-            if player_place[0] < COL_TILES * 64 and player_place[0] > 0 and player_place[1] < ROW_TILES * 64 and \
-                    player_place[1] > 0:
+            if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+                    my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+                image=image.splite(',')
+
                 if not visiable_sprites.check_existines(player_id, image, player_place):
-                    Enemy(1, player_id, player_place, visiable_sprites, obstecal_sprits, image, damage_player)
+                    Players(image[0], player_place,  visiable_sprites, obstecal_sprits, image[1], player_id, damage_player)
 
 
 
@@ -157,8 +159,8 @@ class Incoming_packets:
         # if yes print it on the map
         shot_place = tuple((shot_place[1:-1].split(',')))  # converting the place from str to tuple
         shot_place = (int(shot_place[0]), int(shot_place[1]))
-        if player_place[0] < COL_TILES * 64 and player_place[0] > 0 and player_place[1] < ROW_TILES * 64 and \
-                player_place[1] > 0:
+        if player_place[0] + MIDDLE_SCREEN[0] > shot_place[0] > player_place[0] - MIDDLE_SCREEN[0] and \
+                player_place[1] + MIDDLE_SCREEN[1] > shot_place[1] > player_place[1] - MIDDLE_SCREEN[1]:
             Bullets(shot_place, bullet, obsicales_sprites, None)
 
 
@@ -308,7 +310,7 @@ class Incoming_packets:
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    def handle_enemy_player_place_type_hit(self, header_info, player, bullet_group):
+    def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites,obstecal_sprits):
         info = header_info.split('-')
         for each_info in info:
             each_info = header_info.split('/')
@@ -317,11 +319,12 @@ class Incoming_packets:
             else:
                 hit = False
 
-            if not bullet_group.check_existines(each_info[0], hit, (int(each_info[1][1], int(each_info[1][4])))):
-                enemy_place = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
-                enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
-                #Enemy(each_info[2], player_id, player_place, visiable_sprites, obstecal_sprits, image)
-                Players(each_info[2], each_info[0], enemy_place, )
+                if not visiable_sprites.check_existines(each_info[0], hit, (int(each_info[1][1], int(each_info[1][4])))):
+                    enemy_place = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
+                    enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
+                    if player.rect.center + MIDDLE_SCREEN[0] > enemy_place[0] > player.rect.center - MIDDLE_SCREEN[0] and \
+                            player.rect.center + MIDDLE_SCREEN[1] > enemy_place[1] > player.rect.center - MIDDLE_SCREEN[1]:
+                        Enemy(each_info[3], each_info[2], each_info[1], enemy_place, visiable_sprites, obstecal_sprits, hit)
 
 
             # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not

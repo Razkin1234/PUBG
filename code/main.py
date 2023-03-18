@@ -152,8 +152,9 @@ class Game:
                             text_color = TEXT_COLOR
 
                         elif len(self.user_name) <= 8:
-                            self.user_name += event.unicode
-                            text_color = TEXT_COLOR
+                            if 'z' >= event.unicode >= 'a' or 'A' >= event.unicode >= 'A' or '9' >= event.unicode >= '0':
+                                self.user_name += event.unicode
+                                text_color = TEXT_COLOR
 
                         else:
                             text_color = 'red'
@@ -170,8 +171,10 @@ class Game:
                             text_color = TEXT_COLOR
 
                         elif len(self.passward) <= 8:
-                            self.passward += event.unicode
-                            text_color = TEXT_COLOR
+                            print(event.unicode)
+                            if 'z' >= event.unicode >= 'a' or 'A' >= event.unicode >= 'A' or '9' >= event.unicode >= '0':
+                                self.passward += event.unicode
+                                text_color = TEXT_COLOR
 
                         else:
                             text_color = 'red'

@@ -97,7 +97,7 @@ class Level:
                                 if packet.get_id() != l2_parts[1]:
                                     packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
                                                                player.rect.center,
-                                                               visibale_sprites, obstecal_sprits,self.damage_player)
+                                                               self.other_players, obstecal_sprits, self.damage_player)
 
 
                                 break
@@ -113,7 +113,7 @@ class Level:
                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                     if l_parts[0] == 'shooter_id:':
                         if l_parts[1] != packet.get_id():
-                            packet.handle_shot_place(line_parts[1], self.other_bullet_group, self.obstacle_sprites)
+                            packet.handle_shot_place(line_parts[1], self.other_bullet_group, self.obstacle_sprites,self.player.rect.center)
 
                         break
             # --------------
@@ -169,7 +169,7 @@ class Level:
 
             # --------------
             elif line_parts[0] == 'enemy_player_place_type_hit:':
-                packet.handle_enemy_player_place_type_hit(line_parts[1])
+                packet.handle_enemy_player_place_type_hit(line_parts[1], self.player, obstecal_sprits,  )
 
     def get_place_to_start(self, place_to_start):
         self.place_to_start = place_to_start
@@ -419,7 +419,7 @@ class Level:
             self.item_sprites.item_picking(self.player,packet_to_send)
 
             self.other_bullet_group.check_if_bullet_hit_me(self.player)
-
+            self.other_players.update()
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
             # self.visble_sprites.enemy_update(self.player)
@@ -432,7 +432,7 @@ class Level:
                 image = self.player.weapon
             else:
                 image = "no"
-            packet_to_send.add_header_player_place_and_image(self.player.rect.center, image)
+            packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
             self.bullet_group.bullet_record(packet_to_send)
 
             # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
