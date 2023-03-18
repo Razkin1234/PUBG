@@ -147,6 +147,7 @@ class Level:
                                                                  l_parts[1])  # getting in answer the message to print
                                     break
                         elif line_parts[0] == 'server_shutdown:':
+                            shut_down_event.set()
                             packet.handle_server_shutdown()
 
                         # --------------
@@ -404,5 +405,6 @@ class Level:
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
         if self.player.health == 0:
             packet_to_send.add_header_dead(self.player.id)
+            packet_to_send.for_dead_object_update(self.player)
         # print(packet_to_send.get_packet())
         return packet_to_send

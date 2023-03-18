@@ -162,10 +162,10 @@ class YsortCameraGroup(pygame.sprite.Group):
                                             packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ boots', 1)
                                         if player.items_on[str(counter)]['name'] == 'medkit':
-                                            packet_to_send.add_object_update('pick', 'medkit', sprite.rect.center, 1)
+                                            packet_to_send.add_object_update('pick', 'med_kit', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ med_kits', 1)
                                         if player.items_on[str(counter)]['name'] == 'bendage':
-                                            packet_to_send.add_object_update('pick', 'bendage', sprite.rect.center, 1)
+                                            packet_to_send.add_object_update('pick', 'bandage', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ bandages', 1)
                                         sprite.kill()
                                         break

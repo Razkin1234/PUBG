@@ -216,14 +216,25 @@ class Incoming_packets:
 
     def handle_object_update(self, header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
+        type_for_clients = ''
         for each_change in changes:
             each_change = each_change.split('-')
+            if 'backpack' == each_change[1]:
+                type_for_clients = 'backpack'
+            elif 'boots' == each_change[1]:
+                type_for_clients = 'boots'
+            elif 'ammo' == each_change[1]:
+                type_for_clients = 'ammo'
+            elif 'med_kit' == each_change[1]:
+                type_for_clients = 'medkit'
+            elif 'bandage' == each_change[1]:
+                type_for_clients = 'bendage'
             if each_change[0] == 'pick':
                 # so delete the object that is on the screen, you have the type in each_change[1] and the place in each_change[2]
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
                 for item in item_sprites:
-                    if item.rect.center == each_change1 and item.sprite_type == each_change[1]:
+                    if item.rect.center == each_change1 and item.sprite_type == type_for_clients:
                         item.kill()
                         break
                 for weapon in weapon_sprites:
@@ -235,7 +246,7 @@ class Incoming_packets:
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
                 if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots':
-                    Item(each_change1, item_sprites, each_change[1])
+                    Item(each_change1, item_sprites, type_for_clients)
                 else:
                     Weapon_item(each_change1, weapon_sprites, each_change[1])
 
