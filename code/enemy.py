@@ -4,16 +4,22 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
+
     def __init__(self, monster_name, id, pos, groups, obstacle_sprites,damage_player, hit):
+
+
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
         self.id = id
+
         self.hit = hit
+
         #graphics setup
         monster_name = 'bamboo'
         self.import_graphics(monster_name)
         if hit != 'no':
+
             self.status = 'attack'
         else:
             self.status = 'move'
@@ -44,7 +50,9 @@ class Enemy(Entity):
         self.can_attack = True
         self.attack_time = None
         self.attack_cooldown = 400
+
         self.damage_player = damage_player
+
        # self.trigger_death_particles = trigger_death_particles
 
         #invincibility timer
@@ -153,6 +161,26 @@ class Enemy(Entity):
         """
         if not self.vulnerable:
             self.direction *= -self.resistance
+
+    def move(self, speed):  # moves the player around
+        if self.direction.magnitude() != 0:
+            self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
+        self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
+        self.collision('horizontal')
+        self.hitbox.y += self.direction.y * speed  # making the player move verticaly
+        self.collision('vertical')
+        self.rect.center = self.hitbox.center
+
+    def collision(self, direction):  # checking for collisions
+        if direction == 'horizontal':
+            for sprite in self.obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.x > 0:  # when we are moving right
+                        self.hitbox.right = sprite.hitbox.left
+                    if self.direction.x < 0:  # when we are moving left
+                        self.hitbox.left = sprite.hitbox.right
+                    self.direction.x = 0
+                    self.direction.y = 0
 
     def update(self):
         self.hit_reaction()

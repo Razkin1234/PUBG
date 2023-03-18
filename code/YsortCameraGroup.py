@@ -1,4 +1,6 @@
+
 import pygame, sys
+
 from settings import *
 from tile import Tile
 from player import Player
@@ -8,7 +10,6 @@ from entity import Entity
 import itertools
 from other_players import Players
 from Connection_to_server import Connection_to_server
-
 
 class YsortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -53,11 +54,9 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def earase_non_relevant_sprites(self, player):
         for sprite in self.sprites():
-            if player.rect[0] - (COL_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[0] or sprite.rect[0] > player.rect[
-                0] + (COL_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[0]-(COL_LOAD_TILE_DISTANCE*TILESIZE) > sprite.rect[0] or sprite.rect[0] > player.rect[0]+(COL_LOAD_TILE_DISTANCE*TILESIZE):
                 sprite.kill()
-            if player.rect[1] - (ROW_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[1] or sprite.rect[1] > player.rect[
-                1] + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[1]-(ROW_LOAD_TILE_DISTANCE*TILESIZE) > sprite.rect[1] or sprite.rect[1] > player.rect[1]+(ROW_LOAD_TILE_DISTANCE*TILESIZE):
                 sprite.kill()
 
     def erase_dead_sprites(self, id):
@@ -73,9 +72,11 @@ class YsortCameraGroup(pygame.sprite.Group):
             else:
                 sprite.kill()
 
+
     def bullet_record(self, packet_to_send):
         for sprite in self.sprites():
             packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 30)
+
 
     def enemy_update(self, player):
         enemy_sprites = [sprite for sprite in self.sprites() if
@@ -83,9 +84,11 @@ class YsortCameraGroup(pygame.sprite.Group):
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
 
+
     def check_existines(self, player_id, hit, pos):
         for sprite in self.sprites():
             if sprite.id == player_id:
+
                 sprite.rect.center = pos
                 sprite.hit_box.center = pos
                 sprite.hit = hit
@@ -151,6 +154,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict.clear()
                                     sprite.kill()
 
+
     def weapon_picking(self, player, packet_to_send):
         copy_items = self.sprites().copy()
         if player.can_pick_item:
@@ -172,3 +176,4 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 temp_dict.clear()
                                 sprite.kill()
                                 break
+

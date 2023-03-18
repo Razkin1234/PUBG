@@ -7,7 +7,9 @@ from item import Item
 from enemy import Enemy
 import pygame
 import sys
+
 from  bullet import Bullets
+
 
 class Incoming_packets:
 
@@ -127,8 +129,8 @@ class Incoming_packets:
             return True, None
             pass
 
-    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites,
-                            obstecal_sprits,damage_player):  # maybe done
+    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player):  # maybe done
+
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -143,10 +145,13 @@ class Incoming_packets:
                     Enemy(1, player_id, player_place, visiable_sprites, obstecal_sprits, image, damage_player)
 
 
+
         except Exception as e:
             print(str(e) + f"line_{e.__traceback__.tb_lineno}")
 
+
     def handle_shot_place(self, shot_place, bullet, obsicales_sprites,player_place):
+
         # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
@@ -155,6 +160,7 @@ class Incoming_packets:
         if player_place[0] < COL_TILES * 64 and player_place[0] > 0 and player_place[1] < ROW_TILES * 64 and \
                 player_place[1] > 0:
             Bullets(shot_place, bullet, obsicales_sprites, None)
+
 
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need

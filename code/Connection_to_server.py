@@ -23,7 +23,9 @@ class Connection_to_server:
         :param packet:
         :return:
         """
-        self.__packet += f'inventory_update: {header_name} {name_of_item},\r\n'
+
+        self.__packet += f'inventory_update: {header_name} {name_of_item}\r\n'
+
 
     def add_header_player_place_and_image(self, player_place, image):
         self.__packet += f'player_place: {str(player_place).replace(" ", "")}\r\nimage: {image}\r\n'

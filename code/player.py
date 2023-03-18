@@ -142,6 +142,7 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
+
                 if self.weapon == 'gun':
                     self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                 else:
@@ -149,9 +150,6 @@ class Player(Entity):
                 self.attack_for_moment = True
                 self.attacking = True
                 self.attack_time = pygame.time.get_ticks()
-
-
-
 
             #magic input
             if keys[pygame.K_LCTRL] and not self.attacking:

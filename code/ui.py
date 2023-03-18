@@ -115,9 +115,9 @@ class UI:
 
         self.writing = False #for the graphics☺
 
-    def ui_screen(self,player):
+    def ui_screen(self,player,packet_to_send):
         self.items_weapons_box()
-        self.ui_input(player)
+        self.ui_input(player,packet_to_send)
         if self.box_on[0] == 'weapon':
             self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = True
         elif self.box_on[0]=='item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = True
@@ -269,7 +269,9 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
+
                                     packet_to_send.add_header_inventory_update("- weapon", weapon)
+
                                     del player.objects_on[weapon]
 
 
