@@ -144,7 +144,16 @@ class Player(Entity):
             if keys[pygame.K_SPACE] and not self.attacking:
 
                 if self.weapon == 'gun':
-                    self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
+
+                    for items in self.items_on:
+                        if self.items_on[items]["name"] == 'ammo':
+                            if self.items_on[items]['amount'] >= 1:
+                                self.items_on[items]['amount'] -= 1
+                                self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
+                                break
+                            else:
+                                pass
+
                 else:
                     self.create_attack()
                 self.attack_for_moment = True
@@ -295,7 +304,11 @@ class Player(Entity):
 
         self.stop()
 
-
+        for items in self.items_on:
+            if self.items_on[items]["name"] == 'ammo':
+                if self.items_on[items]['amount'] == 0:
+                    del self.items_on[items]
+                    break
         if 'boots' in self.items_on.keys(): #checks if to be faster if we have boots in inventory
             self.speed = self.stats['speed'] + 2
         else:
