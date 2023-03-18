@@ -5,40 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/code/.idea/.name" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down_attack/attack_down.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down_idle/idle_down.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left_attack/attack_left.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left_idle/idle_left.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right_attack/attack_right.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right_idle/idle_right.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_0.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up_attack/attack_up.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up_idle/idle_up.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/notwork.zip" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/FinalProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/FinalProject.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pubg.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_23_01_2023_19_29_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_23_01_2023_19_29__Changes_.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Connection_to_server.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/Incoming_packets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/My_Keyring.json" beforeDir="false" afterPath="$PROJECT_DIR$/My_Keyring.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/Fire.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/attack/claw.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/attack/fireball.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/attack/slash.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/death.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/heal.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/hit.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/main.ogg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/sword.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/Connection_to_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Connection_to_server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Incoming_packets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/bullet.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/bullet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/enemy.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/enemy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/entity.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/entity.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/other_players.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/other_players.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/server_responsebilty.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/code/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/weapon.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/weapon.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graphics/rami.tmx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -67,7 +77,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/PUBG" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunDashboard">
@@ -269,31 +279,6 @@
           <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
           <line>122</line>
           <option name="timeStamp" value="46" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Server.py</url>
-          <line>2330</line>
-          <option name="timeStamp" value="56" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>137</line>
-          <option name="timeStamp" value="98" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>42</line>
-          <option name="timeStamp" value="109" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>49</line>
-          <option name="timeStamp" value="110" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>14</line>
-          <option name="timeStamp" value="111" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

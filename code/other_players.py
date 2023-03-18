@@ -2,80 +2,114 @@ from support import *
 from Connection_to_server import Connection_to_server
 import pygame
 from entity import Entity
-
+from settings import *
 class Players(Entity):
-    def __init__(self, image, id, pos, groups, obstecal_sprites, hit):  # add hiting
-        # general setup
-        try:
-            super().__init__(groups)
-            self.sprite_type = 'enemy'
-            self.id = id
-            # graphics setup
-            image = 'bamboo'
-            self.import_graphics(image)
-            self.status = 'idle'
-            self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
-            self.rect = self.image.get_rect(topleft=pos)
-            self.image = self.animations[self.status][self.frame_index]
 
+    def __init__(self, image, pos, groups, obstacle_sprites, hit, id, damage_player):
+        super().__init__(groups)
+        # server conection
+        self.id = id  # need to get id
 
+        self.animations = None
+        self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
+        self.rect = self.image.get_rect(topleft=pos)
+        self.hitbox = self.rect.inflate(0, -26)  # if i want to overlap itemes
+        self.hit = hit
+        # graphics setup
+        self.import_player_assets()
+        self.damage_player = damage_player
+        self.obstacle_sprites = obstacle_sprites        # movement
+        if hit != 'no':
+            self.weapon = hit
+            self.status = image
+        # stats
+        self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 6}  # ma health , max energy
+        self.health = self.stats['health'] - 60  # our current health
+        self.energy = self.stats['energy']  # our current energy
+        self.exp = 100
+        self.speed = self.stats['speed']  # the speed of the player
 
-            self.obstical_sprites = obstecal_sprites
-            self.hit = False
-            # movement
+        # damage timer
+        self.vulnerable = True
+        self.hurt_time = None
+        self.invulnerability_duration = 500
 
-            self.hitbox = self.rect.inflate(0, -10)
+        # movement
+        self.attacking = False
+        self.attack_cooldown = 50
+        self.attack_time = None
+        self.place_to_go = None
+        # ui button cooldown + is pressed
+        self.can_press_i = True  # that we will switch only one weapon every time we press {
+        self.i_pressed_time = None
+        self.i_pressed_cooldown = 100  # }
+        self.i_pressed = False
 
-            # stats
-            self.image = image
-            player_info = image[self.image]  # the list that will give us the following information
-            self.health = player_info['health']
-            self.exp = player_info['exp']  # how much exp we will get from killing the monster
-            self.speed = player_info['speed']
-            self.attack_damage = player_info['damage']
-            self.resistance = player_info['resistance']  # how does the monster takes a hit
-            self.attack_radius = player_info['attack_radius']  # the radius that the monster will attack us
-            self.notice_radius = player_info['notice_radius']  # the radius that the monster will aproach us
-            self.attack_type = player_info['attack_type']  # the type of the monster's attack
+        # chat stuff:
+        self.chat_input = False
 
-            # player interaction
-            self.can_attack = True
-            self.attack_time = None
-            self.attack_cooldown = 400
-
-            # invincibility timer
-            self.vulnerable = True
-            self.hit_time = None
-            self.invincibility_duration = 300
-        except Exception as e:
-            print(str(e) + f"line_{e.__traceback__.tb_lineno}")
-    def import_graphics(self, name):
-        self.animations = {'idle': [], 'move': [], 'attack': []}
-        main_path = f'../graphics/ninjarobot/{name}/'
+    def import_player_assets(self):
+        character_path = '../graphics/ninjarobot/'
+        self.animations = {'up': [], 'down': [], 'left': [], 'right': [],
+                           'right_idle': [], 'left_idle': [], 'up_idle': [], 'down_idle': [],
+                           'right_attack': [], 'left_attack': [], 'up_attack': [], 'down_attack': []}
         for animation in self.animations.keys():
-            self.animations[animation] = import_folder(main_path + animation)  # gives me the correct monster image
+            full_path = character_path + animation
+            self.animations[animation] = import_folder(full_path)
 
-    def get_damage(self, player, attack_type, packet_to_send):
-        """
 
-        :param player: the player
-        :param attack_type: if its close weapon attack or away wepon attack
-        :return:nothing
-        """
-        if self.vulnerable:
-            if attack_type == 'weapon':
-                packet_to_send.add_hit_an_enemy(self, self.id, player.get_full_weapon_damege())
-            else:
-                pass
-                # away_damage
-            self.hit_time = pygame.time.get_ticks()
-            self.vulnerable = False
+    def get_status(self):
 
-    def chack_death(self):
-        """
-        check if the enemy lost all of his health and kill him if so
-        :return:
-        """
-        if self.health <= 0:
-            self.kill()
-            self.trigger_death_particles(self.rect.center,self.monster_name)
+        # idle status
+        if self.direction.x == 0 and self.direction.y == 0:
+            if not 'idle' in self.status and not 'attack' in self.status:
+                self.status = self.status + '_idle'
+        if self.attacking:
+            self.direction.x = 0  # the player cannot move while attacking
+            self.direction.y = 0  # the player cannot move while attacking
+            if not 'attack' in self.status:
+                if 'idle' in self.status:
+                    self.status = self.status.replace('idle', 'attack')
+                else:
+                    self.status = self.status + '_attack'
+        else:
+            if 'attack' in self.status:
+                self.status = self.status.replace('_attack', '')
+
+    def actions(self):
+        if self.hit != 'no':
+            self.attack_time = pygame.time.get_ticks()
+            self.damage_player(self.attack_damage, self.hit)
+
+    def animate(self):  # shows us the animations
+        animation = self.animations[self.status]
+
+        # loop over the frame index
+        self.frame_index += self.animation_speed
+        if self.frame_index >= len(animation):
+            self.frame_index = 0
+
+        # set the image
+        self.image = animation[int(self.frame_index)]
+        self.rect = self.image.get_rect(center=self.hitbox.center)
+
+        # flicker
+        if not self.vulnerable:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
+
+    def cooldowns(self):
+        current_time = pygame.time.get_ticks()
+
+        # attacking cooldown
+        if self.attacking:
+            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
+                self.attacking = False
+
+    def update(self, player):
+        self.cooldowns()
+        self.actions(player)
+        self.get_status()
+        self.animate()

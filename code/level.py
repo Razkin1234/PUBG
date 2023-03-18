@@ -24,9 +24,6 @@ from Connection_to_server import Connection_to_server
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
 
-
-
-
 class Level:
     def __init__(self, place_to_start):
         # get the display surface
@@ -47,6 +44,7 @@ class Level:
 
         self.finished_first_object_event = threading.Event()
 
+        self.other_players = YsortCameraGroup()
         # attack sprites
         self.current_attack = None
         self.attack_sprites = pygame.sprite.Group()
@@ -106,7 +104,7 @@ class Level:
                                             if packet.get_id() != l2_parts[1]:
                                                 packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
                                                                            player.rect.center,
-                                                                           visibale_sprites, obstecal_sprits)
+                                                                           self.other_players, obstecal_sprits, self.damage_player)
 
                                             break
                                     break
@@ -122,7 +120,8 @@ class Level:
                                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                 if l_parts[0] == 'shooter_id:':
                                     if l_parts[1] != packet.get_id():
-                                        packet.handle_shot_place(line_parts[1], self.bullet_group, self.obstacle_sprites)
+                                        packet.handle_shot_place(line_parts[1], self.other_bullet_group,
+                                                                 self.obstacle_sprites, self.player.rect.center)
                                     break
                         # --------------
 
@@ -167,7 +166,7 @@ class Level:
                         elif line_parts[0] == 'object_update:':
                             l_parts = line_parts[1].split('?')
                             if l_parts[0] != player.id:
-                                packet.handle_object_update(l_parts[1])
+                                packet.handle_object_update(l_parts[1], self.item_sprites)
                         # --------------
 
                         # --------------
@@ -177,7 +176,7 @@ class Level:
 
                         # --------------
                         elif line_parts[0] == 'enemy_update:':
-                            packet.handle_enemy_player_place_type_hit(line_parts[1])
+                            packet.handle_enemy_player_place_type_hit(line_parts[1], self.player, obstecal_sprits, )
 
             time.sleep(0.1)
 
@@ -359,8 +358,6 @@ class Level:
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
     def run(self,packet_to_send, id):  # update and draw the game
-        print('in run')
-
         self.player_id = id
 
         self.cooldown()
@@ -375,73 +372,36 @@ class Level:
         self.floor_sprites.custom_draw(self.camera)
         self.floor_sprites.update()
 
-
-
-
-
-
         self.finished_first_object_event.wait()
-        # this line blocks!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.item_sprites.custom_draw(self.camera)
-        print('passed block1')
+        self.weapon_sprites.custom_draw(self.camera)
 
-
-
-
-
-
+        self.item_sprites.item_picking(self.player, packet_to_send)
+        self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
         self.bullet_group.custom_draw(self.camera)
         self.bullet_group.bullet_move()
 
+        self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
-
-
-
-
-
-
-        # this line blocks!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.item_sprites.item_picking(self.player)
-        print('passed block2')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        self.other_players.update()
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         # self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic(packet_to_send)
         self.ui.display(self.player)
         if self.player.i_pressed:
-            self.ui.ui_screen(self.player)
+            self.ui.ui_screen(self.player, packet_to_send)
 
         if self.player.attack_for_moment:
             image = self.player.weapon
         else:
             image = "no"
-        packet_to_send.add_header_player_place_and_image(self.player.rect.center, image)
+        packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
         self.bullet_group.bullet_record(packet_to_send)
 
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
         if self.player.health == 0:
             packet_to_send.add_header_dead(self.player.id)
-        print('performed run thread iterate')
-        debug(self.player.rect)
+        # print(packet_to_send.get_packet())
         return packet_to_send

@@ -7,7 +7,6 @@ from Incoming_packets import Incoming_packets
 from Connection_to_server import Connection_to_server
 from concurrent.futures import ThreadPoolExecutor
 
-
 def give_me_first_place(packet):
     lines = packet.get_packet().split('\r\n')
     while '' in lines:
@@ -76,203 +75,208 @@ class Game:
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.my_socket.settimeout(5)
 
-    # self.my_socket.bind(('0.0.0.0', 62227))
-    # -------------------
 
     def run(self):
-
         self.screen.fill('black')
         self.main_menu()
 
     def main_menu(self):
-            """
-    		the main menu screen creator
-    		:return:
-    		"""
-            pygame.display.set_caption('menu')
-            text_color = TEXT_COLOR
-            ID_input_rect = pygame.Rect((550, 240), (160, 32))
-            passward_input_rect = pygame.Rect((550, 290), (160, 32))
-            server_input_rect = pygame.Rect((550, 340), (260, 32))
-            active_ID = False
-            active_pasward = False
-            active_server = False
-            play_button = Button(None,  # create the play button
-                                 (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-            sign_in_button = Button(None, (550, 240), "sign_in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-            log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-            sign_in = False
-            log_in = False
-            chack = True
-            while True:
-                self.display_surface.fill('black')
+        """
+		the main menu screen creator
+		:return:
+		"""
+        pygame.display.set_caption('menu')
+        text_color = TEXT_COLOR
+        ID_input_rect = pygame.Rect((550, 240), (160, 32))
+        passward_input_rect = pygame.Rect((550, 290), (160, 32))
+        server_input_rect = pygame.Rect((550, 340), (260, 32))
+        active_ID = False
+        active_pasward = False
+        active_server = False
+        play_button = Button(None,  # create the play button
+                             (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
 
-                mouse_menu = pygame.mouse.get_pos()
-                text_surf = pygame.font.Font(UI_FONT, 150).render('PUBG', True, TEXT_COLOR)
-                text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
-                self.display_surface.blit(text_surf, text_rect)
+        sign_up_button = Button(None, (550, 240), "sign up", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        sign_in = False
+        log_in = False
+        check = True
 
-                for event in pygame.event.get():  # check the events
+        while True:
+            self.display_surface.fill('black')
 
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
+            mouse_menu = pygame.mouse.get_pos()
+            text_surf = pygame.font.Font(UI_FONT, 150).render('PUBG', True, TEXT_COLOR)
+            text_rect = text_surf.get_rect(center=(MIDDLE_SCREEN[0], MIDDLE_SCREEN[1] - 250))  # the bar
+            self.display_surface.blit(text_surf, text_rect)
 
-                    if event.type == pygame.MOUSEBUTTONDOWN:  # check if he clicked the mouse
+            for event in pygame.event.get():  # check the events
 
-                        if ID_input_rect.collidepoint(event.pos):
-                            active_ID = True
-                            active_pasward = False
-                            active_server = False
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-                        if passward_input_rect.collidepoint(event.pos):
-                            active_pasward = True
-                            active_ID = False
-                            active_server = False
+                if event.type == pygame.MOUSEBUTTONDOWN:  # check if he clicked the mouse
 
-                        if server_input_rect.collidepoint(event.pos):
-                            active_server = True
-                            active_ID = False
-                            active_pasward = False
+                    if ID_input_rect.collidepoint(event.pos):
+                        active_ID = True
+                        active_pasward = False
+                        active_server = False
 
-                    if active_ID:
+                    if passward_input_rect.collidepoint(event.pos):
+                        active_pasward = True
+                        active_ID = False
+                        active_server = False
 
-                        if event.type == pygame.KEYDOWN:
+                    if server_input_rect.collidepoint(event.pos):
+                        active_server = True
+                        active_ID = False
+                        active_pasward = False
 
-                            if event.key == pygame.K_SPACE:
-                                pass
+                if active_ID:
 
-                            elif event.key == pygame.K_BACKSPACE:
-                                self.user_name = self.user_name[:-1]
-                                text_color = TEXT_COLOR
+                    if event.type == pygame.KEYDOWN:
 
-                            elif len(self.user_name) <= 8:
+                        if event.key == pygame.K_SPACE:
+                            pass
+
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.user_name = self.user_name[:-1]
+                            text_color = TEXT_COLOR
+
+                        elif len(self.user_name) <= 8:
+                            if 'z' >= event.unicode >= 'a' or 'A' >= event.unicode >= 'A' or '9' >= event.unicode >= '0':
                                 self.user_name += event.unicode
                                 text_color = TEXT_COLOR
 
-                            else:
-                                text_color = 'red'
+                        else:
+                            text_color = 'red'
 
-                    if active_pasward:
+                if active_pasward:
 
-                        if event.type == pygame.KEYDOWN:
+                    if event.type == pygame.KEYDOWN:
 
-                            if event.key == pygame.K_SPACE:
-                                pass
+                        if event.key == pygame.K_SPACE:
+                            pass
 
-                            elif event.key == pygame.K_BACKSPACE:
-                                self.passward = self.passward[:-1]
-                                text_color = TEXT_COLOR
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.passward = self.passward[:-1]
+                            text_color = TEXT_COLOR
 
-                            elif len(self.passward) <= 8:
+                        elif len(self.passward) <= 8:
+                            if 'z' >= event.unicode >= 'a' or 'A' >= event.unicode >= 'A' or '9' >= event.unicode >= '0':
                                 self.passward += event.unicode
                                 text_color = TEXT_COLOR
 
-                            else:
-                                text_color = 'red'
+                        else:
+                            text_color = 'red'
 
-                    if active_server:
+                if active_server:
 
-                        if event.type == pygame.KEYDOWN:
+                    if event.type == pygame.KEYDOWN:
 
-                            if event.key == pygame.K_SPACE:
-                                pass
+                        if event.key == pygame.K_SPACE:
+                            pass
 
-                            elif event.key == pygame.K_BACKSPACE:
-                                self.server_ip = self.server_ip[:-1]
-                                text_color = TEXT_COLOR
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.server_ip = self.server_ip[:-1]
+                            text_color = TEXT_COLOR
 
-                            elif len(self.server_ip) <= 20:
-                                self.server_ip += event.unicode
-                                text_color = TEXT_COLOR
+                        elif len(self.server_ip) <= 20:
+                            self.server_ip += event.unicode
+                            text_color = TEXT_COLOR
 
-                            else:
-                                text_color = 'red'
+                        else: #makes guy to do a flip
+                            text_color = 'red'
 
-                    if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN:
 
-                        if sign_in_button.checkForInput(event.pos):
-                            sign_in = True
+                    if sign_up_button.checkForInput(event.pos):
+                        sign_in = True
 
-                        if log_in_button.checkForInput(event.pos):
-                            log_in = True
+                    if log_in_button.checkForInput(event.pos):
+                        log_in = True
 
-                        if play_button.checkForInput(event.pos):
+                    if play_button.checkForInput(event.pos):
 
-                            if len(self.user_name) > 0 and len(self.passward) > 0 and len(self.server_ip) > 0:
-                                ####################################################################################################################
-                                # FOR REGISTER RECUEST
-                                ####################################################################################################################
-                                if sign_in:
-                                    # try:
-                                    print(self.server_ip)
+                        if len(self.user_name) > 0 and len(self.passward) > 0 and len(self.server_ip) > 0:
+                            ####################################################################################################################
+                            # FOR REGISTER RECUEST
+                            ####################################################################################################################
+                            if sign_in:
+                                # try:
+                                print(self.server_ip)
+                                print(type(self.server_ip))
+                                self.my_socket.connect((self.server_ip, SERVER_PORT))
+                                print("connected")
+                                send_packet = Connection_to_server(None)
+                                send_packet.add_header_register_request(self.user_name, self.passward)
+                                self.my_socket.send(send_packet.get_packet().encode('utf-8'))
+                                print(send_packet.get_packet())
+                                print("sand")
+                                # here the tttttl
+                                server_reply = self.my_socket.recv(8192)
+                                print("recive")
+                                print(server_reply)
+                                packet = Incoming_packets(server_reply, self.server_ip, None)
+
+                                if packet.rotshild_filter():
+                                    check = handeler_of_incoming_packets(packet, self.display_surface)
+                                if not check:
+                                    sign_in = False
+                                    log_in = False
+                            # except Exception as e:
+                            #    print(e)
+                            #    sign_in = False
+                            #    log_in = False
+                            ####################################################################################################################
+                            # FOR LOGIN RECUEST
+                            ####################################################################################################################
+                            if (sign_in or log_in) and check:
+                                # try:
+                                if log_in:
                                     self.my_socket.connect((self.server_ip, SERVER_PORT))
-                                    send_packet = Connection_to_server(None)
-                                    send_packet.add_header_register_request(self.user_name, self.passward)
-                                    self.my_socket.send(send_packet.get_packet().encode('utf-8'))
-                                    print(send_packet.get_packet())
-                                    print('register request sent')
-                                    # here the ttl
-                                    server_reply = self.my_socket.recv(SOCKET_BUFFER_SIZE)
-                                    print(f"received reply from server:\n{server_reply}")
-                                    packet = Incoming_packets(server_reply, self.server_ip, None)
+                                send_packet = Connection_to_server(None)
+                                send_packet.add_header_login_request(self.user_name, self.passward)
+                                self.my_socket.send(send_packet.get_packet().encode('utf-8'))
+                                # here the tttttl
+                                server_reply = self.my_socket.recv(500000)
 
-                                    if packet.rotshild_filter():
-                                        check = handeler_of_incoming_packets(packet, self.display_surface)
-                                    if not check:
-                                        sign_in = False
-                                        log_in = False
-                                # except Exception as e:
-                                #    print(e)
-                                #    sign_in = False
-                                #    log_in = False
-                                ####################################################################################################################
-                                # FOR LOGIN RECUEST
-                                ####################################################################################################################
-                                if (sign_in or log_in):
-                                    # try:
-                                    if log_in:
-                                        self.my_socket.connect((self.server_ip, SERVER_PORT))
-                                    send_packet = Connection_to_server(None)
-                                    send_packet.add_header_login_request(self.user_name, self.passward)
-                                    self.my_socket.send(send_packet.get_packet().encode('utf-8'))
-                                    print('login request sent')
-                                    # here the ttl
-                                    server_reply = self.my_socket.recv(20000)
-                                    print(f"received reply from server:\n{server_reply}")
-                                    packet = Incoming_packets(server_reply, self.server_ip, None)
-                                    packet_to_save = Incoming_packets(server_reply, self.server_ip, None)
-                                    packets_to_handle_queue.append(packet_to_save)
-                                    if packet.rotshild_filter():
-                                        self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
-                                    if check:
-                                        self.play(packet)  # packet
-                                # except Exception as e:
-                                # print(e)
+                                print("a")
+                                packet = Incoming_packets(server_reply, self.server_ip, None)
+                                packet_to_save = Incoming_packets(server_reply, self.server_ip, None)
+                                packets_to_handle_queue.append(packet_to_save)
+                                if packet.rotshild_filter():
+                                    self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
+                                if check:
+                                    self.play(packet)  # packet
+                            # except Exception as e:
+                            # print(e)
 
-                if log_in or sign_in:
-                    server_text_surface = self.font.render(self.server_ip, True, text_color)
-                    self.display_surface.blit(server_text_surface, (555, 345))
-                    pygame.draw.rect(self.display_surface, 'white', server_input_rect, 2)
+            if log_in or sign_in:
+                server_text_surface = self.font.render(self.server_ip, True, text_color)
+                self.display_surface.blit(server_text_surface, (555, 345))
+                pygame.draw.rect(self.display_surface, 'white', server_input_rect, 2)
 
-                    pygame.draw.rect(self.display_surface, 'white', passward_input_rect, 2)
-                    pygame.draw.rect(self.display_surface, 'white', ID_input_rect, 2)
-                    ID_text_surface = self.font.render(self.user_name, True,
-                                                       text_color)  # show text that the player write on the screen
-                    passward_text_surface = self.font.render(self.passward, True, text_color)
+                pygame.draw.rect(self.display_surface, 'white', passward_input_rect, 2)
+                pygame.draw.rect(self.display_surface, 'white', ID_input_rect, 2)
+                ID_text_surface = self.font.render(self.user_name, True,
+                                                   text_color)  # show text that the player write on the screen
+                passward_text_surface = self.font.render(self.passward, True, text_color)
 
-                    self.display_surface.blit(passward_text_surface, (555, 295))
-                    self.display_surface.blit(ID_text_surface, (555, 245))
+                self.display_surface.blit(passward_text_surface, (555, 295))
+                self.display_surface.blit(ID_text_surface, (555, 245))
 
-                    play_button.changeColor(mouse_menu)
-                    play_button.update(self.display_surface)
+                play_button.changeColor(mouse_menu)
+                play_button.update(self.display_surface)
 
-                else:
-                    for button in [sign_in_button, log_in_button]:
-                        button.changeColor(mouse_menu)
-                        button.update(self.display_surface)
+            else:
 
-                pygame.display.update()
+                for button in [sign_up_button, log_in_button]:
+                    button.changeColor(mouse_menu)
+                    button.update(self.display_surface)
+
+            pygame.display.update()
 
     def handle_of_incoming_packets(self):
         while not shut_down_event.is_set():
@@ -281,21 +285,11 @@ class Game:
             packets_to_handle_queue.append(packet)
             print('performed recieving iterate in thread')
 
-    def play(self, packet):  # packet is the login reply packet received from the server
-        # place_to_start = give_me_first_place(packet)
-        # self.level = Level(place_to_start)
-        # pygame.display.set_caption('PUBG')
-        # self.screen.fill('black')
-        #
-        # packet.set_player_id(self.player_id)
-        # packet_to_send = Connection_to_server(self.player_id)
-        # self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
+    # self.my_socket.bind(('0.0.0.0', 62227))
+    # -------------------
 
-        # self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-        #
-        # pygame.display.update()
-        # self.clock.tick(FPS)
 
+    def play(self, packet):
         with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
             place_to_start = give_me_first_place(packet)
             self.level = Level(place_to_start)
@@ -303,11 +297,7 @@ class Game:
             self.screen.fill('black')
             executor.submit(self.level.handeler_of_incoming_packets, self.level.visble_sprites, self.level.player,
                             self.level.obstacle_sprites, self.level.item_sprites, self.player_id)
-            # packet.set_player_id(self.player_id)
             packet_to_send = Connection_to_server(self.player_id)
-            # self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
-
-            # self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
 
             pygame.display.update()
             self.clock.tick(FPS)
@@ -327,10 +317,10 @@ class Game:
                         pygame.quit()
                         sys.exit()
 
-                packet_to_send = self.level.run(packet_to_send,self.player_id)
-                self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                pygame.display.update()
-                self.clock.tick(FPS)
+                    packet_to_send = self.level.run(packet_to_send,self.player_id)
+                    self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                    pygame.display.update()
+                    self.clock.tick(FPS)
 
 
 if __name__ == '__main__':
