@@ -115,9 +115,9 @@ class UI:
 
         self.writing = False #for the graphics☺
 
-    def ui_screen(self,player):
+    def ui_screen(self,player,packet_to_send):
         self.items_weapons_box()
-        self.ui_input(player)
+        self.ui_input(player,packet_to_send)
         if self.box_on[0] == 'weapon':
             self.ui_weapon_boxes[f'{self.box_on[1]}']['onit'] = True
         elif self.box_on[0]=='item': self.ui_item_boxes[f'{self.box_on[1]}']['onit'] = True
@@ -184,7 +184,7 @@ class UI:
         text = font.render(self.user_text, True, (0, 0, 0))
         self.display_surface.blit(text, (17, 267))
 
-    def ui_input(self,player):
+    def ui_input(self,player,packet_to_send):
         keys = pygame.key.get_pressed()
         if not player.chat_input: #if the chat is not on
             if keys[pygame.K_v]: #making the chat value on
@@ -269,6 +269,9 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
+
+                                    packet_to_send.add_header_inventory_update("- weapons", weapon)
+
                                     del player.objects_on[weapon]
 
 
@@ -277,7 +280,7 @@ class UI:
                                     else:
                                         player.weapon_index = 0
                                     player.weapon = list(player.objects_on.keys())[player.weapon_index]  # the weapon we are using
-                    elif self.box_on[0]=='item':
+                    elif self.box_on[0] == 'item':
                         objects_copy = player.items_on.copy()
                         for weapon, weapon_value in objects_copy.items():
                             if weapon_value['ui'] == self.box_on[1]:
@@ -285,6 +288,16 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                    if weapon_value['name'] == 'backpack':
+                                        packet_to_send.add_header_inventory_update('- backpack', 1)
+                                    if weapon_value['name'] == 'ammo':
+                                        packet_to_send.add_header_inventory_update('- ammo', 1)
+                                    if weapon_value['name'] == 'boots':
+                                        packet_to_send.add_header_inventory_update('- boots', 1)
+                                    if weapon_value['name'] == 'medkit':
+                                        packet_to_send.add_header_inventory_update('- med_kits', 1)
+                                    if weapon_value['name'] == 'bendage':
+                                        packet_to_send.add_header_inventory_update('- bandages', 1)
                                     del player.items_on[weapon]
                                 else: #only for the backpack erasing
                                     items_copy = player.items_on.copy()

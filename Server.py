@@ -187,8 +187,8 @@ OBJECTS_PLACES = {'ammo': {},
 # The amount of each object to be on the map every moment
 OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
                          'med_kit': 980,
-                         'backpack': 7,
-                         'bandage': 1200,
+                         'backpack': 700,
+                         'bandage': 1,
                          'boots': 3,
                          'sword': 20,
                          'lance': 5,
@@ -1010,6 +1010,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     if id_cache == '':
                         id_cache = lines[0].split()[1]
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
+
                     reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], id_cache)
                     break
         # --------------
@@ -1026,7 +1027,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             if id_cache == '':
                 id_cache = lines[0].split()[1]
                 enemy_id, hit_hp = line_parts[1].split(',')
-            reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
+            #reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
         # --------------
 
         # --------------

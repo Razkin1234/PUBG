@@ -24,7 +24,7 @@ class Player(Entity):
         # movement
         self.attack_for_moment = False
         self.attacking = False
-        self.attack_cooldown = 400
+        self.attack_cooldown = 50
         self.attack_time = None
         self.place_to_go = None
         self.obstacle_sprites = obstacle_sprites
@@ -68,7 +68,7 @@ class Player(Entity):
 
 
         #stats
-        self.stats = {'health' : 100, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
+        self.stats = {'health' : 60, 'energy' : 60, 'attack' : 10, 'magic': 4, 'speed': 6}  #ma health , max energy
         self.health = self.stats['health']-60 #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
@@ -145,11 +145,10 @@ class Player(Entity):
                 if self.weapon == 'gun':
                     self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                 else:
-                    self.attack_for_moment = True
-                    self.attacking = True
-                    self.attack_time = pygame.time.get_ticks()
                     self.create_attack()
-
+                self.attack_for_moment = True
+                self.attacking = True
+                self.attack_time = pygame.time.get_ticks()
 
             #magic input
             if keys[pygame.K_LCTRL] and not self.attacking:

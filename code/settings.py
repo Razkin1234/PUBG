@@ -50,7 +50,8 @@ weapon_data = {
 
 item_data = {
 	'backpack': {'graphic': '../graphics/items/backpack.png'},
-	'ammo': {'amount': 10, 'graphic': '../graphics/items/ammo.png'},
+
+	'ammo': {'amount': 20, 'graphic': '../graphics/items/ammo.png'},
 	'boots': {'speed': 1, 'graphic': '../graphics/items/boots.png'},
 	'medkit': {'health': 50, 'graphic': '../graphics/items/medkit.png'},
 	'bendage': {'health': 7, 'graphic': '../graphics/items/bendage.png'}
