@@ -3,7 +3,7 @@ from collections import deque
 
 # game setup
 WIDTH = 1280
-HEIGTH = 720
+HEIGTH = 700
 FPS = 60
 TILESIZE = 64
 MIDDLE_SCREEN = (WIDTH/2, HEIGTH/2)

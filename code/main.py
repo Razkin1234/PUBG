@@ -103,7 +103,7 @@ class Game:
         log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         sign_in = False
         log_in = False
-        chack = True
+        check = True
         while True:
             self.display_surface.fill('black')
 
@@ -194,7 +194,8 @@ class Game:
                     if sign_in_button.checkForInput(event.pos):
                         sign_in = True
 
-                    if log_in_button.checkForInput(event.pos):
+                    elif log_in_button.checkForInput(event.pos):
+                        #sign_in = False
                         log_in = True
 
                     if play_button.checkForInput(event.pos):
@@ -242,7 +243,8 @@ class Game:
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
-                                server_reply = self.my_socket.recv(20000)
+                                server_reply = self.my_socket.recv(23000)
+                                print(server_reply)
                                 print("a")
                                 packet = Incoming_packets(server_reply, self.server_ip, None)
                                 packet_to_save = Incoming_packets(server_reply, self.server_ip, None)

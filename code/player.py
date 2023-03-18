@@ -142,7 +142,7 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
-                if self.weapon == 'axe':
+                if self.weapon == 'gun':
                     self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                 else:
                     self.attack_for_moment = True
