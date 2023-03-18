@@ -97,11 +97,10 @@ class Game:
                              (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
 
         sign_up_button = Button(None, (550, 240), "sign up", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-        log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        log_in_button = Button(None, (550, 410), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         sign_in = False
         log_in = False
         check = True
-
         while True:
             self.display_surface.fill('black')
 
@@ -194,7 +193,8 @@ class Game:
                     if sign_up_button.checkForInput(event.pos):
                         sign_in = True
 
-                    if log_in_button.checkForInput(event.pos):
+                    elif log_in_button.checkForInput(event.pos):
+                        sign_in = False
                         log_in = True
 
                     if play_button.checkForInput(event.pos):
@@ -203,7 +203,7 @@ class Game:
                             ####################################################################################################################
                             # FOR REGISTER RECUEST
                             ####################################################################################################################
-                            if sign_in:
+                            if not log_in and sign_in:
                                 # try:
                                 print(self.server_ip)
                                 print(type(self.server_ip))
@@ -240,8 +240,8 @@ class Game:
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
-                                server_reply = self.my_socket.recv(500000)
-
+                                server_reply = self.my_socket.recv(28000)
+                                print(server_reply)
                                 print("a")
                                 packet = Incoming_packets(server_reply, self.server_ip, None)
                                 packet_to_save = Incoming_packets(server_reply, self.server_ip, None)

@@ -107,7 +107,7 @@ from random import randint, choice
 # ------------------------ socket
 SERVER_UDP_PORT = 56789
 SERVER_IP = '0.0.0.0'
-SOCKET_BUFFER_SIZE = 1024
+SOCKET_BUFFER_SIZE = 2048
 SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
 # check the main loop trigger event sometimes.
 # The bigger you'll set this timeout - you will check the trigger event less often,
@@ -195,7 +195,7 @@ OBJECTS_AMOUNT_ON_MAP = {'ammo': 2000,
                          'axe': 7,
                          'rapier': 20,
                          'sai': 17,
-                         'gun': 2}
+                         'gun': 200}
 # ------------------------
 
 # ------------------------ Players
@@ -257,6 +257,8 @@ FPS = 60
 # (will hold tuples with the payloads as bytestring and the src address as a tuple of (IP, PORT))
 # each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
 PACKETS_TO_HANDLE_QUEUE = deque()
+
+
 # -------------------------
 
 
@@ -590,7 +592,7 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
                         updated_weapons.append(weapon)
                     else:
                         count += 1
-                for _ in range(count - 1):
+                for _ in range(count-1):
                     updated_weapons.append(info)
                 value = ','.join(updated_weapons)
             cursor.execute("UPDATE clients_info"
@@ -2266,21 +2268,21 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        # executor.submit(moving_enemies_thread, server_socket)
+#         executor.submit(moving_enemies_thread, server_socket)
         # setting a thread to handle incomig packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            try:                                                                                                  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
+            try:  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:                                                                                # !!
-                continue                                                                                          # !!
-                                                                                                                  # !!
+            except socket_timeout:  # !!
+                continue  # !!
+                # !!
             # adds the payload to the queue to wait for being handled                                             # !!
-            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))                                                # !!
+            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))  # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

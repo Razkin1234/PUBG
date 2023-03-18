@@ -147,7 +147,7 @@ class Level:
                                                                  l_parts[1])  # getting in answer the message to print
                                     break
                         elif line_parts[0] == 'server_shutdown:':
-                            pass
+                            packet.handle_server_shutdown()
 
                         # --------------
 
@@ -159,14 +159,14 @@ class Level:
                         # --------------
                         elif line_parts[0] == 'first_objects_position:':
                             self.finished_first_object_event.clear()
-                            packet.handle_first_objects_position(line_parts[1], item_sprites)
+                            packet.handle_first_objects_position(line_parts[1], item_sprites, self.weapon_sprites)
                             self.finished_first_object_event.set()
                         # --------------
                         # --------------
                         elif line_parts[0] == 'object_update:':
                             l_parts = line_parts[1].split('?')
                             if l_parts[0] != player.id:
-                                packet.handle_object_update(l_parts[1], self.item_sprites)
+                                packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
                         # --------------
 
                         # --------------
@@ -176,7 +176,7 @@ class Level:
 
                         # --------------
                         elif line_parts[0] == 'enemy_update:':
-                            packet.handle_enemy_player_place_type_hit(line_parts[1], self.player, obstecal_sprits, )
+                            packet.handle_enemy_player_place_type_hit(line_parts[1])
 
             time.sleep(0.1)
 
@@ -387,6 +387,7 @@ class Level:
         self.other_players.update()
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
+        self.player.update1(packet_to_send)
         # self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic(packet_to_send)
         self.ui.display(self.player)

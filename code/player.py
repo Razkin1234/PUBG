@@ -40,7 +40,7 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
         self.bullet_group = bullet_group
 
-        self.objects_on = {'gun': {'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png' ,'ui':1}
+        self.objects_on = {
 
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {} #for all of the items we will have
@@ -104,7 +104,7 @@ class Player(Entity):
                 self.direction.y = 0
                 self.status = 'down'
 
-    def inputm(self):  # checks the input from the player, mouse
+    def inputm(self, packet_to_send):  # checks the input from the player, mouse
 
         if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
             self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
@@ -140,13 +140,13 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
-
                 if self.weapon == 'gun':
 
                     for items in self.items_on:
                         if self.items_on[items]["name"] == 'ammo':
                             if self.items_on[items]['amount'] >= 1:
                                 self.items_on[items]['amount'] -= 1
+                                packet_to_send.add_header_inventory_update("- ammo", 1)
                                 self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                                 break
                             else:
@@ -292,9 +292,9 @@ class Player(Entity):
         return base_damage + weapon_damage
 
 
-    def update(self):
+    def update1(self, packet_to_send):
 
-        self.inputm() #checking the input diraction
+        self.inputm(packet_to_send) #checking the input diraction
         self.cooldowns()
         self.get_status()
         self.animate()

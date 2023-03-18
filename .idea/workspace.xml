@@ -6,8 +6,18 @@
   <component name="ChangeListManager">
     <list default="true" id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/FinalProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/PUBG/.idea/FinalProject.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/PUBG/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/PUBG/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/pubg.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/shelf/Uncommitted_changes_before_Update_at_23_01_2023_19_29_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/shelf/Uncommitted_changes_before_Update_at_23_01_2023_19_29__Changes_.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/PUBG/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PUBG/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/PUBG/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notwork.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/Connection_to_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Connection_to_server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,17 +62,17 @@
   </component>
   <component name="RunManager" selected="Python.main">
     <configuration name="Server" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="pubg" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="C:\networks\Python3.8\python.exe" />
+      <option name="SDK_HOME" value="C:\Networks\Python3.8-64bit\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Server.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -114,7 +124,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -166,10 +176,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.Server" />
         <item itemvalue="Python.tests" />
         <item itemvalue="Python.level" />
         <item itemvalue="Python.YsortCameraGroup" />
-        <item itemvalue="Python.Server" />
       </list>
     </recent_temporary>
   </component>
@@ -237,6 +247,61 @@
           <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
           <line>122</line>
           <option name="timeStamp" value="46" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Server.py</url>
+          <line>2270</line>
+          <option name="timeStamp" value="56" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
+          <line>97</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="109" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
+          <line>41</line>
+          <option name="timeStamp" value="110" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
+          <line>10</line>
+          <option name="timeStamp" value="111" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>161</line>
+          <option name="timeStamp" value="127" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>163</line>
+          <option name="timeStamp" value="128" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="129" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>382</line>
+          <option name="timeStamp" value="130" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>181</line>
+          <option name="timeStamp" value="133" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>445</line>
+          <option name="timeStamp" value="134" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
