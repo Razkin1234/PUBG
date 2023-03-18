@@ -187,15 +187,15 @@ OBJECTS_PLACES = {'ammo': {},
 # The amount of each object to be on the map every moment
 OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
                          'med_kit': 980,
-                         'backpack': 700,
-                         'bandage': 1,
+                         'backpack': 7,
+                         'bandage': 1200,
                          'boots': 3,
                          'sword': 20,
                          'lance': 5,
                          'axe': 7,
                          'rapier': 20,
                          'sai': 17,
-                         'gun': 200}
+                         'gun': 2}
 # ------------------------
 
 # ------------------------ Players
@@ -586,9 +586,14 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             else:
                 client_weapons = value.split(',')
                 updated_weapons = []
+                count = 0
                 for weapon in client_weapons:
                     if weapon != info:
                         updated_weapons.append(weapon)
+                    else:
+                        count += 1
+                for _ in range(count-1):
+                    updated_weapons.append(info)
                 value = ','.join(updated_weapons)
             cursor.execute("UPDATE clients_info"
                            " SET weapons = ?"
@@ -1010,7 +1015,6 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     if id_cache == '':
                         id_cache = lines[0].split()[1]
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-
                     reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], id_cache)
                     break
         # --------------
@@ -1027,7 +1031,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             if id_cache == '':
                 id_cache = lines[0].split()[1]
                 enemy_id, hit_hp = line_parts[1].split(',')
-            #reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
+            reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
         # --------------
 
         # --------------
@@ -2264,7 +2268,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        # executor.submit(moving_enemies_thread, server_socket)
+#         executor.submit(moving_enemies_thread, server_socket)
         # setting a thread to handle incomig packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------

@@ -66,23 +66,23 @@ class Incoming_packets:
         for i, item in enumerate(items):
             try:
                 items[i] = int(items[i])
+                for j in range(items[i]):
+                    if i == 0:
+                        items[i+j] = 'ammo'
+
+                    elif i == 1:
+                        items[i+j] = 'medkit'
+
+                    elif i == 2:
+                        items[i+j] = 'backpacks'
+
+                    elif i == 3:
+                        items[i+j] = 'bendage'
+
+                    elif i == 4:
+                        items[i+j] = 'boots'
             except:
-                print('did')
-            for j in range(items[i]):
-                if i == 0:
-                    items[i+j] = 'ammo'
-
-                elif i == 1:
-                    items[i+j] = 'medkit'
-
-                elif i == 2:
-                    items[i+j] = 'backpacks'
-
-                elif i == 3:
-                    items[i+j] = 'bendage'
-
-                elif i == 4:
-                    items[i+j] = 'boots'
+                pass
         print(items)
         for weapon in weapons:
             if weapon in weapon_data:
