@@ -104,7 +104,7 @@ class Game:
                              (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
 
         sign_up_button = Button(None, (550, 240), "sign up", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-        log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        log_in_button = Button(None, (550, 440), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         sign_in = False
         log_in = False
         check = True
@@ -124,7 +124,6 @@ class Game:
                     sys.exit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:  # check if he clicked the mouse
-
                     if ID_input_rect.collidepoint(event.pos):
                         active_ID = True
                         active_pasward = False
@@ -195,13 +194,12 @@ class Game:
                             text_color = 'red'
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-
                     if sign_up_button.checkForInput(event.pos):
-
                         sign_in = True
 
                     if log_in_button.checkForInput(event.pos):
                         log_in = True
+                        sign_in = False
 
                     if play_button.checkForInput(event.pos):
 
@@ -209,7 +207,7 @@ class Game:
                             ####################################################################################################################
                             # FOR REGISTER RECUEST
                             ####################################################################################################################
-                            if sign_in:
+                            if not log_in and sign_in:
                                 # try:
                                 print(self.server_ip)
                                 print(type(self.server_ip))
