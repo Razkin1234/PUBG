@@ -185,10 +185,10 @@ OBJECTS_PLACES = {'ammo': {},
                   'sai': {},
                   'gun': {}}
 # The amount of each object to be on the map every moment
-OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
-                         'med_kit': 980,
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 2000,
+                         'med_kit': 300,
                          'backpack': 7,
-                         'bandage': 1200,
+                         'bandage': 400,
                          'boots': 3,
                          'sword': 20,
                          'lance': 5,

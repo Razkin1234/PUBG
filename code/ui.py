@@ -137,6 +137,7 @@ class UI:
             for box, box_value in self.backpack_items_box.items():
                 self.selection_box(box_value['left'], box_value['top'], box_value['onit'], box_value['rep'])
 
+        #wepon displaying
         for weapon , weapon_value in player.objects_on.items():
             temp_dict = self.ui_weapon_boxes[str(player.objects_on[weapon]['ui'])]
             bg_rect = pygame.Rect(temp_dict['left'],temp_dict['top'],ITEM_BOX_SIZE,ITEM_BOX_SIZE)
@@ -153,6 +154,10 @@ class UI:
             item_surf = self.item_graphics_dict[player.items_on[item]['name']]
             item_rect = item_surf.get_rect(center=bg_rect.center)
             self.display_surface.blit(item_surf, item_rect)
+            if item == 'ammo':
+                font = pygame.font.Font(None, 28)
+                text = font.render(str(item_value['amount']), True, (255, 255, 255))
+                self.display_surface.blit(text, (temp_dict['left']+3,temp_dict['top']+55))
 
         self.cooldown() #for the cooldown
 

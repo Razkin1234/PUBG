@@ -440,4 +440,5 @@ class Level:
             # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
             if self.player.health == 0:
                 packet_to_send.add_header_dead(self.player.id)
+            #print(packet_to_send.get_packet())
             return packet_to_send
