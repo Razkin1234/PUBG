@@ -157,8 +157,8 @@ DEFAULT_BANDAGES = 0  # INVENTORY
 DEFAULT_BOOTS = 0  #
 DEFAULT_EXP = 0  #
 
-MAX_SIZE_FOR_AMMO_PACKAGE = 1
-MIN_SIZE_FOR_AMMO_PACKAGE = 1
+MAX_SIZE_FOR_AMMO_PACKAGE = 30
+MIN_SIZE_FOR_AMMO_PACKAGE = 10
 MAX_SIZE_FOR_MEDKITS_PACKAGE = 2
 MIN_SIZE_FOR_MEDKITS_PACKAGE = 1
 MAX_SIZE_FOR_BACKPACKS_PACKAGE = 1
@@ -185,10 +185,10 @@ OBJECTS_PLACES = {'ammo': {},
                   'sai': {},
                   'gun': {}}
 # The amount of each object to be on the map every moment
-OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
-                         'med_kit': 980,
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 2000,
+                         'med_kit': 300,
                          'backpack': 7,
-                         'bandage': 1200,
+                         'bandage': 400,
                          'boots': 3,
                          'sword': 20,
                          'lance': 5,
