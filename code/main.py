@@ -102,11 +102,11 @@ class Game:
         active_server = False
         play_button = Button(None,  # create the play button
                              (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-        sign_in_button = Button(None, (550, 240), "sign_in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        sign_up_button = Button(None, (550, 240), "sign up", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         sign_in = False
         log_in = False
-        chack = True
+        check = True
         while True:
             self.display_surface.fill('black')
 
@@ -194,7 +194,7 @@ class Game:
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
 
-                    if sign_in_button.checkForInput(event.pos):
+                    if sign_up_button.checkForInput(event.pos):
                         sign_in = True
 
                     if log_in_button.checkForInput(event.pos):
@@ -245,7 +245,7 @@ class Game:
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
-                                server_reply = self.my_socket.recv(20000)
+                                server_reply = self.my_socket.recv(500000)
                                 print("a")
                                 packet = Incoming_packets(server_reply, self.server_ip, None)
                                 packet_to_save = Incoming_packets(server_reply, self.server_ip, None)
@@ -275,7 +275,7 @@ class Game:
                 play_button.update(self.display_surface)
 
             else:
-                for button in [sign_in_button, log_in_button]:
+                for button in [sign_up_button, log_in_button]:
                     button.changeColor(mouse_menu)
                     button.update(self.display_surface)
 
@@ -305,7 +305,7 @@ class Game:
                     if event.type == pygame.QUIT:
                         packet_to_send.add_header_disconnect(self.player_id)
                         self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                        socket.close()
+                        self.my_socket.close()
                         packets_to_handle_queue.clear()
 
                         shut_down_evant.set()#for the thread closing

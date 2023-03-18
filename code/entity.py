@@ -1,5 +1,6 @@
 import pygame
 from math import sin
+from debug import debug
 class Entity(pygame.sprite.Sprite):
     def __init__(self,groups):
         super().__init__(groups)

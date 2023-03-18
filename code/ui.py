@@ -184,7 +184,7 @@ class UI:
         text = font.render(self.user_text, True, (0, 0, 0))
         self.display_surface.blit(text, (17, 267))
 
-    def ui_input(self,player):
+    def ui_input(self,player,packet_to_send):
         keys = pygame.key.get_pressed()
         if not player.chat_input: #if the chat is not on
             if keys[pygame.K_v]: #making the chat value on
@@ -269,6 +269,7 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
+                                    packet_to_send.add_header_inventory_update("- weapon", weapon)
                                     del player.objects_on[weapon]
 
 
@@ -285,6 +286,7 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                    packet_to_send.add_header_inventory_update(f"- {weapon_value['name']}", 1)
                                     del player.items_on[weapon]
                                 else: #only for the backpack erasing
                                     items_copy = player.items_on.copy()

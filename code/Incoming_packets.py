@@ -7,7 +7,7 @@ from item import Item
 from enemy import Enemy
 import pygame
 import sys
-
+from  bullet import Bullets
 
 class Incoming_packets:
 
@@ -128,31 +128,33 @@ class Incoming_packets:
             pass
 
     def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites,
-                            obstecal_sprits):  # maybe done
+                            obstecal_sprits,damage_player):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
         # pass
         try:
-
             player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
             player_place = (int(player_place[0]), int(player_place[1]))
 
             if player_place[0] < COL_TILES * 64 and player_place[0] > 0 and player_place[1] < ROW_TILES * 64 and \
                     player_place[1] > 0:
                 if not visiable_sprites.check_existines(player_id, image, player_place):
-                    Enemy(1, player_id, player_place, visiable_sprites, obstecal_sprits, image)
+                    Enemy(1, player_id, player_place, visiable_sprites, obstecal_sprits, image, damage_player)
 
 
         except Exception as e:
             print(str(e) + f"line_{e.__traceback__.tb_lineno}")
 
-    def handle_shot_place(self, shot_place, bullet, obsicales_sprites):
+    def handle_shot_place(self, shot_place, bullet, obsicales_sprites,player_place):
         # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
         shot_place = tuple((shot_place[1:-1].split(',')))  # converting the place from str to tuple
         shot_place = (int(shot_place[0]), int(shot_place[1]))
+        if player_place[0] < COL_TILES * 64 and player_place[0] > 0 and player_place[1] < ROW_TILES * 64 and \
+                player_place[1] > 0:
+            Bullets(shot_place, bullet, obsicales_sprites, None)
 
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need

@@ -23,8 +23,6 @@ from Connection_to_server import Connection_to_server
 """""
 
 
-
-
 class Level:
     def __init__(self, place_to_start):
         # get the display surface
@@ -42,7 +40,7 @@ class Level:
         self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
         self.weapon_sprites = YsortCameraGroup()
-
+        self.other_players = YsortCameraGroup()
         # attack sprites
         self.current_attack = None
         self.attack_sprites = pygame.sprite.Group()
@@ -98,7 +96,7 @@ class Level:
                                 if packet.get_id() != l2_parts[1]:
                                     packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
                                                                player.rect.center,
-                                                               visibale_sprites, obstecal_sprits)
+                                                               visibale_sprites, obstecal_sprits,self.damage_player)
 
                                 break
                         break
@@ -113,7 +111,7 @@ class Level:
                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                     if l_parts[0] == 'shooter_id:':
                         if l_parts[1] != packet.get_id():
-                            packet.handle_shot_place(line_parts[1], self.bullet_group, self.obstacle_sprites)
+                            packet.handle_shot_place(line_parts[1], self.other_bullet_group, self.obstacle_sprites)
                         break
             # --------------
 
@@ -157,7 +155,7 @@ class Level:
             elif line_parts[0] == 'object_update:':
                 l_parts = line_parts[1].split('?')
                 if l_parts[0] != player.id:
-                    packet.handle_object_update(l_parts[1])
+                    packet.handle_object_update(l_parts[1], self.item_sprites)
             # --------------
 
             # --------------
@@ -352,8 +350,7 @@ class Level:
             self.player_id = id
             if packet.rotshild_filter():
                 self.handeler_of_incoming_packets(packet, self.visble_sprites, self.player, self.obstacle_sprites,
-                                             self.item_sprites)
-
+                                                  self.item_sprites)
             self.cooldown()
             self.camera.x = self.player.rect.centerx  # updating the camera location
             self.camera.y = self.player.rect.centery
@@ -368,12 +365,14 @@ class Level:
             self.item_sprites.custom_draw(self.camera)
             self.weapon_sprites.custom_draw(self.camera)
 
-            self.item_sprites.item_picking(self.player)
-            self.weapon_sprites.weapon_picking(self.player)
+            self.item_sprites.item_picking(self.player,packet_to_send)
+            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()
-            self.item_sprites.item_picking(self.player)
+            self.item_sprites.item_picking(self.player,packet_to_send)
+
+            self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
@@ -395,8 +394,6 @@ class Level:
                 packet_to_send.add_header_dead(self.player.id)
             return packet_to_send
         else:
-            self.player_id = id
-
             self.cooldown()
             self.camera.x = self.player.rect.centerx  # updating the camera location
             self.camera.y = self.player.rect.centery
@@ -409,10 +406,16 @@ class Level:
             self.floor_sprites.custom_draw(self.camera)
             self.floor_sprites.update()
             self.item_sprites.custom_draw(self.camera)
+            self.weapon_sprites.custom_draw(self.camera)
+
+            self.item_sprites.item_picking(self.player,packet_to_send)
+            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()
-            self.item_sprites.item_picking(self.player)
+            self.item_sprites.item_picking(self.player,packet_to_send)
+
+            self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
@@ -421,7 +424,6 @@ class Level:
             self.ui.display(self.player)
             if self.player.i_pressed:
                 self.ui.ui_screen(self.player)
-            debug(self.player.rect)
 
             if self.player.attack_for_moment:
                 image = self.player.weapon

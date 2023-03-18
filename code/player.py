@@ -24,7 +24,7 @@ class Player(Entity):
         # movement
         self.attack_for_moment = False
         self.attacking = False
-        self.attack_cooldown = 400
+        self.attack_cooldown = 50
         self.attack_time = None
         self.place_to_go = None
         self.obstacle_sprites = obstacle_sprites
@@ -40,7 +40,7 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
         self.bullet_group = bullet_group
 
-        self.objects_on = {
+        self.objects_on = {'gun': {'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png' ,'ui':1}
 
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
@@ -142,13 +142,15 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
-                if self.weapon == 'axe':
+                if self.weapon == 'gun':
                     self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                 else:
-                    self.attack_for_moment = True
-                    self.attacking = True
-                    self.attack_time = pygame.time.get_ticks()
                     self.create_attack()
+                self.attack_for_moment = True
+                self.attacking = True
+                self.attack_time = pygame.time.get_ticks()
+
+
 
 
             #magic input
