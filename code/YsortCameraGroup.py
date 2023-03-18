@@ -114,6 +114,9 @@ class YsortCameraGroup(pygame.sprite.Group):
                         if sprite.sprite_type == 'ammo':
                             if player.items_on['ammo']['amount'] < 200:
                                 player.items_on['ammo']['amount'] += 1
+                                packet_to_send.add_header_inventory_update("+ ammo", 1)
+                                # pick_drop, type_object, place, amount
+                                packet_to_send.add_object_update('pick', 'ammo', sprite.rect.center, 1)
                                 sprite.kill()
 
                     if 'backpack' in player.items_on:
@@ -137,13 +140,15 @@ class YsortCameraGroup(pygame.sprite.Group):
                                         temp_dict.clear()
                                         if player.items_on[str(counter)]['name'] == 'backpack':
                                             packet_to_send.add_header_inventory_update('+ backpack', 1)
-                                        if player.items_on[str(counter)]['name'] == 'ammo':
-                                            packet_to_send.add_header_inventory_update('+ ammo', 1)
+                                            packet_to_send.add_object_update('pick', 'backpack', sprite.rect.center, 1)
                                         if player.items_on[str(counter)]['name'] == 'boots':
+                                            packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ boots', 1)
                                         if player.items_on[str(counter)]['name'] == 'medkit':
+                                            packet_to_send.add_object_update('pick', 'medkit', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ med_kits', 1)
                                         if player.items_on[str(counter)]['name'] == 'bendage':
+                                            packet_to_send.add_object_update('pick', 'bendage', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ bandages', 1)
                                         sprite.kill()
                                         break
@@ -157,6 +162,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict['ui'] = i
                                     player.items_on['backpack'] = temp_dict.copy()
                                     temp_dict.clear()
+                                    packet_to_send.add_object_update('pick', 'backpack', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ backpack", 1)
                                     sprite.kill()
                             elif sprite.sprite_type == 'boots':
@@ -166,6 +172,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict = items_add_data[sprite.sprite_type].copy()
                                     temp_dict['ui'] = i
                                     player.items_on['boots'] = temp_dict.copy()
+                                    packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()
                                     sprite.kill()
@@ -179,6 +186,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict['ui'] = i
                                     player.items_on['ammo'] = temp_dict.copy()
                                     player.items_on['ammo']['amount'] = 1
+                                    packet_to_send.add_object_update('pick', 'ammo', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ ammo", 1)
                                     temp_dict.clear()
                                     sprite.kill()
@@ -202,6 +210,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 temp_dict = weapon_data[sprite.sprite_type].copy()
                                 temp_dict['ui'] = i
                                 player.objects_on[str(sprite.sprite_type)] = temp_dict.copy()
+                                packet_to_send.add_object_update('pick', str(sprite.sprite_type), sprite.rect.center, 1)
                                 packet_to_send.add_header_inventory_update("+ weapons", str(sprite.sprite_type))
                                 temp_dict.clear()
                                 sprite.kill()

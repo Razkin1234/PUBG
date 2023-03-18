@@ -60,6 +60,7 @@ class Incoming_packets:
     def handle_first_inventory(self, first_inventory, player):
         # to add it to the inventory
         items = first_inventory.split(",")
+        new_item = []
         weapons = items[0].split("/")
         del items[0]
         del items[-1]
@@ -68,22 +69,22 @@ class Incoming_packets:
                 items[i] = int(items[i])
                 for j in range(items[i]):
                     if i == 0:
-                        items[i+j] = 'ammo'
+                        new_item.append('ammo')
 
                     elif i == 1:
-                        items[i+j] = 'medkit'
+                        new_item.append('medkit')
 
                     elif i == 2:
-                        items[i+j] = 'backpacks'
+                        new_item.append('backpack')
 
                     elif i == 3:
-                        items[i+j] = 'bendage'
+                        new_item.append('bendage')
 
                     elif i == 4:
-                        items[i+j] = 'boots'
+                        new_item.append('boots')
             except:
                 pass
-        print(items)
+        print(new_item)
         for weapon in weapons:
             if weapon in weapon_data:
                 if weapon not in player.objects_on:
@@ -100,9 +101,13 @@ class Incoming_packets:
                             player.objects_on[weapon] = temp_dict.copy()
                             temp_dict.clear()
                             break
-        for item in items:
+        for item in new_item:
             if item in item_data:
-                if 'backpack' in player.items_on:
+                if 'ammo' in player.items_on:
+                    if item == 'ammo':
+                        if player.items_on['ammo']['amount'] < 200:
+                            player.items_on['ammo']['amount'] += 1
+                if 'backpack' in new_item:
                     count = 13
                 else:
                     count = 10
@@ -113,7 +118,7 @@ class Incoming_packets:
                             flag = False
                             break
                     if flag:  # we will put the item in this slott
-                        if item != "backpack" and item != 'boots':
+                        if item != "backpack" and item != 'boots' and item != 'ammo':
                             if item in items_add_data:
                                 temp_dict = items_add_data[item].copy()
                                 temp_dict['ui'] = i
@@ -125,22 +130,29 @@ class Incoming_packets:
                                         break
                                     counter += 1
                                 break
-                            elif item == 'backpack':
-                                if 'backpack' in player.items_on:
-                                    break
-                                else:
-                                    temp_dict = items_add_data[item].copy()
-                                    temp_dict['ui'] = i
-                                    player.items_on['backpack'] = temp_dict.copy()
-                                    temp_dict.clear()
-                            elif item == 'boots':
-                                if 'boots' in player.items_on:
-                                    break
-                                else:
-                                    temp_dict = items_add_data[item].copy()
-                                    temp_dict['ui'] = i
-                                    player.items_on['boots'] = temp_dict.copy()
-                                    temp_dict.clear()
+                        elif item == 'backpack':
+                            if 'backpack' in player.items_on:
+                                break
+                            else:
+                                temp_dict = items_add_data[item].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['backpack'] = temp_dict.copy()
+                                temp_dict.clear()
+                        elif item == 'boots':
+                            if 'boots' in player.items_on:
+                                break
+                            else:
+                                temp_dict = items_add_data[item].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['boots'] = temp_dict.copy()
+                                temp_dict.clear()
+                        elif item == 'ammo':
+                            if 'ammo' not in player.items_on:
+                                temp_dict = items_add_data['ammo'].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['ammo'] = temp_dict.copy()
+                                player.items_on['ammo']['amount'] = 1
+                                temp_dict.clear()
 
 
     def handle_register_status(self, register_status):

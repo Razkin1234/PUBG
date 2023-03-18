@@ -424,6 +424,7 @@ class Level:
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
+            self.player.update1(packet_to_send)
             # self.visble_sprites.enemy_update(self.player)
             self.player_attack_logic(packet_to_send)
             self.ui.display(self.player)

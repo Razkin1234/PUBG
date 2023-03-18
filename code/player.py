@@ -105,7 +105,7 @@ class Player(Entity):
                 self.direction.y = 0
                 self.status = 'down'
 
-    def inputm(self):  # checks the input from the player, mouse
+    def inputm(self, packet_to_send):  # checks the input from the player, mouse
 
         if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
             self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
@@ -147,6 +147,7 @@ class Player(Entity):
                         if self.items_on[items]["name"] == 'ammo':
                             if self.items_on[items]['amount'] >= 1:
                                 self.items_on[items]['amount'] -= 1
+                                packet_to_send.add_header_inventory_update("- ammo", 1)
                                 self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                                 break
                             else:
@@ -292,9 +293,9 @@ class Player(Entity):
         return base_damage + weapon_damage
 
 
-    def update(self):
+    def update1(self, packet_to_send):
 
-        self.inputm() #checking the input diraction
+        self.inputm(packet_to_send) #checking the input diraction
         self.cooldowns()
         self.get_status()
         self.animate()
