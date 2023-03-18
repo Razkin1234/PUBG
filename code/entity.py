@@ -1,4 +1,3 @@
-
 import pygame
 from math import sin
 class Entity(pygame.sprite.Sprite):
@@ -17,6 +16,8 @@ class Entity(pygame.sprite.Sprite):
         self.hitbox.y += self.direction.y * speed  # making the player move verticaly
         self.collision('vertical')
         self.rect.center = self.hitbox.center
+
+
 
     def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
@@ -43,4 +44,3 @@ class Entity(pygame.sprite.Sprite):
             return 255
         else:
             return  0
-
