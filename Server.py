@@ -586,9 +586,14 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
             else:
                 client_weapons = value.split(',')
                 updated_weapons = []
+                count = 0
                 for weapon in client_weapons:
                     if weapon != info:
                         updated_weapons.append(weapon)
+                    else:
+                        count += 1
+                for _ in range(count-1):
+                    updated_weapons.append(info)
                 value = ','.join(updated_weapons)
             cursor.execute("UPDATE clients_info"
                            " SET weapons = ?"
@@ -2263,7 +2268,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        # executor.submit(moving_enemies_thread, server_socket)
+#         executor.submit(moving_enemies_thread, server_socket)
         # setting a thread to handle incomig packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------

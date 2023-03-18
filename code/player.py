@@ -40,7 +40,7 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
         self.bullet_group = bullet_group
 
-        self.objects_on = {'gun': {'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png' ,'ui':1}
+        self.objects_on = {
 
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
@@ -141,7 +141,6 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
-
                 if self.weapon == 'gun':
 
                     for items in self.items_on:

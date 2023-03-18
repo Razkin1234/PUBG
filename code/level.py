@@ -139,7 +139,7 @@ class Level:
                                                      l_parts[1])  # getting in answer the message to print
                         break
             elif line_parts[0] == 'server_shutdown:':
-                pass
+                packet.handle_server_shutdown()
 
             # --------------
 
@@ -151,15 +151,14 @@ class Level:
 
             # --------------
             elif line_parts[0] == 'first_objects_position:':
-                packet.handle_first_objects_position(line_parts[1], item_sprites)
+                packet.handle_first_objects_position(line_parts[1], item_sprites, self.weapon_sprites)
             # --------------
 
             # --------------
             elif line_parts[0] == 'object_update:':
                 l_parts = line_parts[1].split('?')
                 if l_parts[0] != player.id:
-                    packet.handle_object_update(l_parts[1], self.item_sprites)
-
+                    packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
             # --------------
 
             # --------------
@@ -367,16 +366,17 @@ class Level:
             self.floor_sprites.custom_draw(self.camera)
             self.floor_sprites.update()
             self.item_sprites.custom_draw(self.camera)
-            self.weapon_sprites.custom_draw(self.camera)
 
             self.item_sprites.item_picking(self.player,packet_to_send)
             self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()
+            self.weapon_sprites.custom_draw(self.camera)
             self.item_sprites.item_picking(self.player,packet_to_send)
 
             self.other_bullet_group.check_if_bullet_hit_me(self.player)
+
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
@@ -416,9 +416,11 @@ class Level:
 
             self.bullet_group.custom_draw(self.camera)
             self.bullet_group.bullet_move()
+            self.weapon_sprites.custom_draw(self.camera)
             self.item_sprites.item_picking(self.player,packet_to_send)
 
             self.other_bullet_group.check_if_bullet_hit_me(self.player)
+
 
             self.visble_sprites.custom_draw(self.camera)
             self.visble_sprites.update()
