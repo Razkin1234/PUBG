@@ -5,51 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/code/.idea/.name" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_0.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down/down_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down_attack/attack_down.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/down_idle/idle_down.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_0.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left/left_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left_attack/attack_left.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/left_idle/idle_left.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_0.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right/right_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right_attack/attack_right.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/right_idle/idle_right.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_0.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up/up_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up_attack/attack_up.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graphics/monsters/ninjarobot/up_idle/idle_up.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notwork.zip" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/FinalProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/FinalProject.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/Incoming_packets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/Connection_to_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Connection_to_server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Incoming_packets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/bullet.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/bullet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/enemy.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/enemy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/entity.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/entity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/other_players.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/other_players.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notwork.zip" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -156,7 +114,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
