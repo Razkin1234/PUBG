@@ -66,7 +66,6 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def bullet_move(self):
         for sprite in self.sprites():
-            print(sprite.need_to_stop)
             if sprite.need_to_stop:
                 sprite.update()
             else:
@@ -109,6 +108,13 @@ class YsortCameraGroup(pygame.sprite.Group):
         if player.can_pick_item:
             for sprite in copy_items:
                 if sprite.rect.colliderect(player.hitbox):
+                    #only for the ammo:
+                    if 'ammo' in player.items_on:
+                        if sprite.sprite_type == 'ammo':
+                            if player.items_on['ammo']['amount'] < 200:
+                                player.items_on['ammo']['amount'] += 1
+                                sprite.kill()
+
                     if 'backpack' in player.items_on:
                         count = 13
                     else:
@@ -154,10 +160,10 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict.clear()
                                     sprite.kill()
                             elif sprite.sprite_type == 'ammo':
-                                print('here')
                                 if 'ammo' in player.items_on:
-                                    player.items_on['ammo']['amount'] += 1
-                                    sprite.kill()
+                                    pass
+                                    # player.items_on['ammo']['amount'] += 1
+                                    # sprite.kill()
                                 else:
                                     temp_dict = items_add_data[sprite.sprite_type].copy()
                                     temp_dict['ui'] = i
