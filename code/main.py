@@ -191,7 +191,7 @@ class Game:
                             self.server_ip += event.unicode
                             text_color = TEXT_COLOR
 
-                        else:
+                        else: #makes guy to do a flip
                             text_color = 'red'
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
