@@ -66,7 +66,6 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def bullet_move(self):
         for sprite in self.sprites():
-            print(sprite.need_to_stop)
             if sprite.need_to_stop:
                 sprite.update()
             else:
@@ -109,6 +108,13 @@ class YsortCameraGroup(pygame.sprite.Group):
         if player.can_pick_item:
             for sprite in copy_items:
                 if sprite.rect.colliderect(player.hitbox):
+                    #only for the ammo:
+                    if 'ammo' in player.items_on:
+                        if sprite.sprite_type == 'ammo':
+                            if player.items_on['ammo']['amount'] < 200:
+                                player.items_on['ammo']['amount'] += 1
+                                sprite.kill()
+
                     if 'backpack' in player.items_on:
                         count = 13
                     else:
@@ -120,7 +126,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 flag = False
                                 break
                         if flag:  # we will put the item in this slott
-                            if sprite.sprite_type != "backpack" and sprite.sprite_type != 'boots':
+                            if sprite.sprite_type != "backpack" and sprite.sprite_type != 'boots' and sprite.sprite_type != 'ammo':
                                 temp_dict = items_add_data[sprite.sprite_type].copy()
                                 temp_dict['ui'] = i
                                 counter = 0  # for the loop that gives the dict name in player.itmes (can't have the same names)
@@ -153,6 +159,20 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()
                                     sprite.kill()
+                            elif sprite.sprite_type == 'ammo':
+                                if 'ammo' in player.items_on:
+                                    pass
+                                    # player.items_on['ammo']['amount'] += 1
+                                    # sprite.kill()
+                                else:
+                                    temp_dict = items_add_data[sprite.sprite_type].copy()
+                                    temp_dict['ui'] = i
+                                    player.items_on['ammo'] = temp_dict.copy()
+                                    player.items_on['ammo']['amount'] = 1
+                                    packet_to_send.add_header_inventory_update("+ ammo", 1)
+                                    temp_dict.clear()
+                                    sprite.kill()
+
 
 
     def weapon_picking(self, player, packet_to_send):

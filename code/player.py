@@ -44,7 +44,6 @@ class Player(Entity):
 
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
-
         } #for all of the items we will have
 
         #items picking:
