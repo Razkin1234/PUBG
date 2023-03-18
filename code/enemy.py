@@ -4,22 +4,14 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
-
-    def __init__(self, monster_name, id, pos, groups, obstacle_sprites,damage_player, hit):
-
-
+    def __init__(self, monster_name, id, pos, groups, obstacle_sprites, hit):
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
         self.id = id
-
-        self.hit = hit
-
         #graphics setup
-        monster_name = 'bamboo'
         self.import_graphics(monster_name)
-        if hit != 'no':
-
+        if hit:
             self.status = 'attack'
         else:
             self.status = 'move'
@@ -33,10 +25,7 @@ class Enemy(Entity):
 
         #stats
         self.monster_name = monster_name
-        if hit != 'no':
-            weapon_info = weapon_data[hit]
-            self.damage = weapon_info['damage']
-        monster_info = monster_data[monster_name] #the list that will give us the following information
+        monster_info = monster_data[self.monster_name] #the list that will give us the following information
         self.health = monster_info['health']
         self.exp = monster_info['exp'] #how much exp we will get from killing the monster
         self.speed = monster_info['speed']
@@ -50,9 +39,7 @@ class Enemy(Entity):
         self.can_attack = True
         self.attack_time = None
         self.attack_cooldown = 400
-
-        self.damage_player = damage_player
-
+       # self.damage_player = damage_player
        # self.trigger_death_particles = trigger_death_particles
 
         #invincibility timer
@@ -82,7 +69,7 @@ class Enemy(Entity):
     def get_status(self,player):
         distance = self.get_player_distance_direction(player)[0]
 
-        if self.hit != 'no': #changing the bot to attack mode
+        if distance <= self.attack_radius and self.can_attack: #changing the bot to attack mode
             if self.status != 'attack':
                 self.frame_index = 0 #that the enemy will attack again (animation)
             self.status = 'attack'
@@ -94,7 +81,7 @@ class Enemy(Entity):
     def actions(self,player):
         if self.status == 'attack':
             self.attack_time = pygame.time.get_ticks()
-            self.damage_player(self.attack_damage, self.hit)
+            self.damage_player(self.attack_damage,self.attack_type)
         elif self.status == 'move':
             self.direction = self.get_player_distance_direction(player)[1]
         else:

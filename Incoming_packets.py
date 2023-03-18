@@ -168,7 +168,7 @@ class Incoming_packets:
     def handle_disconnect(self, dead_id, visble_sprites):
         visble_sprites.erase_dead_sprites(dead_id)
 
-    def handle_object_update(self, header_info, item_sprites):
+    def handle_object_update(self, header_info, item_sprites): #weapons and items
         changes = header_info.split('/')
         for each_change in changes:
             each_change = each_change.split('-')
@@ -185,7 +185,7 @@ class Incoming_packets:
                 each_change1 = tuple((each_change[1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
                 Item(each_change1, item_sprites, each_change[1])
-                pass
+
 
     def handle_first_objects_position(self, header_info, item_sprites):
         changes = header_info.split('/')

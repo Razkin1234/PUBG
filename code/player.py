@@ -24,7 +24,7 @@ class Player(Entity):
         # movement
         self.attack_for_moment = False
         self.attacking = False
-        self.attack_cooldown = 50
+        self.attack_cooldown = 400
         self.attack_time = None
         self.place_to_go = None
         self.obstacle_sprites = obstacle_sprites
@@ -40,10 +40,11 @@ class Player(Entity):
         self.switch_duration_cooldown = 200 #}
         self.bullet_group = bullet_group
 
-        self.objects_on = {'gun': {'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png' ,'ui':1}
+        self.objects_on = {
 
         }#max valeus without backpack = 6 , max valeu with backpack = 9
         self.items_on = {
+
         } #for all of the items we will have
 
         #items picking:
@@ -141,23 +142,14 @@ class Player(Entity):
             keys = pygame.key.get_pressed()
              #attack input
             if keys[pygame.K_SPACE] and not self.attacking:
-
-                if self.weapon == 'gun':
-
-                    for items in self.items_on:
-                        if self.items_on[items]["name"] == 'ammo':
-                            if self.items_on[items]['amount'] >= 1:
-                                self.items_on[items]['amount'] -= 1
-                                self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
-                                break
-                            else:
-                                pass
-
+                if self.weapon == 'axe':
+                    self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                 else:
+                    self.attack_for_moment = True
+                    self.attacking = True
+                    self.attack_time = pygame.time.get_ticks()
                     self.create_attack()
-                self.attack_for_moment = True
-                self.attacking = True
-                self.attack_time = pygame.time.get_ticks()
+
 
             #magic input
             if keys[pygame.K_LCTRL] and not self.attacking:
@@ -303,11 +295,7 @@ class Player(Entity):
 
         self.stop()
 
-        for items in self.items_on:
-            if self.items_on[items]["name"] == 'ammo':
-                if self.items_on[items]['amount'] == 0:
-                    del self.items_on[items]
-                    break
+
         if 'boots' in self.items_on.keys(): #checks if to be faster if we have boots in inventory
             self.speed = self.stats['speed'] + 2
         else:

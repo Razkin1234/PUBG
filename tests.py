@@ -1,7 +1,7 @@
 import socket
 
 # ------------------- Server address
-SERVER_IP = '192.168.3.67'
+SERVER_IP = '127.0.0.1'
 SERVER_PORT = 56789
 # -------------------
 
@@ -15,7 +15,7 @@ my_socket.connect((SERVER_IP, SERVER_PORT))
 
 def wait_for_reply():
     print('waiting for reply...')
-    ciphertext_reply = my_socket.recv(8192)
+    ciphertext_reply = my_socket.recv(20000)
     encoded_reply = ciphertext_reply
     plaintext_reply = encoded_reply.decode('utf-8')
     print('Got reply: \n----------------\n' + plaintext_reply + '\n----------------\n\n\n')
@@ -156,27 +156,16 @@ def test_object_update(header_info: str, id: str):
 # -------------------------------------------------
 #test_register_request('user1', 'password1')
 #test_login_request('user1', 'password1')
-=======
-test_login_request('user1', 'password1')
->>>>>>> 10a5fc1be8a9579eeff88e70575e64bb948c1277
 #test_update_inventory('+ weapons weapon_name1', '1')
 #test_dead('1')
 #test_disconnect('1')
 #test_shot_place('(1,1)', '8', '1')
-test_player_place('(1,2)', 'no', '1')
-=======
-=======
->>>>>>> da28b58a34a7621a1bd45ed9244bfd41cde874f1
 #test_login_request('user1', 'password1')
 #test_update_inventory('- ammo 2', '1')
 #test_dead('1')
 #test_disconnect('1')
 #test_shot_place('(1,1)', '8', '1')
 #test_player_place('(1344,800)', 'no', '1')
-<<<<<<< HEAD
->>>>>>> 198cdb337b57a480a28c863e5bfd1bea6e3d1727
-=======
->>>>>>> da28b58a34a7621a1bd45ed9244bfd41cde874f1
 #test_object_update('drop-ammo-(32845,25492)-7', '1')
 #wait_for_reply()
 # while True:
