@@ -53,7 +53,7 @@
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PythonContentEntriesConfigurable"
   }
 }]]></component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.Server">
     <configuration name="Server" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="FinalProject" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -273,8 +273,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="Python.Server" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.YsortCameraGroup" />
         <item itemvalue="Python.level" />
         <item itemvalue="Python.player" />
