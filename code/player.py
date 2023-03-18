@@ -293,7 +293,7 @@ class Player(Entity):
         return base_damage + weapon_damage
 
 
-    def update1(self, packet_to_send):
+    def update(self, packet_to_send):
 
         self.inputm(packet_to_send) #checking the input diraction
         self.cooldowns()
