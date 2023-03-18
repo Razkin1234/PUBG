@@ -128,7 +128,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     if not str(counter) in player.items_on:
                                         player.items_on[str(counter)] = temp_dict.copy()
                                         temp_dict.clear()
-                                        packet_to_send.add_header_inventory_update(f'+ {str(counter)}', 1)
+                                        packet_to_send.add_header_inventory_update(f"+ {player.items_on[str(counter)]['name']}", 1)
                                         sprite.kill()
                                         break
                                     counter += 1
@@ -172,7 +172,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 temp_dict = weapon_data[sprite.sprite_type].copy()
                                 temp_dict['ui'] = i
                                 player.objects_on[str(sprite.sprite_type)] = temp_dict.copy()
-                                packet_to_send.add_header_inventory_update("+ wepon", sprite.sprite_type)
+                                packet_to_send.add_header_inventory_update("+ weapon", str(sprite.sprite_type))
                                 temp_dict.clear()
                                 sprite.kill()
                                 break

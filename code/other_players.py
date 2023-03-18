@@ -18,8 +18,7 @@ class Players(Entity):
         # graphics setup
         self.import_player_assets()
         self.status = image
-
-        # movement
+        self.obstacle_sprites = obstacle_sprites        # movement
 
         # stats
         self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 6}  # ma health , max energy

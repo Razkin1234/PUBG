@@ -67,7 +67,7 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def bullet_record(self,packet_to_send):
         for sprite in self.sprites():
-            packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 300)
+            packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 30)
 
     def enemy_update(self,player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and  sprite.sprite_type == 'enemy']
