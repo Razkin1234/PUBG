@@ -1,6 +1,4 @@
-
 import pygame, sys
-
 from settings import *
 from tile import Tile
 from player import Player
@@ -10,6 +8,7 @@ from entity import Entity
 import itertools
 from other_players import Players
 from Connection_to_server import Connection_to_server
+import threading
 
 class YsortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -32,11 +31,14 @@ class YsortCameraGroup(pygame.sprite.Group):
        Draws the sprites on screen according to the screen height, and then according to the position of the camera
        :return: None
        """
-        # For every visible sprite, from top to bottom
-        for sprite in sorted(self.sprites(), key=lambda x: (x.rect.centery)):
+        print(f'called from {threading.current_thread().name}')
+        # For every visible sprite AT THE MOMENT!!!, from top to bottom
+        current_frame_sprites = self.sprites()
+        for sprite in sorted(current_frame_sprites, key=lambda x: (x.rect.centery)):
             # Display the sprite on screen, moving it by the calculated offset
             offset_position = sprite.rect.topleft - camera + self.screen_center
             self.display_surface.blit(sprite.image, offset_position)
+        print('after')
 
     """""""""
     getting a rectangle and a axis (0 or 1), making the sprite group lusing all the items with the rect 
@@ -71,6 +73,22 @@ class YsortCameraGroup(pygame.sprite.Group):
             else:
                 sprite.kill()
 
+    def erase_dead_sprites(self, id):
+        for sprite in self.sprites():
+            if sprite.id == id:
+                sprite.kill()
+
+    def bullet_move(self):
+        for sprite in self.sprites():
+            print(sprite.need_to_stop)
+            if sprite.need_to_stop:
+                sprite.update()
+            else:
+                sprite.kill()
+
+    def bullet_record(self,packet_to_send):
+        for sprite in self.sprites():
+            packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 300)
 
     def bullet_record(self, packet_to_send):
         for sprite in self.sprites():
@@ -83,7 +101,6 @@ class YsortCameraGroup(pygame.sprite.Group):
                          hasattr(sprite, 'sprite_type') and sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
-
 
     def check_existines(self, player_id, hit, pos):
         for sprite in self.sprites():
@@ -145,10 +162,10 @@ class YsortCameraGroup(pygame.sprite.Group):
                                             packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ boots', 1)
                                         if player.items_on[str(counter)]['name'] == 'medkit':
-                                            packet_to_send.add_object_update('pick', 'med_kits', sprite.rect.center, 1)
+                                            packet_to_send.add_object_update('pick', 'med_kit', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ med_kits', 1)
                                         if player.items_on[str(counter)]['name'] == 'bendage':
-                                            packet_to_send.add_object_update('pick', 'bendage', sprite.rect.center, 1)
+                                            packet_to_send.add_object_update('pick', 'bandage', sprite.rect.center, 1)
                                             packet_to_send.add_header_inventory_update('+ bandages', 1)
                                         sprite.kill()
                                         break
@@ -215,4 +232,3 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 temp_dict.clear()
                                 sprite.kill()
                                 break
-

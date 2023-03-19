@@ -306,10 +306,10 @@ class UI:
                                         packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- boots', 1)
                                     if weapon_value['name'] == 'medkit':
-                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_object_update('drop', 'med_kit', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- med_kits', 1)
                                     if weapon_value['name'] == 'bendage':
-                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_object_update('drop', 'bandage', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- bandages', 1)
                                     if weapon_value['name'] != 'ammo':
                                         Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
@@ -350,10 +350,10 @@ class UI:
                                         packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- boots', 1)
                                     if weapon_value['name'] == 'medkit':
-                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_object_update('drop', 'med_kit', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- med_kits', 1)
                                     if weapon_value['name'] == 'bendage':
-                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_object_update('drop', 'bandage', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- bandages', 1)
                                     if weapon_value['name'] != 'ammo':
                                         Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
