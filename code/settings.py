@@ -1,15 +1,17 @@
 from collections import deque
-
+from threading import Event
 
 # game setup
 WIDTH = 1280
-HEIGTH = 720
+HEIGTH = 700
 FPS = 60
 TILESIZE = 64
 MIDDLE_SCREEN = (WIDTH/2, HEIGTH/2)
 
 
 #server
+SOCKET_BUFFER_SIZE = 8192
+shut_down_event = Event()
 SERVER_IP = '192.168.172.244'
 SERVER_PORT = 56789
 packets_to_handle_queue = deque()
@@ -43,6 +45,7 @@ weapon_data = {
 	'sword': {'cooldown': 100, 'damage': 15,'graphic':'../graphics/weapons/sword/full.png'},
 	'lance': {'cooldown': 400, 'damage': 30,'graphic':'../graphics/weapons/lance/full.png'},
 	'axe': {'cooldown': 300, 'damage': 20, 'graphic':'../graphics/weapons/axe/full.png'},
+	'rapier': {'cooldown': 50, 'damage': 8, 'graphic':'../graphics/weapons/rapier/full.png'},
 	'sai': {'cooldown': 200, 'damage': 10, 'graphic':'../graphics/weapons/sai/full.png'},
 	'gun': {'cooldown': 80, 'damage': 10, 'graphic':'../graphics/weapons/gun/full.png'}
 	}

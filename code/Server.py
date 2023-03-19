@@ -1,3 +1,4 @@
+# The Server was written for python 3.8.0 64-bit interpreter
 """
 ====================================================PROTOCOL=================================================================================================|                                                                                                                |
 * It's a textual protocol                                                                                                                                    |
@@ -6,7 +7,7 @@
 * Rotshild packets's layers will be: IP()/UDP()/Raw()                                                                                                        |
                                                                                                                                                              |
 structure - 'Rotshild <ID>\r\n\r\n<headers>'                                                                                                                 |
-[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register request there is no ID]     |
+[ID - an int (from 1 on) that each client gets from the server at the beginning of the connection. Server's ID is 0. at register/login request no ID]        |
 [each header looks like this: 'header_name: header_info\r\n' . except of the last one - its without '\r\n']                                                  |
                                                                                                                                                              |
 ------------------------------------------------------------------                                                                                           |
@@ -28,9 +29,9 @@ Headers API:                                                                    
             - first_inventory: [[weapon_name1]/[weapon_name2]...],                                                                 [only server sends]       |
                                [how much ammo?],                                                                                                             |
                                [how much med kits?],                                                                                                         |
-                               [how much backpack?],                                                                                                         |
-                               [how much plasters?],                                                                                                         |
-                               [how much shoes?],                                                                                                            |
+                               [how much backpacks?],                                                                                                         |
+                               [how much bandages?],                                                                                                         |
+                               [how much boots?],                                                                                                            |
                                [how much exp?],                                                                                                              |
                                ([the X respawn coordinate]-[the Y respawn coordinate])               (*NOTE: all in 1 line)                                  |
             - register_request: [user name],[password]                                                                             [only clients send]       |
@@ -42,12 +43,12 @@ Headers API:                                                                    
                                  - ammo [how much?]                                                                                                          |
                                  + med_kits [how much?]                                                                                                      |
                                  - med_kits [how much?]                                                                                                      |
-                                 + backpack [how much?]                                                                                                      |
-                                 - backpack [how much?]                                                                                                      |
-                                 + plasters [how much?]                                                                                                      |
-                                 - plasters [how much?]                                                                                                      |
-                                 + shoes [how much?]                                                                                                         |
-                                 - shoes [how much?]                                                                                                         |
+                                 + backpacks [how much?]                                                                                                     |
+                                 - backpacks [how much?]                                                                                                     |
+                                 + bandages [how much?]                                                                                                      |
+                                 - bandages [how much?]                                                                                                      |
+                                 + boots [how much?]                                                                                                         |
+                                 - boots [how much?]                                                                                                         |
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
@@ -65,6 +66,7 @@ Headers API:                                                                    
                             !!! the structure in the previous line is for when clients send.                                                                 |
                             !!! when server sends there is also the sender client ID and '?' in the beginning of the header regular info, see below.         |
                             [sender ID]?pick or drop-[object type]-([X],[Y])-[amount]/pick or drop-[object type]-([X],[Y])-[amount]...                       |
+                            !!! the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun                           |
               [between each change there is '/']                                                                                                             |
               [between each part in a single change there is '-']                                                                                            |
               [between the sender client ID and the regular header info (when server sends) there is '?']                                                    |
@@ -73,8 +75,11 @@ Headers API:                                                                    
               [between the place and the amount there is '|']                                                                                                |
               [between the places there is ';']                                                                                                              |
               [between each type there is '/']                                                                                                               |
-            - enemy_player_place_image_type_hit: [id_enemy],([the X coordinate],[the Y coordinate]),[type_of_enemy],[Yes or No(if hitting)] [only server sends]  |
-            - hit_an_enemy: [id_of_enemy]                                                                                          [only clients sends]      |
+              [the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun]                                           |
+            - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
+              [between every different enemy there is '-']                                                                                                   |
+            - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
+            - dead_enemy: [id_of_enemy]                                                                                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
@@ -88,7 +93,10 @@ import re
 import threading
 import colorama
 import MyKeyring  # my module (not the external library)
+import pygame
+from time import sleep
 from prettytable import PrettyTable
+from collections import deque
 from socket import socket, AF_INET, SOCK_DGRAM, timeout as socket_timeout
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha512
@@ -115,9 +123,8 @@ DB_ACCESS_PERMISSION = None  # The access permission for the  DB file in both UN
 # ------------------------
 
 # ------------------------ Events
-SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server (to exit the game loop)
+SHUTDOWN_TRIGGER_EVENT = threading.Event()  # A trigger event to shut down the server
 SHUTDOWN_INFORMING_EVENT = threading.Event()  # When set it means finished informing the clients about shutdown
-CLOSING_THREADS_EVENT = threading.Event()  # when set it means the server is closing its worker threads
 # (the purpose of this is to inform the user input thread to terminate at a crash situation)
 # ------------------------
 
@@ -141,13 +148,13 @@ FAKE_FERNET_KEY_5 = 'fake_fernet_5'  # a fake Fernet key
 # ------------------------
 
 # ------------------------ Objects
-DEFAULT_WEAPONS = 'stick'  #
-DEFAULT_AMMO = 0           #
-DEFAULT_MED_KITS = 0       # DEFAULT
-DEFAULT_BACKPACK = 0       # AMOUNTS
-DEFAULT_PLASTERS = 0       #
-DEFAULT_SHOES = 0          #
-DEFAULT_EXP = 0            #
+DEFAULT_WEAPONS = 'rapier'  #
+DEFAULT_AMMO = 0  # DEFAULT
+DEFAULT_MED_KITS = 0  # AMOUNTS
+DEFAULT_BACKPACKS = 0  # IN
+DEFAULT_BANDAGES = 0  # INVENTORY
+DEFAULT_BOOTS = 0  #
+DEFAULT_EXP = 0  #
 
 MAX_SIZE_FOR_AMMO_PACKAGE = 30
 MIN_SIZE_FOR_AMMO_PACKAGE = 10
@@ -155,62 +162,162 @@ MAX_SIZE_FOR_MEDKITS_PACKAGE = 2
 MIN_SIZE_FOR_MEDKITS_PACKAGE = 1
 MAX_SIZE_FOR_BACKPACKS_PACKAGE = 1
 MIN_SIZE_FOR_BACKPACKS_PACKAGE = 1
-MAX_SIZE_FOR_PLASTERS_PACKAGE = 5
-MIN_SIZE_FOR_PLASTERS_PACKAGE = 1
-MAX_SIZE_FOR_SHOES_PACKAGE = 1
-MIN_SIZE_FOR_SHOES_PACKAGE = 1
+MAX_SIZE_FOR_BANDAGES_PACKAGE = 5
+MIN_SIZE_FOR_BANDAGES_PACKAGE = 1
+MAX_SIZE_FOR_BOOTS_PACKAGE = 1
+MIN_SIZE_FOR_BOOTS_PACKAGE = 1
 MAX_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 MIN_SIZE_FOR_WEAPONS_PACKAGE = 1  # for any weapon type
 
-# The optional spawn places for objects on the map as (X,Y)   [X and Y are str]
-OBJECTS_SPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
 # the current existing objects on the map as {str:{(str,str):int,},}
 # for each object type (key) it will be like {(X,Y):amount, (X,Y):amount...}       [X, Y are str and amount is int]
-OBJECTS_PLACES = {'ammo': {}, 'med_kits': {}, 'backpacks': {}, 'plasters': {}, 'shoes': {}, 'exp': {}}
+OBJECTS_PLACES = {'ammo': {},
+                  'med_kit': {},
+                  'backpack': {},
+                  'bandage': {},
+                  'boots': {},
+                  'exp': {},
+                  'sword': {},
+                  'lance': {},
+                  'axe': {},
+                  'rapier': {},
+                  'sai': {},
+                  'gun': {}}
 # The amount of each object to be on the map every moment
-OBJECTS_AMOUNT_ON_MAP = {'ammo': 400, 'med_kits': 80, 'backpacks': 50, 'plasters': 120, 'shoes': 40}
+OBJECTS_AMOUNT_ON_MAP = {'ammo': 400,
+                         'med_kit': 280,
+                         'backpack': 7,
+                         'bandage': 120,
+                         'boots': 3,
+                         'sword': 2,
+                         'lance': 5,
+                         'axe': 70,
+                         'rapier': 20,
+                         'sai': 170,
+                         'gun': 900}
 # ------------------------
 
 # ------------------------ Players
-# The optional respawn places on the map as (X,Y)   [X and Y are str]
-RESPAWN_SPOTS = [('1', '1'), ('2', '2'), ('3', '3')]  # REPLACE THIS WITH THE REAL OPTIONS!!!!!!!!!!!!!!!!!!!
 # IPs, PORTs, IDs and user names of all clients as (ID, IP, PORT, NAME)      [ID, IP, PORT and NAME are str]
 CLIENTS_ID_IP_PORT_NAME = []
 # Places of all clients by IDs as ID:(X,Y)        [ID, X and Y are str]
 PLAYER_PLACES_BY_ID = {}
 # -------------------------
 
+# ------------------------- Enemy
+SQUID_AMOUNT = 0  # AMOUNTS OF
+RACCOON_AMOUNT = 0  # EACH ENEMY
+SPIRIT_AMOUNT = 0  # AT THE
+BAMBOO_AMOUNT = 0  # MOMENT
+
+SHOULD_BE_SQUID = 25  # AMOUNTS OF
+SHOULD_BE_RACCOON = 10  # EACH ENEMY
+SHOULD_BE_SPIRIT = 25  # THAT SHOULD
+SHOULD_BE_BAMBOO = 40  # BE
+
+SQUID_HP = 100  #
+RACCOON_HP = 300  # HP OF
+SPIRIT_HP = 100  # EACH ENEMY
+BAMBOO_HP = 70  #
+
+SQUID_SPEED = 3  #
+RACCOON_SPEED = 2  # SPEED OF
+SPIRIT_SPEED = 4  # EACH ENEMY
+BAMBOO_SPEED = 3  #
+
+# list of enemies data. its a list of lists of each enemy data.
+# the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type]
+# [enemy_id, id_of_target_player and enemy_type are str.
+# place_of_enemy is a tuple of strs, like (X,Y).
+# enemy_hp_amount is int]
+ENEMY_DATA = []
+# list of the shots with the cooldown of enemy be like [[(x,y),cooldown],(x1,y1),....]
+ENEMY_SHOTS = []
+# -------------------------
+
 # ------------------------- General
-# List of all of the IDs of enemy [ID1,ID2,ID3,....]
-SAVE_ID_FOR_ENEMY = []
-# Dictionary that the key is the id of enemy like ID:[[place_of_enemy],[[id_of_player_locked]],[number_of_lives_enemy],[type_enemy]]
-ENEMY_BY_ID = {}
 # Opening for server's packets (after this are the headers)
 ROTSHILD_OPENING_OF_SERVER_PACKETS = 'Rotshild 0\r\n\r\n'
+# The borders of the areas in the map. each sublist is [min X, max X, min Y, max Y]
+BORDERS_OF_EACH_AREA_ON_MAP = [[736, 2784, 718, 6578],
+                               [736, 3488, 7182, 10610],
+                               [3488, 15392, 718, 10610],
+                               [18080, 22496, 2190, 7922],
+                               [24672, 50464, 718, 9138],
+                               [26912, 47968, 12878, 28082],
+                               [14560, 26912, 12878, 20786],
+                               [736, 14432, 11406, 20786],
+                               [7264, 16992, 24846, 28594]]
+# A set with all the active IDs (both clients and enemies) as str
+ACTIVE_ID_SET = set()
+# The Frames Per Second of the game (like in the client code)
+FPS = 60
+# A queue of packets that are waiting to be handled
+# (will hold tuples with the payloads as bytestring and the src address as a tuple of (IP, PORT))
+# each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
+PACKETS_TO_HANDLE_QUEUE = deque()
+
+
 # -------------------------
 
 
-def handle_locking_on_enemy(enemy_id, player_id):
+def check_if_enemy_need_to_shot_or_to_stop():
     """
-    changing the enemy who got shot to locked on the one who shot him
-    :param player_id:
-    :param enemy_id:
-    :return: none
+    checking if enemy needs to shoot. if yes so i am creating the shot, adding it to the list and the calling the function moving_the_bullets()
+    :return:
     """
-    global ENEMY_BY_ID
-    ENEMY_BY_ID[enemy_id][1] = player_id
+    global ENEMY_DATA, PLAYER_PLACES_BY_ID
+    for enemy in ENEMY_DATA:
+        if enemy[4] == 5:  # write here the type of the enemy that shoots
+            pass
+            current_time = pygame.time.get_ticks()
+            # check here the radios from the player you are locked on in enemy[2]
+            # and here if it corrects so you have the place of the player in PLAYER_PLACES_BY_ID[enemy[2]] so create the shot and add it to the list
+    moving_the_bullets()
 
 
-def first_player_locked_on():
+def moving_the_bullets():
     """
-    i am checking if there is only one player on the map. if there
-    so i am setting all of the enemies to be locked on him
+    moving the shots of the enemys and sending to the clients
+    :return:
     """
-    global ENEMY_BY_ID, PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, SAVE_ID_FOR_ENEMY
-    if len(PLAYER_PLACES_BY_ID) == 1:
-        client_id = CLIENTS_ID_IP_PORT_NAME[0][0]
-        for id_enemy in SAVE_ID_FOR_ENEMY:
-            ENEMY_BY_ID[id_enemy][1] = client_id
+    global ENEMY_SHOTS
+    shot_to_send = ''
+    for shot in ENEMY_SHOTS:
+        # here the code for moving the shots
+        enemy_shot = str(shot).replace("'", '').replace(' ', '')
+        shot_to_send += f'shot_place: {enemy_shot}-'
+    shot_to_send = shot_to_send[:-1]
+    shot_to_send += '\r\n'
+    shot_to_send += f'hit_hp : {str(3)}\r\n'
+    return shot_to_send
+
+
+def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
+    """
+    Changing the enemy who got hit to target on the one who shot him and taking down hp.
+    :param hp: <String> how much to take off?
+    :param shooter_id: <String> the shooter's ID.
+    :param enemy_id: <String> the ID og the enemy.
+    :return: <String> if there is a dead enemy so returning a dead_enemy header.
+    """
+
+    global ENEMY_DATA, ACTIVE_ID_SET
+
+    hp = int(hp)
+    for enemy in ENEMY_DATA:
+        if enemy[0] == enemy_id:
+            if enemy[3] - hp > 0:
+                # the enemy didn't die
+                enemy[2] = shooter_id
+                enemy[3] = enemy[3] - hp
+                return ''
+            else:
+                # the enemy died
+                ENEMY_DATA.remove(enemy)
+                ACTIVE_ID_SET.remove(enemy_id)
+                return f'dead_enemy: {enemy_id}\r\n'
+        return ''
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -344,7 +451,7 @@ def handle_object_update(header_data: str, sender_id: str) -> str:
                 if OBJECTS_PLACES[object_type][place] == 0:
                     del OBJECTS_PLACES[object_type][place]
                 # generating a new place to spawn this object in
-                spawn_place = random_spawn_place('object')
+                spawn_place = random_spawn_place()
                 # saving the new place
                 if spawn_place in OBJECTS_PLACES[object_type]:
                     OBJECTS_PLACES[object_type][spawn_place] += amount
@@ -393,8 +500,8 @@ def handle_object_update(header_data: str, sender_id: str) -> str:
 
 def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list and saving its place to
-    the DB for respawn.
+    Deleting the client from PLAYER_PLACES_BY_ID dict, CLIENTS_ID_IP_PORT_NAME list and ACTIVE_ID_SET set, and
+    saving its place to the DB for respawn.
     :param client_id: <String> the ID of the clients who is disconnecting.
     :param user_name: <String> the user name of the client.
     :param connector: the connection object to the DB.
@@ -402,7 +509,7 @@ def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
     :return: <String> disconnect header with the ID of the disconnected clients.
     """
 
-    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION
+    global PLAYER_PLACES_BY_ID, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Store current place to DB and delete the client from the PLAYER_PLACES_BY_ID dict
     if client_id in PLAYER_PLACES_BY_ID:
@@ -419,6 +526,9 @@ def handle_disconnect(client_id: str, user_name: str, connector, cursor) -> str:
         if client_addr[0] == client_id:  # client_addr[0] is the ID of the client
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
+
+    # Deleting the client from the ACTIVE_ID_SET set
+    ACTIVE_ID_SET.remove(client_id)
 
     print(">> ", end='')
     print_ansi(text='Client manually disconnected from game server', color='red', bold=True, underline=True)
@@ -496,6 +606,9 @@ def get_current_object_position_header() -> str:
 
     objects_position = ''
     for object_type in OBJECTS_PLACES:
+        if not OBJECTS_PLACES[object_type]:
+            # if there are no objects of this type (possible only with exp)
+            continue
         objects_position += object_type + '-'
         for place in OBJECTS_PLACES[object_type]:
             str_place = str(place).replace("'", '').replace(' ', '')
@@ -503,8 +616,6 @@ def get_current_object_position_header() -> str:
             objects_position += str_place + '|' + str_amount + ';'
         objects_position = objects_position[:-1] + '/'
     objects_position = objects_position[:-1]
-    if objects_position[-1] == 'p':  # if there is exp on the map at the moment
-        objects_position += '-'
 
     return objects_position
 
@@ -562,7 +673,7 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
                         f'   User port number - {client_port}\n'
                         f'   Number of active players on server - {str(len(CLIENTS_ID_IP_PORT_NAME))}\n', color='green')
 
-        return 'login_status: ' + given_id + '\r\n' + 'first_objects_position: ' + objects_position + '\r\n'\
+        return 'login_status: ' + given_id + '\r\n' + 'first_objects_position: ' + objects_position + '\r\n' \
                + f'first_inventory: ' \
                  f"{plaintext_inventory[0].replace(',', '/')}," \
                  f'{plaintext_inventory[1]},' \
@@ -577,55 +688,68 @@ def handle_login_request(user_name: str, password: str, client_ip: str, client_p
         return 'login_status: fail\r\n'
 
 
-def create_new_id(client_ip_port_name: tuple) -> str:
+def create_new_id(client_ip_port_name: tuple = None) -> str:
     """
-    Creating a new ID for a client, saving it with its IP and PORT in the CLIENTS_ID_IP_PORT_NAME list, and returning it
+    Creating a new ID for a client or an enemy.
+    If its a client then saving it with its IP and PORT in the CLIENTS_ID_IP_PORT_NAME list, and returning it.
+    If its an enemy then just returning it.
+    (in any case adding it to the ACTIVE_ID_SET global set)
     :param client_ip_port_name: <Tuple> the IP, PORT and user name of the new client as (IP, PORT, NAME).
                                                                                         [IP, PORT and NAME are str]
+            If didn't mention this parameter it will be None - indicating the ID is for an enemy.
     :return: <String> the ID given to the client.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME
+    global CLIENTS_ID_IP_PORT_NAME, ACTIVE_ID_SET
 
-    # checking if the list is empty
-    if not CLIENTS_ID_IP_PORT_NAME:
+    # checking if the set is empty
+    if not ACTIVE_ID_SET:
         # giving ID = 1
-        CLIENTS_ID_IP_PORT_NAME.append(('1', client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+        if client_ip_port_name is not None:
+            CLIENTS_ID_IP_PORT_NAME.append(
+                ('1', client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+            ACTIVE_ID_SET.add('1')
         return '1'
 
     last_id = 0  # the last active id we know we have at the moment
-    found = False  # flag
-    while found is False:  # Running till a free id found
+    found = True  # flag
+    while True:
         last_id += 1  # Checking the next id
 
-        for client in CLIENTS_ID_IP_PORT_NAME:  # Running for each client
-            if client[0] == str(last_id):
-                # if got here then there is a client with the id in last_id
+        for id in ACTIVE_ID_SET:  # iterating over the active IDs
+            if id == str(last_id):
+                # if got here then the id in last_id is taken
+                found = False
                 break
-
-            # checking if we passed all active clients
-            elif client[0] == CLIENTS_ID_IP_PORT_NAME[len(CLIENTS_ID_IP_PORT_NAME) - 1][0]:
-                # if got here then there is no client with the id in last_id
+            else:
                 found = True
 
+        if found is True:
+            break
+
     # the smallest free ID is in last_id
-    CLIENTS_ID_IP_PORT_NAME.append((str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+    if client_ip_port_name is not None:
+        CLIENTS_ID_IP_PORT_NAME.append(
+            (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
+        ACTIVE_ID_SET.add(str(last_id))
     return str(last_id)
 
 
-def random_spawn_place(for_what: str) -> tuple:
+def random_spawn_place() -> tuple:
     """
-    Random a spawn spot from the RESPAWN_SPOTS global list or from the OBJECTS_SPAWN_SPOTS (according to for_what arg).
-    :param for_what: <String> what do you want to random for? ('player' or 'object')
-    :return: <Tuple> the random spawn place as (X,Y).  [X and Y are str]
+    Giving a random place on the map.
+    :return: <Tuple> The random place as a tuple of strings (X, Y)  [X and Y are str]
     """
 
-    global RESPAWN_SPOTS, OBJECTS_SPAWN_SPOTS
+    global BORDERS_OF_EACH_AREA_ON_MAP
 
-    if for_what == 'player':
-        return RESPAWN_SPOTS[randint(0, len(RESPAWN_SPOTS) - 1)]
-    if for_what == 'object':
-        return OBJECTS_SPAWN_SPOTS[randint(0, len(OBJECTS_SPAWN_SPOTS) - 1)]
+    # random an area on the map (we have 9)
+    area_number = randint(0, 8)
+    chosen_area = BORDERS_OF_EACH_AREA_ON_MAP[area_number]
+    # random coordinates in the chosen area
+    x = randint(chosen_area[0], chosen_area[1])
+    y = randint(chosen_area[2], chosen_area[3])
+    return str(x), str(y)
 
 
 def handle_register_request(user_name: str, password: str, connector, cursor) -> str:
@@ -638,7 +762,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     :return: <String> register_status header. (if taken - 'taken', if free - 'success', if invalid - 'invalid').
     """
 
-    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, \
+    global DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, \
         DEFAULT_EXP, FERNET_ENCRYPTION
 
     if ' ' in user_name or ' ' in password:
@@ -653,16 +777,16 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
         return 'register_status: taken\r\n'
 
     # random a spawn location
-    spawn_place = random_spawn_place('player')
+    spawn_place = random_spawn_place()
 
     # encrypting the data to be saved (and hashing the password)
     hashed_password = sha512_hash(password.encode('utf-8'))
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_spawn_place = FERNET_ENCRYPTION.encrypt(str(spawn_place).replace("'", '').replace(' ', '')
                                                       .encode('utf-8'))
@@ -674,8 +798,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                   encrypted_default_ammo,
                   encrypted_default_med_kits,
                   encrypted_default_backpack,
-                  encrypted_default_plasters,
-                  encrypted_default_shoes,
+                  encrypted_default_bandages,
+                  encrypted_default_boots,
                   encrypted_default_exp,
                   encrypted_spawn_place)
     cursor.execute("INSERT INTO clients_info"
@@ -685,8 +809,8 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
                    " ammo,"
                    " med_kits,"
                    " backpack,"
-                   " plasters,"
-                   " shoes,"
+                   " bandages,"
+                   " boots,"
                    " exp,"
                    " respawn_place)"
                    " VALUES (?,?,?,?,?,?,?,?,?,?)", new_client)
@@ -715,12 +839,12 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     # So changing it to be '(1,1)'
     place = f'({shot_place[0]},{shot_place[1]})'
 
-    return f'shot_place: {shot_place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
+    return f'shot_place: {place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
-    Deleting the dead client from PLAYER_PLACES_BY_ID dict and from the CLIENTS_ID_IP_PORT_NAME list,
+    Deleting the dead client from PLAYER_PLACES_BY_ID dict, CLIENTS_ID_IP_PORT_NAME list, and ACTIVE_ID_SET set,
     and initializing the inventory (the DB values but for user_name and password) to default.
     :param dead_id: <String> the ID of the dead client
     :param user_name: <String> the uesr name of the dead client.
@@ -730,7 +854,7 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     """
 
     global CLIENTS_ID_IP_PORT_NAME, PLAYER_PLACES_BY_ID, DEFAULT_WEAPONS, DEFAULT_AMMO, DEFAULT_MED_KITS, \
-        DEFAULT_BACKPACK, DEFAULT_PLASTERS, DEFAULT_SHOES, DEFAULT_EXP, FERNET_ENCRYPTION
+        DEFAULT_BACKPACKS, DEFAULT_BANDAGES, DEFAULT_BOOTS, DEFAULT_EXP, FERNET_ENCRYPTION, ACTIVE_ID_SET
 
     # Deleting the dead client from the PLAYER_PLACES_BY_ID dict
     if dead_id in PLAYER_PLACES_BY_ID:
@@ -742,16 +866,19 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
             CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
             break
 
+    # Deleting the dead client from the ACTIVE_ID_SET set
+    ACTIVE_ID_SET.remove(dead_id)
+
     # random a new respawn location
-    respawn_place = random_spawn_place('player')
+    respawn_place = random_spawn_place()
 
     # encrypting the data to be saved (and hashing the password)
     encrypted_default_weapons = FERNET_ENCRYPTION.encrypt(DEFAULT_WEAPONS.encode('utf-8'))
     encrypted_default_ammo = FERNET_ENCRYPTION.encrypt(str(DEFAULT_AMMO).encode('utf-8'))
     encrypted_default_med_kits = FERNET_ENCRYPTION.encrypt(str(DEFAULT_MED_KITS).encode('utf-8'))
-    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACK).encode('utf-8'))
-    encrypted_default_plasters = FERNET_ENCRYPTION.encrypt(str(DEFAULT_PLASTERS).encode('utf-8'))
-    encrypted_default_shoes = FERNET_ENCRYPTION.encrypt(str(DEFAULT_SHOES).encode('utf-8'))
+    encrypted_default_backpack = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BACKPACKS).encode('utf-8'))
+    encrypted_default_bandages = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BANDAGES).encode('utf-8'))
+    encrypted_default_boots = FERNET_ENCRYPTION.encrypt(str(DEFAULT_BOOTS).encode('utf-8'))
     encrypted_default_exp = FERNET_ENCRYPTION.encrypt(str(DEFAULT_EXP).encode('utf-8'))
     encrypted_respawn_place = FERNET_ENCRYPTION.encrypt(str(respawn_place).replace("'", '').replace(' ', '')
                                                         .encode('utf-8'))
@@ -761,8 +888,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                      encrypted_default_ammo,
                      encrypted_default_med_kits,
                      encrypted_default_backpack,
-                     encrypted_default_plasters,
-                     encrypted_default_shoes,
+                     encrypted_default_bandages,
+                     encrypted_default_boots,
                      encrypted_default_exp,
                      encrypted_respawn_place)
     cursor.execute("UPDATE clients_info"
@@ -770,8 +897,8 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
                    " ammo = ?,"
                    " med_kits = ?,"
                    " backpack = ?,"
-                   " plasters = ?,"
-                   " shoes = ?,"
+                   " bandages = ?,"
+                   " boots = ?,"
                    " exp = ?,"
                    " respawn_place = ?"
                    " WHERE user_name = ?", client_update + (user_name.encode('utf-8'),))
@@ -819,7 +946,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     :param server_socket: <Socket> the server's socket object.
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, PUBLIC_KEY
+    global CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS
 
     reply_rotshild_layer = ROTSHILD_OPENING_OF_SERVER_PACKETS
     connector = None  # connection object to DB
@@ -894,6 +1021,14 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
 
         # --------------
+        elif line_parts[0] == 'hit_an_enemy:':
+            if id_cache == '':
+                id_cache = lines[0].split()[1]
+                enemy_id, hit_hp = line_parts[1].split(',')
+            reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
+        # --------------
+
+        # --------------
         elif line_parts[0] == 'inventory_update:':
             # open db connector and cursor if not open already
             if not (connector and cursor):
@@ -955,13 +1090,6 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
         # --------------
 
-        # --------------
-        elif line_parts[0] == 'hit_an_enemy:':
-            if id_cache == '':
-                id_cache = lines[0].split()[1]
-            handle_locking_on_enemy(line_parts[1], id_cache)
-        # --------------
-
     if not individual_reply:
         # sending the reply to all active clients
         for client in CLIENTS_ID_IP_PORT_NAME:
@@ -1006,34 +1134,41 @@ def rotshild_filter(payload: bytes) -> bool:
     return payload[:len(expected)] == expected
 
 
-def verify_and_handle_packet_thread(payload: bytes, src_addr: tuple, server_socket: socket):
+def verify_and_handle_packet_thread(server_socket: socket):
     """
+    Taking payloads from the PACKET_TO_HANDLE_QUEUE and handling it.
     Checking on encoded data if it's a Rotshild protocol packet.
-    Then (if not register request) verifies match of src IP-PORT-ID.
+    Then (if not register/login request) verifies match of src IP-PORT-ID.
     If all good then handling the packet.
-    :param payload: <Bytes> the payload received.
-    :param src_addr: <Tuple> the source address of the packet as (IP, PORT).  [IP is str and PORT is int]
     :param server_socket: <Socket> the socket object of the server.
     """
 
-    global PRIVATE_KEY, SERVER_SOCKET_TIMEOUT
+    global PRIVATE_KEY, SERVER_SOCKET_TIMEOUT, PACKETS_TO_HANDLE_QUEUE, SHUTDOWN_TRIGGER_EVENT
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
     try:
-        if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
-            plaintext = payload.decode('utf-8')
-            # handling packet if ID-IP-PORT matches or if register request
-            if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
-                                                                   src_addr[0],
-                                                                   str(src_addr[1])):
-                packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            # pop a packet to handle
+            if len(PACKETS_TO_HANDLE_QUEUE) > 0:
+                payload, src_addr = PACKETS_TO_HANDLE_QUEUE.popleft()
+            else:
+                sleep(0.1)  # to avoid waisting CPU cycles
+                continue
+
+            if rotshild_filter(payload):  # checking on encoded data if it's a Rotshild protocol packet
+                plaintext = payload.decode('utf-8')
+                # handling packet if ID-IP-PORT matches or if register/login request
+                if plaintext[9] == '\r' or check_if_id_matches_ip_port(plaintext.split('\r\n')[0].split()[1],
+                                                                       src_addr[0],
+                                                                       str(src_addr[1])):
+                    packet_handler(plaintext, src_addr[0], str(src_addr[1]), server_socket)  # handling the packet
 
     except Exception as ex:
-        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on a packet thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on a packet handle "
+                        f"thread)... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1051,7 +1186,7 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
     :param reason: <String> why doed it closed? (by_user or error)
     """
 
-    global CLIENTS_ID_IP_PORT_NAME, PUBLIC_KEY, ROTSHILD_OPENING_OF_SERVER_PACKETS, SHUTDOWN_INFORMING_EVENT
+    global CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, SHUTDOWN_INFORMING_EVENT
 
     print_ansi('   [informing all active clients about the shutdown]', color='cyan', new_line=False)
     sys.stdout.flush()  # force flushing the buffer to the terminal
@@ -1068,6 +1203,181 @@ def inform_active_clients_about_shutdown(server_socket: socket, reason: str):
         SHUTDOWN_INFORMING_EVENT.set()
 
 
+def get_next_position(initial_pos: tuple, target_pos: tuple, speed: int) -> tuple:
+    """
+    Calculates the next position on the map, after one move in the specifies speed towards the target position.
+    :param initial_pos: <Tuple> the initial position as (X, Y)  [X and Y are int]
+    :param target_pos: <Tuple> the target position as (X, Y)  [X and Y are int]
+    :param speed: <Int> the movement speed
+    :return: <Tuple> the new position as (X, Y)  [X and Y are str]
+    """
+
+    if initial_pos == target_pos:
+        # shouldn't move, arrived to target point.
+        return initial_pos
+
+    # creates a Vector2 object to represent the position
+    pos_vector = pygame.math.Vector2(initial_pos[0], initial_pos[1])
+    # creates a Vector2 object to represent the target position
+    target_pos_vector = pygame.math.Vector2(target_pos[0], target_pos[1])
+
+    # subtracts the position vector from the target position vector to get the distance vector between them
+    distance_to_target_vector = target_pos_vector - pos_vector
+    # calculate a unit direction vector to the target point
+    # (normalize returns a unit vector (length = 1) in the same direction as the original one)
+    direction_to_target_unit_vector = distance_to_target_vector.normalize()
+    # multiplies the direction unit vector by the speed to get the velocity vector
+    velocity_vector = direction_to_target_unit_vector * speed
+    # adds the velocity vector to the position vector to get the new position vector
+    # (after 1 move in the specified speed towards the target point)
+    pos_vector += velocity_vector
+
+    # converts the Vector2 object of the new position to a tuple of ints (X, Y) and returning it
+    return int(list(pos_vector)[0]), int(list(pos_vector)[1])
+
+
+def creating_enemies():
+    """
+    Making sure there are 100 alive enemies.
+    """
+
+    global SQUID_AMOUNT, RACCOON_AMOUNT, SPIRIT_AMOUNT, BAMBOO_AMOUNT, ENEMY_DATA, CLIENTS_ID_IP_PORT_NAME, \
+        SHOULD_BE_SQUID, SHOULD_BE_RACCOON, SHOULD_BE_SPIRIT, SHOULD_BE_BAMBOO, SQUID_HP, RACCOON_HP, SPIRIT_HP, \
+        BAMBOO_HP
+
+    if SQUID_AMOUNT != SHOULD_BE_SQUID:
+        i = SHOULD_BE_SQUID - SQUID_AMOUNT
+        SQUID_AMOUNT = SHOULD_BE_SQUID
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
+                               'squid'])
+
+    if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
+        i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
+        SPIRIT_AMOUNT = SHOULD_BE_SPIRIT
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
+                               'spirit'])
+
+    if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
+        i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
+        RACCOON_AMOUNT = SHOULD_BE_RACCOON
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
+                               'raccoon'])
+
+    if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
+        i = SHOULD_BE_BAMBOO - BAMBOO_AMOUNT
+        BAMBOO_AMOUNT = SHOULD_BE_BAMBOO
+        for _ in range(i):
+            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+            ENEMY_DATA.append([create_new_id(), random_spawn_place(), CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
+                               'bamboo'])
+
+
+def calculate_distance(enemy_place: tuple, player_place: tuple):
+    """
+
+    :param enemy_place:
+    :param player_place:
+    :return:
+    """
+    enemy_pos_vector = pygame.math.Vector2(int(enemy_place[0]), int(enemy_place[1]))
+    player_pos_vector = pygame.math.Vector2(player_place[0], player_place[1])
+    distance = enemy_pos_vector.distance_to(player_pos_vector)
+    return distance
+
+
+def moving_enemies_thread(server_socket: socket):
+    """
+    Making sure there are enough enemies on the map and moving all the enemies 1 step. and sending enemy_update header.
+    :param server_socket: <Socket> the server socket object.
+    """
+
+    global ENEMY_DATA, PLAYER_PLACES_BY_ID, SQUID_SPEED, RACCOON_SPEED, SPIRIT_SPEED, BAMBOO_SPEED, \
+        SHUTDOWN_TRIGGER_EVENT, CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, FPS
+
+    # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
+    # not be cought in the main.
+    try:
+        clock = pygame.time.Clock()  # Generating a clock object to count and fit the FPS of the game
+        attacked_previous_frame = 0
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
+            # waiting for clients to enter
+            if not CLIENTS_ID_IP_PORT_NAME:
+                sleep(0.1)  # to avoid waisting CPU cycles
+                continue
+            # Making sure there are enough enemies. if some died - spawning new ones
+            creating_enemies()
+
+            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'enemy_update: '
+
+            # iterate over all the enemies and move 1 step
+            for enemy in ENEMY_DATA:
+                # get the enemy place as a tuple of ints
+                enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
+                # get the target player place as a tuple of ints
+                target_player_id = enemy[2]
+                target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
+                target_player_place = (int(target_player_place[0]), int(target_player_place[1]))
+
+                # get the next place of the enemy
+                if enemy[4] == 'squid':
+                    enemy_place = get_next_position(enemy_place, target_player_place, SQUID_SPEED)
+                elif enemy[4] == 'spirit':
+                    enemy_place = get_next_position(enemy_place, target_player_place, SPIRIT_SPEED)
+                elif enemy[4] == 'raccoon':
+                    enemy_place = get_next_position(enemy_place, target_player_place, RACCOON_SPEED)
+                elif enemy[4] == 'bamboo':
+                    enemy_place = get_next_position(enemy_place, target_player_place, BAMBOO_SPEED)
+
+                # convert the place to a tuple of strings
+                enemy_place = (str(enemy_place[0]), str(enemy_place[1]))
+
+                # store the new place in the ENEMY_DATA list
+                enemy[1] = enemy_place
+
+                # add the new places of the enemy to the header
+                enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
+                distance = calculate_distance(enemy_place, target_player_place)
+                if distance <= 30 and attacked_previous_frame == 0:
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
+                    attacked_previous_frame += 1
+                else:
+                    attacked_previous_frame += 1
+                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+                if attacked_previous_frame == 60:
+                    attacked_previous_frame = 0
+            # replacing the '-' trailer with a new CRLF characters
+            packet = packet[:-1]
+            packet += '\r\n'
+
+            # sending the packet to all clients
+            for client in CLIENTS_ID_IP_PORT_NAME:
+                server_socket.sendto(packet.encode('utf-8'), (client[1], int(client[2])))
+
+            # delaying to the correct FPS that matches the client code
+            clock.tick(FPS)
+
+    except Exception as ex:
+        print(">> ", end='')
+        print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on the bots "
+                        f"controlling thread)... This is the error message: {ex}", color='red')
+        print(">> ", end='')
+        print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                   color='blue')
+
+        # setting the shutdown trigger event.
+        SHUTDOWN_TRIGGER_EVENT.set()
+
+        inform_active_clients_about_shutdown(server_socket, 'error')
+        return
+
+
 def check_user_input_thread(server_socket: socket):
     """
     Waiting for the user to enter a commend in terminal and execute it.
@@ -1081,8 +1391,8 @@ def check_user_input_thread(server_socket: socket):
     :param server_socket: <Socket> the server socket object.
     """
 
-    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION,\
-        CLOSING_THREADS_EVENT, SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID
+    global SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, DB_PATH, CLIENTS_ID_IP_PORT_NAME, FERNET_ENCRYPTION, \
+        SYS_PLATFORM, ROTSHILD_OPENING_OF_SERVER_PACKETS, PLAYER_PLACES_BY_ID, ACTIVE_ID_SET
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -1185,7 +1495,7 @@ def check_user_input_thread(server_socket: socket):
             import select
             get_input = get_input_unix
 
-        while not CLOSING_THREADS_EVENT.is_set():
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():
             # ------------------ Take input
             # its the same timeout like the socket without a reason, just for order with the error messages
             commend, finished_flag = get_input(SERVER_SOCKET_TIMEOUT)
@@ -1205,10 +1515,11 @@ def check_user_input_thread(server_socket: socket):
             # -------------------
             if commend == 'shutdown':
                 print(">> ", end='')
-                print_ansi(text=f'Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                           color='blue')
+                print_ansi(
+                    text=f'Shutting down the server... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                    color='blue')
 
-                # setting the shutdown trigger event.
+                # setting the shutdown trigger event to exit the game loop.
                 SHUTDOWN_TRIGGER_EVENT.set()
 
                 inform_active_clients_about_shutdown(server_socket, 'by_user')
@@ -1286,6 +1597,9 @@ def check_user_input_thread(server_socket: socket):
                                     CLIENTS_ID_IP_PORT_NAME.remove(client_addr)
                                     break
 
+                            # Deleting the client from the ACTIVE_ID_SET set
+                            ACTIVE_ID_SET.remove(client_id)
+
                             # informing all other clients
                             layer = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'disconnect: ' + client_id + '\r\n'
                             for player in CLIENTS_ID_IP_PORT_NAME:
@@ -1350,8 +1664,9 @@ def check_user_input_thread(server_socket: socket):
                         print_ansi(text=f' -------------------------> failed [{ex}]', color='red', italic=True)
 
                     # creating a new empty DB
-                    print_ansi(text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
-                               new_line=False, color='cyan')
+                    print_ansi(
+                        text="   [Creating a new empty DB ('Server_DB.db' file) and initializing an empty table]",
+                        new_line=False, color='cyan')
                     sys.stdout.flush()  # force flushing the buffer to the terminal
                     initialize_sqlite_rdb()
                     print_ansi(text=' ------> completed', color='green', italic=True)
@@ -1388,7 +1703,8 @@ def check_user_input_thread(server_socket: socket):
     except Exception as ex:
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on user input thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on user input thread)"
+                        f"... This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1471,7 +1787,7 @@ def retrieve_fernet_key_from_keyring():
     If there is no match it create a new random key with these identifiers and saving it with 5 more fake ones.
     """
 
-    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3,\
+    global FERNET_ENCRYPTION, FERNET_KEY_USERNAME, FAKE_FERNET_KEY_1, FAKE_FERNET_KEY_2, FAKE_FERNET_KEY_3, \
         FAKE_FERNET_KEY_4, FAKE_FERNET_KEY_5, SERVICE_NAME
 
     keyring = MyKeyring.MyKeyring()  # initializing a MyKeyring object in th same directory as the script
@@ -1507,8 +1823,8 @@ def initialize_sqlite_rdb():
                    " ammo BLOB,"
                    " med_kits BLOB,"
                    " backpack BLOB,"
-                   " plasters BLOB,"
-                   " shoes BLOB,"
+                   " bandages BLOB,"
+                   " boots BLOB,"
                    " exp BLOB,"
                    " respawn_place BLOB)")
     close_connection_to_db_and_cursor(connection, cursor)
@@ -1643,9 +1959,13 @@ def print_start_info_and_running_status():
                , color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='NOTE: ', new_line=False, color='magenta', italic=True, bold=True)
-    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, and checked only'
-                    ' on Windows.\n         We can only be sure it works the best on Windows, any other platform wasnt '
-                    'checked.\n', color='magenta', italic=True)
+    print_ansi(text='The server was designed to run on Windows or UNIX-like (Linux, MAC...) platforms, of 64-bit '
+                    'version only, and was tested only on Windows.\n'
+                    '         A machine with 32-bit processor or 32-bit Operating System wont be able to run it '
+                    'properly.\n'
+                    '         We can only be sure it works the best on a 64-bit Windows platform. Any other platform '
+                    'of 64-bit should work, but wasnt tested, so might have an unexpected behavior.\n',
+               color='magenta', italic=True)
     print(">> ", end='')
     print_ansi(text='Server is up and running on:', color='magenta', italic=True, bold=True)
     if my_public_ip == "[Your public IP (our system couldn't find it)]":
@@ -1723,10 +2043,10 @@ def set_first_objects_position():
     Setting the position of the objects on the map at the beginning of the game (saving to global OBJECTS_PLACES)
     """
 
-    global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE,\
-        MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE,\
-        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE, MIN_SIZE_FOR_PLASTERS_PACKAGE,\
-        MAX_SIZE_FOR_SHOES_PACKAGE, MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE,\
+    global OBJECTS_AMOUNT_ON_MAP, OBJECTS_PLACES, MAX_SIZE_FOR_AMMO_PACKAGE, MIN_SIZE_FOR_AMMO_PACKAGE, \
+        MAX_SIZE_FOR_MEDKITS_PACKAGE, MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE, \
+        MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE, MIN_SIZE_FOR_BANDAGES_PACKAGE, \
+        MAX_SIZE_FOR_BOOTS_PACKAGE, MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE, \
         MIN_SIZE_FOR_WEAPONS_PACKAGE
 
     # for each object type
@@ -1736,7 +2056,7 @@ def set_first_objects_position():
         if object_type == 'ammo':
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_AMMO_PACKAGE, MAX_SIZE_FOR_AMMO_PACKAGE)
@@ -1744,11 +2064,11 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'med_kits':
+        elif object_type == 'med_kit':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_MEDKITS_PACKAGE, MAX_SIZE_FOR_MEDKITS_PACKAGE)
@@ -1756,11 +2076,11 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'backpacks':
+        elif object_type == 'backpack':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
                 amount = randint(MIN_SIZE_FOR_BACKPACKS_PACKAGE, MAX_SIZE_FOR_BACKPACKS_PACKAGE)
@@ -1768,31 +2088,102 @@ def set_first_objects_position():
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'plasters':
+        elif object_type == 'bandage':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_PLASTERS_PACKAGE, MAX_SIZE_FOR_PLASTERS_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BANDAGES_PACKAGE, MAX_SIZE_FOR_BANDAGES_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        elif object_type == 'shoes':
+        elif object_type == 'boots':
             left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
             while left_to_put_on_map != 0:
                 while True:
-                    place = random_spawn_place('object')
+                    place = random_spawn_place()
                     if place not in OBJECTS_PLACES[object_type]:
                         break
-                amount = randint(MIN_SIZE_FOR_SHOES_PACKAGE, MAX_SIZE_FOR_SHOES_PACKAGE)
+                amount = randint(MIN_SIZE_FOR_BOOTS_PACKAGE, MAX_SIZE_FOR_BOOTS_PACKAGE)
                 if amount > left_to_put_on_map:
                     amount = left_to_put_on_map
                 OBJECTS_PLACES[object_type][place] = amount
                 left_to_put_on_map -= amount
-        # add here for each weapon!!!
+        elif object_type == 'sword':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'lance':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'axe':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'rapier':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'sai':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
+        elif object_type == 'gun':
+            left_to_put_on_map = OBJECTS_AMOUNT_ON_MAP[object_type]
+            while left_to_put_on_map != 0:
+                while True:
+                    place = random_spawn_place()
+                    if place not in OBJECTS_PLACES[object_type]:
+                        break
+                amount = randint(MIN_SIZE_FOR_WEAPONS_PACKAGE, MAX_SIZE_FOR_WEAPONS_PACKAGE)
+                if amount > left_to_put_on_map:
+                    amount = left_to_put_on_map
+                OBJECTS_PLACES[object_type][place] = amount
+                left_to_put_on_map -= amount
 
 
 def store_all_respawn_places():
@@ -1814,8 +2205,8 @@ def store_all_respawn_places():
 
 
 def main():
-    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT,\
-        SHUTDOWN_INFORMING_EVENT, CLOSING_THREADS_EVENT
+    global SERVER_IP, SERVER_UDP_PORT, SOCKET_BUFFER_SIZE, SHUTDOWN_TRIGGER_EVENT, SERVER_SOCKET_TIMEOUT, \
+        SHUTDOWN_INFORMING_EVENT, PACKETS_TO_HANDLE_QUEUE
 
     executor = None
     server_socket = None
@@ -1858,34 +2249,39 @@ def main():
         print(">> ", end='')
         print_ansi(text="OPTIONAL UI COMMENDS:", color='blue', underline=True)
         print_ansi(text="   - 'shutdown': To shutdown the server.\n"
-                   "   - 'get clients': To show all clients registered on this server and their info.\n"
-                   "   - 'delete <user_name>': To delete a client from the server.\n"
-                   "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
-                   "      and the number of active players at the moments.\n"
-                   "   - 'reset': To reset the server and terminate any existing users and data.\n"
-                   "   - 'help': To show optional UI commends.\n",
+                        "   - 'get clients': To show all clients registered on this server and their info.\n"
+                        "   - 'delete <user_name>': To delete a client from the server.\n"
+                        "   - 'get active players': To show active clients at the moment (their user name, ID, IP, PORT)\n"
+                        "      and the number of active players at the moments.\n"
+                        "   - 'reset': To reset the server and terminate any existing users and data.\n"
+                        "   - 'help': To show optional UI commends.\n",
                    color='cyan')
         # --------------------------------------------------
 
+        # -------------------------------------------------- Starting worker threads
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
+        # setting a thread to handle the enemies (bots) behavior
+        # executor.submit(moving_enemies_thread, server_socket)
+        # setting a thread to handle incomig packets from the queue
+        executor.submit(verify_and_handle_packet_thread, server_socket)
+        # ---------------------------------------------------
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # ==============================================| GAME LOOP |=============================================# !!
-        while not SHUTDOWN_TRIGGER_EVENT.is_set():                                                                # !!
-            first_player_locked_on()                                                                              # !!
-            try:                                                                                                  # !!
+        while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
+            try:  # !!
                 data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
-            except socket_timeout:                                                                                # !!
-                continue                                                                                          # !!
-                                                                                                                  # !!
-            # verify the packet in a different thread and if all good then handling it in another thread          # !!
-            executor.submit(verify_and_handle_packet_thread, data, client_address, server_socket)                 # !!
+            except socket_timeout:  # !!
+                continue  # !!
+                # !!
+            # adds the payload to the queue to wait for being handled                                             # !!
+            PACKETS_TO_HANDLE_QUEUE.append((data, client_address))  # !!
         # ========================================================================================================# !!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     except OSError as ex:
-        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
+        SHUTDOWN_TRIGGER_EVENT.set()  # setting the event of closing the server
         if ex.errno == 98 or ex.errno == 10048:
             # In UNIX-like operating systems error number 98 is what in windows specifies by error number 10048.
             # (in windows its Error-'WSAEADDRINUSE' and in UNIX-like - 'EADDRINUSE')
@@ -1893,27 +2289,31 @@ def main():
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
             print_ansi(text=f"Port {str(SERVER_UDP_PORT)} is not available on your machine.\n"
-                       "    Make sure the port is available and is not already in use by another service and run again.",
-                       color='red')
+                            "    Make sure the port is available and is not already in use by another service and run again."
+                       , color='red')
             print(">> ", end='')
-            print_ansi(text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                       color='blue')
+            print_ansi(
+                text=f'Server is shutting down... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                color='blue')
             # don't have clients to inform so setting the event
             SHUTDOWN_INFORMING_EVENT.set()
         else:
             print(">> ", end='')
             print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-            print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+            print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread).."
+                            f". This is the error message: {ex}", color='red')
             print(">> ", end='')
-            print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
-                       color='blue')
+            print_ansi(
+                text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
+                color='blue')
             inform_active_clients_about_shutdown(server_socket, 'error')
 
     except Exception as ex:
-        CLOSING_THREADS_EVENT.set()  # setting the event of closing worker threads (for user input thread to terminate)
+        SHUTDOWN_TRIGGER_EVENT.set()  # setting the event of closing the server
         print(">> ", end='')
         print_ansi(text='[ERROR] ', color='red', blink=True, bold=True, new_line=False)
-        print_ansi(text=f"Something went wrong (on main thread)... This is the error message: {ex}", color='red')
+        print_ansi(text=f"Something went wrong (Line {ex.__traceback__.tb_lineno} in the script - on main thread)... "
+                        f"This is the error message: {ex}", color='red')
         print(">> ", end='')
         print_ansi(text=f'Server crashed. closing it... (it may take up to about {str(SERVER_SOCKET_TIMEOUT)} seconds)',
                    color='blue')
@@ -1947,7 +2347,6 @@ def main():
         # unset all events
         SHUTDOWN_TRIGGER_EVENT.clear()
         SHUTDOWN_INFORMING_EVENT.clear()
-        CLOSING_THREADS_EVENT.clear()
         print_ansi(text=' -------------------------> completed', color='green', italic=True)
 
         print(">> ", end='')

@@ -1,3 +1,4 @@
+import time
 import pygame, sys
 from settings import *
 from tile import Tile
@@ -15,14 +16,13 @@ from magic import MagicPlayer
 import socket
 from Incoming_packets import Incoming_packets
 from item import Item
+import threading
 
 from Connection_to_server import Connection_to_server
 
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
-
-
 
 class Level:
     def __init__(self, place_to_start):
@@ -41,6 +41,9 @@ class Level:
         self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
         self.weapon_sprites = YsortCameraGroup()
+
+        self.finished_first_object_event = threading.Event()
+
         self.other_players = YsortCameraGroup()
         # attack sprites
         self.current_attack = None
@@ -76,100 +79,106 @@ class Level:
 
         self.item = Item
 
-    def handeler_of_incoming_packets(self, packet, visibale_sprites, player, obstecal_sprits, item_sprites):
-        lines = packet.get_packet().split('\r\n')
-        while '' in lines:
-            lines.remove('')
-        for line in lines:
-            line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+    def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites, id):
+         while not shut_down_event.is_set():
+            if len(packets_to_handle_queue) > 0:
+                packet = packets_to_handle_queue.popleft()
+                self.player_id = id
+                if packet.rotshild_filter():
+                    lines = packet.get_packet().split('\r\n')
+                    while '' in lines:
+                        lines.remove('')
+                    for line in lines:
+                        line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                        # --------------
+                        # in this header clients should check the moved_player_id so they wont print their own movement twice.
+                        if line_parts[0] == 'player_place:':
+                            # looking for image header
+                            for l in lines:
+                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                if l_parts[0] == 'image:':
+                                    # looking for moved player id
+                                    for l2 in lines:
+                                        l2_parts = l2.split()
+                                        if l2_parts[0] == 'moved_player_id:':
+                                            if packet.get_id() != l2_parts[1]:
+                                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
+                                                                           player.rect.center,
+                                                                           self.other_players, obstecal_sprits, self.damage_player)
 
-            # --------------
-            # in this header clients should check the moved_player_id so they wont print their own movement twice.
-            if line_parts[0] == 'player_place:':
-                # looking for image header
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'image:':
-                        # looking for moved player id
-                        for l2 in lines:
-                            l2_parts = l2.split()
-                            if l2_parts[0] == 'moved_player_id:':
-                                if packet.get_id() != l2_parts[1]:
-                                    packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
-                                                               player.rect.center,
-                                                               self.other_players, obstecal_sprits, self.damage_player)
+                                            break
+                                    break
+                                    # here calling the function
+
+                        # --------------
+
+                        # --------------
+                        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+                        elif line_parts[0] == 'shot_place:':
+                            # looking for the hit_hp header
+                            for l in lines:
+                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                if l_parts[0] == 'shooter_id:':
+                                    if l_parts[1] != packet.get_id():
+                                        packet.handle_shot_place(line_parts[1], self.other_bullet_group,
+                                                                 self.obstacle_sprites, self.player.rect.center)
+                                    break
+                        # --------------
 
 
-                                break
-                        break
-                        # here calling the function
-            # --------------
+                        # --------------
+                        elif line_parts[0] == 'dead:':
+                            packet.handle_dead(int(line_parts[1]), visibale_sprites)
+                        # --------------
 
-            # --------------
-            # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
-            elif line_parts[0] == 'shot_place:':
-                # looking for the hit_hp header
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'shooter_id:':
-                        if l_parts[1] != packet.get_id():
-                            packet.handle_shot_place(line_parts[1], self.other_bullet_group, self.obstacle_sprites,self.player.rect.center)
+                        # --------------
+                        elif line_parts[0] == 'first_inventory:':
+                            packet.handle_first_inventory(line_parts[1], player)
+                        # --------------
 
-                        break
-            # --------------
+                        # --------------
+                        # clients will get chats of themselves too.
+                        # so they should print only what comes from the server and don't print their own messages just after sending it.
+                        elif line_parts[0] == 'chat:':
+                            for l in lines:
+                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                if l_parts[0] == 'user_name:':
+                                    message = packet.handle_chat(line_parts[1],
+                                                                 l_parts[1])  # getting in answer the message to print
+                                    break
+                        elif line_parts[0] == 'server_shutdown:':
+                            packet.handle_server_shutdown()
 
-            # --------------
-            elif line_parts[0] == 'dead:':
-                packet.handle_dead(int(line_parts[1]), visibale_sprites)
-            # --------------
+                        # --------------
 
-            # --------------
-            elif line_parts[0] == 'first_inventory:':
-                packet.handle_first_inventory(line_parts[1], player)
-            # --------------
+                        # --------------
+                        elif line_parts[0] == 'disconnect:':
+                            packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
 
-            # --------------
-            # clients will get chats of themselves too.
-            # so they should print only what comes from the server and don't print their own messages just after sending it.
-            elif line_parts[0] == 'chat:':
-                for l in lines:
-                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                    if l_parts[0] == 'user_name:':
-                        message = packet.handle_chat(line_parts[1],
-                                                     l_parts[1])  # getting in answer the message to print
-                        break
-            elif line_parts[0] == 'server_shutdown:':
-                pass
+                        # --------------
+                        # --------------
+                        elif line_parts[0] == 'first_objects_position:':
+                            self.finished_first_object_event.clear()
+                            packet.handle_first_objects_position(line_parts[1], item_sprites, self.weapon_sprites)
+                            self.finished_first_object_event.set()
+                        # --------------
+                        # --------------
+                        elif line_parts[0] == 'object_update:':
+                            l_parts = line_parts[1].split('?')
+                            if l_parts[0] != player.id:
+                                packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
+                        # --------------
 
-            # --------------
+                        # --------------
+                        elif line_parts[0] == 'dead_enemy:':
+                            packet.handle_dead_enemy(line_parts[1])
+                        # --------------
 
-            # --------------
-            elif line_parts[0] == 'disconnect:':
-                packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+                        # --------------
+                        elif line_parts[0] == 'enemy_update:':
+                            packet.handle_enemy_player_place_type_hit(line_parts[1])
 
-            # --------------
-
-            # --------------
-            elif line_parts[0] == 'first_objects_position:':
-                packet.handle_first_objects_position(line_parts[1], item_sprites)
-            # --------------
-
-            # --------------
-            elif line_parts[0] == 'object_update:':
-                l_parts = line_parts[1].split('?')
-                if l_parts[0] != player.id:
-                    packet.handle_object_update(l_parts[1], self.item_sprites)
-
-            # --------------
-
-            # --------------
-            elif line_parts[0] == 'dead_enemy:':
-                packet.handle_dead_enemy(line_parts[1])
-            # --------------
-
-            # --------------
-            elif line_parts[0] == 'enemy_player_place_type_hit:':
-                packet.handle_enemy_player_place_type_hit(line_parts[1], self.player, obstecal_sprits,  )
+            time.sleep(0.1)
 
     def get_place_to_start(self, place_to_start):
         self.place_to_start = place_to_start
@@ -348,95 +357,52 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self, server_ip, user_name, passward, packet_to_send, id):  # update and draw the game
-        if len(packets_to_handle_queue) > 0:
-            packet = packets_to_handle_queue.popleft()
-            self.player_id = id
-            if packet.rotshild_filter():
-                self.handeler_of_incoming_packets(packet, self.visble_sprites, self.player, self.obstacle_sprites,self.item_sprites)
+    def run(self,packet_to_send, id):  # update and draw the game
+        self.player_id = id
 
-            self.cooldown()
-            self.camera.x = self.player.rect.centerx  # updating the camera location
-            self.camera.y = self.player.rect.centery
+        self.cooldown()
+        self.camera.x = self.player.rect.centerx  # updating the camera location
+        self.camera.y = self.player.rect.centery
 
-            # for cleaning the exeptions of the tiles that have not bean earased
-            # self.visble_sprites.earase_non_relevant_sprites(self.player)
-            self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+        # for cleaning the exeptions of the tiles that have not bean earased
+        # self.visble_sprites.earase_non_relevant_sprites(self.player)
+        self.obstacle_sprites.earase_non_relevant_sprites(self.player)
 
-            self.floor_update()
-            self.floor_sprites.custom_draw(self.camera)
-            self.floor_sprites.update()
-            self.item_sprites.custom_draw(self.camera)
-            self.weapon_sprites.custom_draw(self.camera)
+        self.floor_update()
+        self.floor_sprites.custom_draw(self.camera)
+        self.floor_sprites.update()
 
-            self.item_sprites.item_picking(self.player,packet_to_send)
-            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
+        self.finished_first_object_event.wait()
+        self.item_sprites.custom_draw(self.camera)
+        self.weapon_sprites.custom_draw(self.camera)
 
-            self.bullet_group.custom_draw(self.camera)
-            self.bullet_group.bullet_move()
-            self.item_sprites.item_picking(self.player,packet_to_send)
+        self.item_sprites.item_picking(self.player, packet_to_send)
+        self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
-            self.other_bullet_group.check_if_bullet_hit_me(self.player)
+        self.bullet_group.custom_draw(self.camera)
+        self.bullet_group.bullet_move()
 
-            self.visble_sprites.custom_draw(self.camera)
-            self.player.update()
-            # self.visble_sprites.enemy_update(self.player)
-            self.player_attack_logic(packet_to_send)
-            self.ui.display(self.player)
-            if self.player.i_pressed:
-                self.ui.ui_screen(self.player,packet_to_send)
+        self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
-            if self.player.attack_for_moment:
-                image = self.player.weapon
-            else:
-                image = "no"
-            packet_to_send.add_header_player_place_and_image(self.player.rect.center, image)
-            self.bullet_group.bullet_record(packet_to_send)
+        self.other_players.update()
+        self.visble_sprites.custom_draw(self.camera)
+        self.visble_sprites.update()
+        self.player.update1(packet_to_send)
+        # self.visble_sprites.enemy_update(self.player)
+        self.player_attack_logic(packet_to_send)
+        self.ui.display(self.player)
+        if self.player.i_pressed:
+            self.ui.ui_screen(self.player, packet_to_send)
 
-            # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
-            if self.player.health == 0:
-                packet_to_send.add_header_dead(self.player.id)
-            return packet_to_send
+        if self.player.attack_for_moment:
+            image = self.player.weapon
         else:
-            self.cooldown()
-            self.camera.x = self.player.rect.centerx  # updating the camera location
-            self.camera.y = self.player.rect.centery
-            # for cleaning the exeptions of the tiles that have not bean earased
-            # self.visble_sprites.earase_non_relevant_sprites(self.player)
-            self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+            image = "no"
+        packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
+        self.bullet_group.bullet_record(packet_to_send)
 
-            self.floor_update()
-            self.floor_sprites.custom_draw(self.camera)
-            self.floor_sprites.update()
-            self.item_sprites.custom_draw(self.camera)
-            self.weapon_sprites.custom_draw(self.camera)
-
-            self.item_sprites.item_picking(self.player,packet_to_send)
-            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
-
-            self.bullet_group.custom_draw(self.camera)
-            self.bullet_group.bullet_move()
-            self.item_sprites.item_picking(self.player,packet_to_send)
-
-            self.other_bullet_group.check_if_bullet_hit_me(self.player)
-            self.other_players.update()
-            self.visble_sprites.custom_draw(self.camera)
-            self.visble_sprites.update()
-            # self.visble_sprites.enemy_update(self.player)
-            self.player_attack_logic(packet_to_send)
-            self.ui.display(self.player)
-            if self.player.i_pressed:
-                self.ui.ui_screen(self.player,packet_to_send)
-
-            if self.player.attack_for_moment:
-                image = self.player.weapon
-            else:
-                image = "no"
-            packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
-            self.bullet_group.bullet_record(packet_to_send)
-            debug(self.player.rect.center)
-            # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
-            if self.player.health == 0:
-                packet_to_send.add_header_dead(self.player.id)
-            #print(packet_to_send.get_packet())
-            return packet_to_send
+        # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
+        if self.player.health == 0:
+            packet_to_send.add_header_dead(self.player.id)
+        # print(packet_to_send.get_packet())
+        return packet_to_send

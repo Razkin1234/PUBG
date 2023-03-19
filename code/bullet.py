@@ -26,7 +26,6 @@ class Bullets(Entity):
             else:
                 self.direction.y = (mouse_pos[1] - MIDDLE_SCREEN[1])
 
-
     def time_to_live(self):
         current_time = pygame.time.get_ticks()
 

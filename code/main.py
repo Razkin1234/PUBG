@@ -6,9 +6,6 @@ import socket
 from Incoming_packets import Incoming_packets
 from Connection_to_server import Connection_to_server
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event
-
-shut_down_evant = Event()
 
 def give_me_first_place(packet):
     lines = packet.get_packet().split('\r\n')
@@ -78,14 +75,10 @@ class Game:
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.my_socket.settimeout(5)
 
-    # self.my_socket.bind(('0.0.0.0', 62227))
-    # -------------------
 
-    def handle_of_incoming_packets(self):
-        while not shut_down_evant.is_set():
-            server_reply = self.my_socket.recv(8192)
-            packet = Incoming_packets(server_reply, self.server_ip, self.player_id)
-            packets_to_handle_queue.append(packet)
+    def run(self):
+        self.screen.fill('black')
+        self.main_menu()
 
     def main_menu(self):
         """
@@ -104,11 +97,11 @@ class Game:
                              (640, 450), "play", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
 
         sign_up_button = Button(None, (550, 240), "sign up", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
-        log_in_button = Button(None, (550, 340), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
+        log_in_button = Button(None, (550, 410), "log in", pygame.font.Font(UI_FONT, 50), TEXT_COLOR, "yellow")
         sign_in = False
         log_in = False
         check = True
-
+        pushed = True
         while True:
             self.display_surface.fill('black')
 
@@ -171,7 +164,6 @@ class Game:
                             text_color = TEXT_COLOR
 
                         elif len(self.passward) <= 8:
-                            print(event.unicode)
                             if 'z' >= event.unicode >= 'a' or 'A' >= event.unicode >= 'A' or '9' >= event.unicode >= '0':
                                 self.passward += event.unicode
                                 text_color = TEXT_COLOR
@@ -198,13 +190,15 @@ class Game:
                             text_color = 'red'
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    if pushed:
+                        if sign_up_button.checkForInput(event.pos):
+                            sign_in = True
+                            pushed = False
 
-                    if sign_up_button.checkForInput(event.pos):
-
-                        sign_in = True
-
-                    if log_in_button.checkForInput(event.pos):
-                        log_in = True
+                        elif log_in_button.checkForInput(event.pos):
+                            sign_in = False
+                            log_in = True
+                            pushed = False
 
                     if play_button.checkForInput(event.pos):
 
@@ -212,7 +206,7 @@ class Game:
                             ####################################################################################################################
                             # FOR REGISTER RECUEST
                             ####################################################################################################################
-                            if sign_in:
+                            if not log_in and sign_in:
                                 # try:
                                 print(self.server_ip)
                                 print(type(self.server_ip))
@@ -234,8 +228,6 @@ class Game:
                                 if not check:
                                     sign_in = False
                                     log_in = False
-                                    while event.type == pygame.K_SPACE:
-                                        pass
                             # except Exception as e:
                             #    print(e)
                             #    sign_in = False
@@ -251,8 +243,8 @@ class Game:
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
-                                server_reply = self.my_socket.recv(500000)
-
+                                server_reply = self.my_socket.recv(28000)
+                                print(server_reply)
                                 print("a")
                                 packet = Incoming_packets(server_reply, self.server_ip, None)
                                 packet_to_save = Incoming_packets(server_reply, self.server_ip, None)
@@ -261,6 +253,9 @@ class Game:
                                     self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
                                 if check:
                                     self.play(packet)  # packet
+                                else:
+                                    sign_in = False
+                                    log_in = False
                             # except Exception as e:
                             # print(e)
 
@@ -280,59 +275,58 @@ class Game:
 
                 play_button.changeColor(mouse_menu)
                 play_button.update(self.display_surface)
-
+                pushed = False
             else:
 
                 for button in [sign_up_button, log_in_button]:
-
                     button.changeColor(mouse_menu)
                     button.update(self.display_surface)
-
+                pushed = True
             pygame.display.update()
 
+    def handle_of_incoming_packets(self):
+        while not shut_down_event.is_set():
+            server_reply = self.my_socket.recv(8192)
+            packet = Incoming_packets(server_reply, self.server_ip, self.player_id)
+            packets_to_handle_queue.append(packet)
+            print('performed recieving iterate in thread')
+
+    # self.my_socket.bind(('0.0.0.0', 62227))
+    # -------------------
+
+
     def play(self, packet):
-        place_to_start = give_me_first_place(packet)
-        self.level = Level(place_to_start)
-        pygame.display.set_caption('PUBG')
-        self.screen.fill('black')
-
-        packet.set_player_id(self.player_id)
-        packet_to_send = Connection_to_server(self.player_id)
-        self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send, self.player_id)
-        self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-
-        pygame.display.update()
-        self.clock.tick(FPS)
-
         with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
-            executor.submit(self.handle_of_incoming_packets)
+            place_to_start = give_me_first_place(packet)
+            self.level = Level(place_to_start)
+            pygame.display.set_caption('PUBG')
+            self.screen.fill('black')
+            executor.submit(self.level.handeler_of_incoming_packets, self.level.visble_sprites, self.level.player,
+                            self.level.obstacle_sprites, self.level.item_sprites, self.player_id)
+            packet_to_send = Connection_to_server(self.player_id)
 
+            pygame.display.update()
+            self.clock.tick(FPS)
+            executor.submit(self.handle_of_incoming_packets)
+            print('receiving packets thread started')
             while True:
+                print('in game loop')
                 packet_to_send = Connection_to_server(self.player_id)
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         packet_to_send.add_header_disconnect(self.player_id)
                         self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                        self.my_socket.close()
-
                         packets_to_handle_queue.clear()
-
-                        shut_down_evant.set()#for the thread closing
-
+                        shut_down_event.set()#for the thread closing
+                        self.my_socket.close()
                         pygame.quit()
                         sys.exit()
 
-                packet_to_send = self.level.run(self.server_ip, self.user_name, self.passward, packet_to_send,
-                                                self.player_id)
-                self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                pygame.display.update()
-                self.clock.tick(FPS)
-
-    def run(self):
-
-        self.screen.fill('black')
-        self.main_menu()
+                    packet_to_send = self.level.run(packet_to_send,self.player_id)
+                    self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                    pygame.display.update()
+                    self.clock.tick(FPS)
 
 
 if __name__ == '__main__':

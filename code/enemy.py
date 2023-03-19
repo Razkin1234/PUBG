@@ -4,21 +4,16 @@ from entity import Entity
 from support import *
 
 class Enemy(Entity):
-
     def __init__(self, monster_name, id, pos, groups, obstacle_sprites,damage_player, hit):
-
-
         #general setup
         super().__init__(groups)
         self.sprite_type = 'enemy'
         self.id = id
-
         self.hit = hit
 
         #graphics setup
         self.import_graphics(monster_name)
         if hit != 'no':
-
             self.status = 'attack'
         else:
             self.status = 'move'
@@ -49,9 +44,7 @@ class Enemy(Entity):
         self.can_attack = True
         self.attack_time = None
         self.attack_cooldown = 400
-
         self.damage_player = damage_player
-
        # self.trigger_death_particles = trigger_death_particles
 
         #invincibility timer

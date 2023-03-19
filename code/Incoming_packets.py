@@ -1,6 +1,7 @@
 from settings import *
 # from level import Level
 from other_players import Players
+from weapon_item import Weapon_item
 from player import Player
 from YsortCameraGroup import YsortCameraGroup
 from item import Item
@@ -9,7 +10,6 @@ import pygame
 import sys
 
 from bullet import Bullets
-
 
 class Incoming_packets:
 
@@ -59,7 +59,31 @@ class Incoming_packets:
     def handle_first_inventory(self, first_inventory, player):
         # to add it to the inventory
         items = first_inventory.split(",")
+        new_item = []
         weapons = items[0].split("/")
+        del items[0]
+        del items[-1]
+        for i, item in enumerate(items):
+            try:
+                items[i] = int(items[i])
+                for j in range(items[i]):
+                    if i == 0:
+                        new_item.append('ammo')
+
+                    elif i == 1:
+                        new_item.append('medkit')
+
+                    elif i == 2:
+                        new_item.append('backpack')
+
+                    elif i == 3:
+                        new_item.append('bendage')
+
+                    elif i == 4:
+                        new_item.append('boots')
+            except:
+                pass
+        print(new_item)
         for weapon in weapons:
             if weapon in weapon_data:
                 if weapon not in player.objects_on:
@@ -76,19 +100,24 @@ class Incoming_packets:
                             player.objects_on[weapon] = temp_dict.copy()
                             temp_dict.clear()
                             break
-            for item in items:
-                if 'backpack' in player.items_on:
+        for item in new_item:
+            if item in item_data:
+                if 'ammo' in player.items_on:
+                    if item == 'ammo':
+                        if player.items_on['ammo']['amount'] < 200:
+                            player.items_on['ammo']['amount'] += 1
+                if 'backpack' in new_item:
                     count = 13
                 else:
                     count = 10
                 for i in range(1, count):
                     flag = True
-                    for item, item_value in player.items_on.items():
+                    for item1, item_value in player.items_on.items():
                         if item_value['ui'] == i:
                             flag = False
                             break
                     if flag:  # we will put the item in this slott
-                        if item != "backpack" and item != 'boots':
+                        if item != "backpack" and item != 'boots' and item != 'ammo':
                             if item in items_add_data:
                                 temp_dict = items_add_data[item].copy()
                                 temp_dict['ui'] = i
@@ -100,22 +129,29 @@ class Incoming_packets:
                                         break
                                     counter += 1
                                 break
-                            elif item == 'backpack':
-                                if 'backpack' in player.items_on:
-                                    break
-                                else:
-                                    temp_dict = items_add_data[item].copy()
-                                    temp_dict['ui'] = i
-                                    player.items_on['backpack'] = temp_dict.copy()
-                                    temp_dict.clear()
-                            elif item == 'boots':
-                                if 'boots' in player.items_on:
-                                    break
-                                else:
-                                    temp_dict = items_add_data[item].copy()
-                                    temp_dict['ui'] = i
-                                    player.items_on['boots'] = temp_dict.copy()
-                                    temp_dict.clear()
+                        elif item == 'backpack':
+                            if 'backpack' in player.items_on:
+                                break
+                            else:
+                                temp_dict = items_add_data[item].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['backpack'] = temp_dict.copy()
+                                temp_dict.clear()
+                        elif item == 'boots':
+                            if 'boots' in player.items_on:
+                                break
+                            else:
+                                temp_dict = items_add_data[item].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['boots'] = temp_dict.copy()
+                                temp_dict.clear()
+                        elif item == 'ammo':
+                            if 'ammo' not in player.items_on:
+                                temp_dict = items_add_data['ammo'].copy()
+                                temp_dict['ui'] = i
+                                player.items_on['ammo'] = temp_dict.copy()
+                                player.items_on['ammo']['amount'] = 1
+                                temp_dict.clear()
 
 
     def handle_register_status(self, register_status):
@@ -127,10 +163,8 @@ class Incoming_packets:
         elif register_status == 'success':
             # to go now back to the login page
             return True, None
-            pass
 
     def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player):  # maybe done
-
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -145,7 +179,6 @@ class Incoming_packets:
 
                 if not visiable_sprites.check_existines(player_id, image, player_place):
                     Players(image[0], player_place,  visiable_sprites, obstecal_sprits, image[1], player_id, damage_player)
-
 
 
         except Exception as e:
@@ -181,26 +214,32 @@ class Incoming_packets:
     def handle_disconnect(self, dead_id, visble_sprites):
         visble_sprites.erase_dead_sprites(dead_id)
 
-    def handle_object_update(self, header_info, item_sprites):
+    def handle_object_update(self, header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         for each_change in changes:
             each_change = each_change.split('-')
             if each_change[0] == 'pick':
                 # so delete the object that is on the screen, you have the type in each_change[1] and the place in each_change[2]
-                each_change1 = tuple((each_change[1:-1].split(',')))  # converting the place from str to tuple
+                each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
                 for item in item_sprites:
-                    if item.rect == each_change1 and item.sprite_type == each_change[1]:
+                    if item.rect.center == each_change1 and item.sprite_type == each_change[1]:
                         item.kill()
+                        break
+                for weapon in weapon_sprites:
+                    if weapon.rect.center == each_change1 and weapon.sprite_type == each_change[1]:
+                        weapon.kill()
                         break
             else:
                 # print the object on the screen, you have the type in each_change[1] and the place in each_change[2]
-                each_change1 = tuple((each_change[1:-1].split(',')))  # converting the place from str to tuple
+                each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
-                Item(each_change1, item_sprites, each_change[1])
-                pass
+                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots':
+                    Item(each_change1, item_sprites, each_change[1])
+                else:
+                    Weapon_item(each_change1, weapon_sprites, each_change[1])
 
-    def handle_first_objects_position(self, header_info, item_sprites):
+    def handle_first_objects_position(self, header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         for each_change in changes:
             each_change1 = each_change.split('-')
@@ -212,6 +251,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Weapon(item_place, item_sprites, 'sword')
+                        Weapon_item(item_place, weapon_sprites, 'sword')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'lance':
                 how_many = each_change1[1].split(';')
@@ -221,6 +261,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Weapon(item_place, item_sprites, 'lance')
+                        Weapon_item(item_place, weapon_sprites, 'lance')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'axe':
                 how_many = each_change1[1].split(';')
@@ -230,6 +271,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Weapon(item_place, item_sprites, 'axe')
+                        Weapon_item(item_place, weapon_sprites, 'axe')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'rapier':
                 how_many = each_change1[1].split(';')
@@ -239,6 +281,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Item(item_place, item_sprites, 'rapier')
+                        Weapon_item(item_place, weapon_sprites, 'rapier')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'sai':
                 how_many = each_change1[1].split(';')
@@ -248,6 +291,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Item(item_place, item_sprites, 'sai')
+                        Weapon_item(item_place, weapon_sprites, 'sai')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'gun':
                 how_many = each_change1[1].split(';')
@@ -257,6 +301,7 @@ class Incoming_packets:
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
                         #Item(item_place, item_sprites, 'gun')
+                        Weapon_item(item_place, weapon_sprites, 'gun')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'ammo':
                 how_many = each_change1[1].split(';')
