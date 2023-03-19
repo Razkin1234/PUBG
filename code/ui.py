@@ -292,18 +292,22 @@ class UI:
                                 if weapon != 'backpack':
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
-                                    Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                     if weapon_value['name'] == 'backpack':
                                         packet_to_send.add_header_inventory_update('- backpack', 1)
                                     if weapon_value['name'] == 'ammo':
-                                        packet_to_send.add_header_inventory_update('- ammo', 1)
+                                        packet_to_send.add_header_inventory_update('- ammo', weapon_value['amount'])
+                                        for sprite in range(weapon_value['amount']):
+                                            Item((player.rect[0:2]), self.item_sprites,weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
                                     if weapon_value['name'] == 'boots':
                                         packet_to_send.add_header_inventory_update('- boots', 1)
                                     if weapon_value['name'] == 'medkit':
                                         packet_to_send.add_header_inventory_update('- med_kits', 1)
                                     if weapon_value['name'] == 'bendage':
                                         packet_to_send.add_header_inventory_update('- bandages', 1)
-                                    del player.items_on[weapon]
+                                    if weapon_value['name'] != 'ammo':
+                                        del player.items_on[weapon]
+                                        Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
                                 else: #only for the backpack erasing
                                     items_copy = player.items_on.copy()
                                     del_flag = True

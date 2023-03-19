@@ -114,6 +114,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                         if sprite.sprite_type == 'ammo':
                             if player.items_on['ammo']['amount'] < 200:
                                 player.items_on['ammo']['amount'] += 1
+                                packet_to_send.add_header_inventory_update("+ ammo", 1)
                                 sprite.kill()
 
                     if 'backpack' in player.items_on:

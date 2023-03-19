@@ -195,7 +195,7 @@ OBJECTS_AMOUNT_ON_MAP = {'ammo': 2000,
                          'axe': 7,
                          'rapier': 20,
                          'sai': 17,
-                         'gun': 2}
+                         'gun': 200}
 # ------------------------
 
 # ------------------------ Players
@@ -2277,7 +2277,7 @@ def main():
         # ==============================================| GAME LOOP |=============================================# !!
         while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
             try:  # !!
-                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
+                data, client_address = server_socket.recvfrom(20000)  # getting incoming packets     # !!
             except socket_timeout:  # !!
                 continue  # !!
                 # !!

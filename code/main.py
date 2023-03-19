@@ -123,6 +123,7 @@ class Game:
                     sys.exit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:  # check if he clicked the mouse
+
                     if ID_input_rect.collidepoint(event.pos):
                         active_ID = True
                         active_pasward = False
@@ -189,17 +190,17 @@ class Game:
                             self.server_ip += event.unicode
                             text_color = TEXT_COLOR
 
-                        else: #makes guy to do a flip
+                        else:
                             text_color = 'red'
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
+
                     if sign_up_button.checkForInput(event.pos):
                         sign_in = True
 
                     elif log_in_button.checkForInput(event.pos):
                         sign_in = False
                         log_in = True
-                        sign_in = False
 
                     if play_button.checkForInput(event.pos):
 
@@ -246,7 +247,7 @@ class Game:
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
-                                server_reply = self.my_socket.recv(5000)
+                                server_reply = self.my_socket.recv(28000)
                                 print(server_reply)
                                 print("a")
                                 packet = Incoming_packets(server_reply, self.server_ip, None)
