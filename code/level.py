@@ -379,7 +379,7 @@ class Level:
             self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
             self.visble_sprites.custom_draw(self.camera)
-            self.visble_sprites.update()
+            self.player.update()
             # self.visble_sprites.enemy_update(self.player)
             self.player_attack_logic(packet_to_send)
             self.ui.display(self.player)
@@ -434,7 +434,7 @@ class Level:
                 image = "no"
             packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
             self.bullet_group.bullet_record(packet_to_send)
-
+            debug(self.player.rect.center)
             # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
             if self.player.health == 0:
                 packet_to_send.add_header_dead(self.player.id)
