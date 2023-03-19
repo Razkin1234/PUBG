@@ -292,7 +292,7 @@ class Game:
     def play(self, packet):
         with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
             place_to_start = give_me_first_place(packet)
-            self.level = Level(place_to_start)
+            self.level = Level(place_to_start, self.user_name)
             pygame.display.set_caption('PUBG')
             self.screen.fill('black')
             executor.submit(self.level.handeler_of_incoming_packets, self.level.visble_sprites, self.level.player,
@@ -303,25 +303,28 @@ class Game:
             self.clock.tick(FPS)
             executor.submit(self.handle_of_incoming_packets)
             print('receiving packets thread started')
-            while True:
-                print('in game loop')
-                packet_to_send = Connection_to_server(self.player_id)
+            try:
+                while True:
+                    packet_to_send = Connection_to_server(self.player_id)
 
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        packet_to_send.add_header_disconnect(self.player_id)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            packet_to_send.add_header_disconnect(self.player_id)
+                            self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                            packets_to_handle_queue.clear()
+                            shut_down_event.set()#for the thread closing
+                            self.my_socket.close()
+                            pygame.quit()
+                            sys.exit()
+
+                        packet_to_send = self.level.run(packet_to_send,self.player_id)
                         self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                        packets_to_handle_queue.clear()
-                        shut_down_event.set()#for the thread closing
-                        self.my_socket.close()
-                        pygame.quit()
-                        sys.exit()
-
-                    packet_to_send = self.level.run(packet_to_send,self.player_id)
-                    self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                    pygame.display.update()
-                    self.clock.tick(FPS)
-
+                        pygame.display.update()
+                        self.clock.tick(FPS)
+            except:
+                pass
+            finally:
+                self.my_socket.close()
 
 if __name__ == '__main__':
     game = Game()

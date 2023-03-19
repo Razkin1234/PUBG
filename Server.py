@@ -737,7 +737,7 @@ def create_new_id(client_ip_port_name: tuple = None) -> str:
     if client_ip_port_name is not None:
         CLIENTS_ID_IP_PORT_NAME.append(
             (str(last_id), client_ip_port_name[0], client_ip_port_name[1], client_ip_port_name[2]))
-        ACTIVE_ID_SET.add(str(last_id))
+    ACTIVE_ID_SET.add(str(last_id))
     return str(last_id)
 
 
@@ -1346,9 +1346,9 @@ def moving_enemies_thread(server_socket: socket):
                 # store the new place in the ENEMY_DATA list
                 enemy[1] = enemy_place
 
-                # add the new places of the enemy to the header
+                # calculate if attacking and add the new places of the enemy to the header
                 enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
-                distance = calculate_distance(enemy_place, target_player_place)
+                distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
                 if distance <= 30 and attacked_previous_frame == 0:
                     packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
                     attacked_previous_frame += 1
@@ -2268,8 +2268,10 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-#         executor.submit(moving_enemies_thread, server_socket)
-        # setting a thread to handle incomig packets from the queue
+        # executor.submit(moving_enemies_thread, server_socket)
+        # setting threads to handle incomig packets from the queue
+        executor.submit(verify_and_handle_packet_thread, server_socket)
+        executor.submit(verify_and_handle_packet_thread, server_socket)
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
 

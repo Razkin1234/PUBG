@@ -25,14 +25,14 @@ from Connection_to_server import Connection_to_server
 """""
 
 class Level:
-    def __init__(self, place_to_start):
+    def __init__(self, place_to_start, user_name):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
         self.place_to_start = place_to_start
         # server_things
         self.player_id = ''
-
+        self.name = user_name
         # sprite groups setup
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
@@ -75,7 +75,7 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites)
+        self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites, self.name)
 
         self.item = Item
 
@@ -83,6 +83,7 @@ class Level:
          while not shut_down_event.is_set():
             if len(packets_to_handle_queue) > 0:
                 packet = packets_to_handle_queue.popleft()
+                print(packet.get_packet())
                 self.player_id = id
                 if packet.rotshild_filter():
                     lines = packet.get_packet().split('\r\n')
@@ -143,8 +144,8 @@ class Level:
                             for l in lines:
                                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                 if l_parts[0] == 'user_name:':
-                                    message = packet.handle_chat(line_parts[1],
-                                                                 l_parts[1])  # getting in answer the message to print
+                                    message = packet.handle_chat(l_parts[1], line_parts[1])  # getting in answer the message to print
+                                    self.ui.print_message(message)
                                     break
                         elif line_parts[0] == 'server_shutdown:':
                             shut_down_event.set()
@@ -386,6 +387,7 @@ class Level:
         self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
         self.other_players.update()
+        self.other_players.custom_draw(self.camera)
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         self.player.update1(packet_to_send)

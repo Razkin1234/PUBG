@@ -3,13 +3,13 @@ from settings import *
 from item import Item
 from weapon_item import Weapon_item
 class UI:
-    def __init__(self,objects_on,items_on,item_sprites,weapon_sprites):
+    def __init__(self,objects_on,items_on,item_sprites,weapon_sprites, name):
         #general
         self.display_surface = pygame.display.get_surface()
         self.font =pygame.font.Font(UI_FONT,UI_FONT_SIZE) #our font
         self.item_sprites = item_sprites
         self.weapon_sprites = weapon_sprites
-
+        self.user_name = name
         #bar setup
         self.health_bar_rect = pygame.Rect(10,10,HEALTH_BAR_WIDTH,BAR_HEIGHT)
         self.energy_bar_rect = pygame.Rect(10,34,ENERGY_BAR_WIDTH,BAR_HEIGHT)
@@ -105,7 +105,7 @@ class UI:
         # chat:
         self.user_text = ''  # the text that the user has used
         self.chat_messages = [
-        'guy is fat'
+
         ]  # the mesagges that we will show on the screen
 
         # for the letters cooldown
@@ -161,6 +161,12 @@ class UI:
 
         self.cooldown() #for the cooldown
 
+    def print_message(self, message):
+        self.chat_messages.append(message)
+        # checking if we display to much messages:
+        if len(self.chat_messages) > 7:
+            self.chat_messages.pop(0)
+
     def chat_display(self):
         #chat box
         bg_rect = pygame.Rect(7, 65, 400, 200)
@@ -183,7 +189,7 @@ class UI:
         for message in self.chat_messages:
             text = font.render(message, True, (255, 255, 255))
             self.display_surface.blit(text,(x,y))
-            y+= 27
+            y += 27
 
         #for the user text box
         text = font.render(self.user_text, True, (0, 0, 0))
@@ -492,7 +498,9 @@ class UI:
                     key_pressed = True #for the cooldown
                     self.writing = False
                     player.chat_input = False
-                    self.chat_messages.append(self.user_text)
+                    #self.chat_messages.append(self.user_text)
+                    packet_to_send.add_header_chat(self.user_text)
+                    packet_to_send.add_header_user_name(self.user_name)
                     self.user_text = ''
                     #checking if we display to much messages:
                     if len(self.chat_messages) > 7:
