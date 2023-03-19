@@ -31,14 +31,12 @@ class YsortCameraGroup(pygame.sprite.Group):
        Draws the sprites on screen according to the screen height, and then according to the position of the camera
        :return: None
        """
-        print(f'called from {threading.current_thread().name}')
         # For every visible sprite AT THE MOMENT!!!, from top to bottom
         current_frame_sprites = self.sprites()
         for sprite in sorted(current_frame_sprites, key=lambda x: (x.rect.centery)):
             # Display the sprite on screen, moving it by the calculated offset
             offset_position = sprite.rect.topleft - camera + self.screen_center
             self.display_surface.blit(sprite.image, offset_position)
-        print('after')
 
     """""""""
     getting a rectangle and a axis (0 or 1), making the sprite group lusing all the items with the rect 

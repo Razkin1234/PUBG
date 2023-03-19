@@ -12,6 +12,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
       <change beforePath="$PROJECT_DIR$/MyKeyring.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyKeyring.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MyKeyringTester.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyKeyringTester.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/My_Keyring.json" beforeDir="false" afterPath="$PROJECT_DIR$/My_Keyring.json" afterDir="false" />
@@ -31,6 +32,10 @@
       <change beforePath="$PROJECT_DIR$/code/Connection_to_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Connection_to_server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Incoming_packets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Server.py" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
       <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/bullet.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/bullet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/button.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/button.py" afterDir="false" />
@@ -39,6 +44,7 @@
       <change beforePath="$PROJECT_DIR$/code/entity.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/entity.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/item.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/item.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
+<<<<<<< HEAD
       <change beforePath="$PROJECT_DIR$/code/magic.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/magic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/particles.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/particles.py" afterDir="false" />
@@ -57,6 +63,9 @@
       <change beforePath="$PROJECT_DIR$/map/map_FloorBlocks.csv" beforeDir="false" afterPath="$PROJECT_DIR$/map/map_FloorBlocks.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notwork.zip" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests.py" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -151,7 +160,10 @@
       <method v="2" />
     </configuration>
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
+<<<<<<< HEAD
       <module name="FinalProject" />
+=======
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -274,21 +286,22 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>97</line>
+          <line>95</line>
           <option name="timeStamp" value="98" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>34</line>
-          <option name="timeStamp" value="109" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>41</line>
-          <option name="timeStamp" value="110" />
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="129" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>84</line>
+          <option name="timeStamp" value="142" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+<<<<<<< HEAD
           <line>160</line>
           <option name="timeStamp" value="127" />
         </line-breakpoint>
@@ -301,6 +314,10 @@
           <url>file://$PROJECT_DIR$/code/level.py</url>
           <line>47</line>
           <option name="timeStamp" value="129" />
+=======
+          <line>105</line>
+          <option name="timeStamp" value="143" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/level.py</url>
