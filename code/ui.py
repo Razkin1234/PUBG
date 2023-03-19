@@ -105,7 +105,7 @@ class UI:
         # chat:
         self.user_text = ''  # the text that the user has used
         self.chat_messages = [
-        'guy is fat'
+
         ]  # the mesagges that we will show on the screen
 
         # for the letters cooldown
