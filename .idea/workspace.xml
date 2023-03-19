@@ -6,6 +6,14 @@
   <component name="ChangeListManager">
     <list default="true" id="c126643d-6d6d-4fd8-afe0-9f7f20e5df13" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -112,7 +120,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -237,39 +245,9 @@
           <option name="timeStamp" value="46" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Server.py</url>
-          <line>2270</line>
-          <option name="timeStamp" value="56" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>97</line>
+          <line>95</line>
           <option name="timeStamp" value="98" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>34</line>
-          <option name="timeStamp" value="109" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>41</line>
-          <option name="timeStamp" value="110" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
-          <line>10</line>
-          <option name="timeStamp" value="111" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/level.py</url>
-          <line>161</line>
-          <option name="timeStamp" value="127" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/code/level.py</url>
-          <line>163</line>
-          <option name="timeStamp" value="128" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/level.py</url>
@@ -278,6 +256,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/level.py</url>
+<<<<<<< HEAD
           <line>181</line>
           <option name="timeStamp" value="133" />
         </line-breakpoint>
@@ -285,6 +264,15 @@
           <url>file://$PROJECT_DIR$/code/level.py</url>
           <line>445</line>
           <option name="timeStamp" value="134" />
+=======
+          <line>84</line>
+          <option name="timeStamp" value="142" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>105</line>
+          <option name="timeStamp" value="143" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -82,6 +82,7 @@ class Level:
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites, id):
          while not shut_down_event.is_set():
             if len(packets_to_handle_queue) > 0:
+                print('GOT HERE')
                 packet = packets_to_handle_queue.popleft()
                 print(packet.get_packet())
                 self.player_id = id
@@ -103,6 +104,7 @@ class Level:
                                         l2_parts = l2.split()
                                         if l2_parts[0] == 'moved_player_id:':
                                             if packet.get_id() != l2_parts[1]:
+                                                print('HERE')
                                                 packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
                                                                            player.rect.center,
                                                                            self.other_players, obstecal_sprits, self.damage_player)
