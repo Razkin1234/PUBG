@@ -77,6 +77,7 @@ class Game:
 
 
     def run(self):
+        pygame.init()
         self.screen.fill('black')
         self.main_menu()
 
@@ -253,9 +254,6 @@ class Game:
                                     self.player_id, check = handeler_of_incoming_packets(packet, self.display_surface)
                                 if check:
                                     self.play(packet)  # packet
-                                else:
-                                    sign_in = False
-                                    log_in = False
                             # except Exception as e:
                             # print(e)
 
@@ -304,13 +302,16 @@ class Game:
                 self.screen.fill('black')
                 executor.submit(self.level.handeler_of_incoming_packets, self.level.visble_sprites, self.level.player,
                                 self.level.obstacle_sprites, self.level.item_sprites, self.player_id)
+                executor.submit(self.level.handeler_of_incoming_packets, self.level.visble_sprites, self.level.player,
+                                self.level.obstacle_sprites, self.level.item_sprites, self.player_id)
+
                 packet_to_send = Connection_to_server(self.player_id)
 
                 pygame.display.update()
                 self.clock.tick(FPS)
                 executor.submit(self.handle_of_incoming_packets)
                 print('receiving packets thread started')
-                while True:
+                while not shut_down_event.is_set():
                     packet_to_send = Connection_to_server(self.player_id)
 
                     for event in pygame.event.get():
@@ -320,16 +321,21 @@ class Game:
                             packets_to_handle_queue.clear()
                             shut_down_event.set()#for the thread closing
                             pygame.quit()
+                            self.my_socket.close()
                             sys.exit()
-    
-                        packet_to_send = self.level.run(packet_to_send,self.player_id)
-                        self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-                        pygame.display.update()
-                        self.clock.tick(FPS)
+
+                    packet_to_send = self.level.run(packet_to_send,self.player_id)
+                    self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                    pygame.display.update()
+                    self.clock.tick(FPS)
         except:
-            pass
-        finally:
+            packet_to_send.add_header_disconnect(self.player_id)
+            self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+            packets_to_handle_queue.clear()
+            shut_down_event.set()  # for the thread closing
+            pygame.quit()
             self.my_socket.close()
+            sys.exit()
 
 
 if __name__ == '__main__':

@@ -132,6 +132,7 @@ class Player(Entity):
                 y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
                 self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
+
         #debug(self.place_to_go)
         #debug2(self.hitbox.center)
 
