@@ -8,6 +8,7 @@ from item import Item
 from enemy import Enemy
 import pygame
 import sys
+import time
 
 from bullet import Bullets
 
@@ -164,25 +165,24 @@ class Incoming_packets:
             # to go now back to the login page
             return True, None
 
-    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player):  # maybe done
+    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
         # pass
-        try:
-            player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
-            player_place = (int(player_place[0]), int(player_place[1]))
+        player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
+        player_place = (int(player_place[0]), int(player_place[1]))
+        where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
+        where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
+        if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+                my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+            image=image.split(',')
 
-            if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
-                    my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
-                image=image.splite(',')
-
-                if not visiable_sprites.check_existines(player_id, image, player_place):
-                    Players(image[0], player_place,  visiable_sprites, obstecal_sprits, image[1], player_id, damage_player)
+            if not visiable_sprites.check_existines(player_id, image, player_place):
+                Players(image[0], player_place,  visiable_sprites, obstecal_sprits, image[1], player_id, damage_player)
+            #time.sleep(0.1)
 
 
-        except Exception as e:
-            print(str(e) + f"line_{e.__traceback__.tb_lineno}")
 
 
     def handle_shot_place(self, shot_place, bullet, obsicales_sprites,player_place):

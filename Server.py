@@ -53,7 +53,7 @@ Headers API:                                                                    
                                  + exp [how much?]                                                                                                           |
                                  - exp [how much?]                                                                                                           |
             - user_name: [user_name]  [comes with chat]                                                                            [only server sends]       |
-            - player_place: ([the X coordinate],[the Y coordinate]) [comes with image and when server sends moved_player_id]       [clients and server send] |
+            - player_place: ([the X coordinate],[the Y coordinate]), and where he is going [comes with image and when server sends moved_player_id]       [clients and server send] |
             - moved_player_id: [the ID of the player who moved] [comes with player_place and image]                                [only server sends]       |
             - image: [the name of the file with the image of the player who moved] [comes with player_place and image]             [clients and server send] |
             - shot_place: ([the X coordinate],[the Y coordinate]) [comes with hit_hp and when server sends then shooter_id too]    [clients and server send] |
@@ -270,7 +270,6 @@ def check_if_enemy_need_to_shot_or_to_stop():
     global ENEMY_DATA, PLAYER_PLACES_BY_ID
     for enemy in ENEMY_DATA:
         if enemy[4] == 5:  # write here the type of the enemy that shoots
-            pass
             current_time = pygame.time.get_ticks()
             # check here the radios from the player you are locked on in enemy[2]
             # and here if it corrects so you have the place of the player in PLAYER_PLACES_BY_ID[enemy[2]] so create the shot and add it to the list
@@ -919,9 +918,10 @@ def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
     return 'dead: ' + dead_id + '\r\n'
 
 
-def handle_player_place(place: tuple, id: str, image: str) -> str:
+def handle_player_place(place: tuple, where_to_go, speed, id: str, image: str) -> str:
     """
     Updates the place of the player at the dict PLAYER_PLACES_BY_ID.
+    :param where_to_go:
     :param image: <String> the name of the file with the image of the player(its different between skins and directions)
     :param place: <Tuple> the place of the player as (X,Y).   [X and Y are str]
     :param id: <String> the ID of the player.
@@ -931,14 +931,14 @@ def handle_player_place(place: tuple, id: str, image: str) -> str:
     global PLAYER_PLACES_BY_ID
 
     # Updates the dict PLAYER_PLACES_BY_ID with the new place of the player
-    PLAYER_PLACES_BY_ID[id] = place
+    PLAYER_PLACES_BY_ID[id] = where_to_go
 
     # now the place it a tuple of strings, and when casting it to str it will be like - "('1', '1')".
     # So changing it to be '(1,1)'
-    place = f'({place[0]},{place[1]})'
+    where_to_go = f'({where_to_go[0]},{where_to_go[1]})'
 
     # returning Rotshild headers with values according to the player's movement
-    return 'player_place: {}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(place, id, image)
+    return 'player_place: {},{},{}\r\nmoved_player_id: {}\r\nimage: {}\r\n'.format(place, where_to_go, speed, id, image)
 
 
 def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_socket: socket):
@@ -1001,7 +1001,9 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     if id_cache == '':
                         id_cache = lines[0].split()[1]
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-                    reply_rotshild_layer += handle_player_place(tuple_place, id_cache, l_parts[1])
+                    another = line_parts[1].split(',')
+                    where_to_go = tuple(another[1][1:-1].split(','))
+                    reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache, l_parts[1])
                     break
         # --------------
 
@@ -1304,7 +1306,7 @@ def moving_enemies_thread(server_socket: socket):
     """
 
     global ENEMY_DATA, PLAYER_PLACES_BY_ID, SQUID_SPEED, RACCOON_SPEED, SPIRIT_SPEED, BAMBOO_SPEED, \
-        SHUTDOWN_TRIGGER_EVENT, CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, FPS
+        SHUTDOWN_TRIGGER_EVENT, CLIENTS_ID_IP_PORT_NAME, ROTSHILD_OPENING_OF_SERVER_PACKETS, FPS, ENEMY_SHOTS
 
     # I'm doing a general exception handling because this method is a new thread and exceptions raised here will
     # not be cought in the main.
@@ -1347,16 +1349,29 @@ def moving_enemies_thread(server_socket: socket):
                 enemy[1] = enemy_place
 
                 # calculate if attacking and add the new places of the enemy to the header
-                enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
-                distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
-                if distance <= 30 and attacked_previous_frame == 0:
-                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
-                    attacked_previous_frame += 1
+                if enemy[4] != 'bamboo':
+                    enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
+                    distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
+                    if distance <= 30 and attacked_previous_frame == 0:
+                        packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/Yes-'
+                        attacked_previous_frame += 1
+                    else:
+                        attacked_previous_frame += 1
+                        packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+                    if attacked_previous_frame == 60:
+                        attacked_previous_frame = 0
                 else:
-                    attacked_previous_frame += 1
-                    packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
-                if attacked_previous_frame == 60:
-                    attacked_previous_frame = 0
+                    enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
+                    distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
+                    if distance <= 600 and attacked_previous_frame == 0:
+                        ENEMY_SHOTS.append(enemy_place)
+                        packet += moving_the_bullets()
+                        packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/no-'
+                    else:
+                        attacked_previous_frame += 1
+                        packet += f'{enemy[0]}/{enemy_place}/{enemy[4]}/No-'
+                    if attacked_previous_frame == 60:
+                        attacked_previous_frame = 0
             # replacing the '-' trailer with a new CRLF characters
             packet = packet[:-1]
             packet += '\r\n'

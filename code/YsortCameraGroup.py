@@ -71,28 +71,10 @@ class YsortCameraGroup(pygame.sprite.Group):
             else:
                 sprite.kill()
 
-    def erase_dead_sprites(self, id):
-        for sprite in self.sprites():
-            if sprite.id == id:
-                sprite.kill()
-
-    def bullet_move(self):
-        for sprite in self.sprites():
-            print(sprite.need_to_stop)
-            if sprite.need_to_stop:
-                sprite.update()
-            else:
-                sprite.kill()
 
     def bullet_record(self,packet_to_send):
         for sprite in self.sprites():
             packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 300)
-
-    def bullet_record(self, packet_to_send):
-        for sprite in self.sprites():
-            print()
-            packet_to_send.add_header_shot_place_and_hit_hp(sprite.rect.center, 30)
-
 
     def enemy_update(self, player):
         enemy_sprites = [sprite for sprite in self.sprites() if
@@ -105,7 +87,7 @@ class YsortCameraGroup(pygame.sprite.Group):
             if sprite.id == player_id:
 
                 sprite.rect.center = pos
-                sprite.hit_box.center = pos
+                sprite.hitbox.center = pos
                 sprite.hit = hit
                 return True
         return False

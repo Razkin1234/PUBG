@@ -25,14 +25,14 @@ from Connection_to_server import Connection_to_server
 """""
 
 class Level:
-    def __init__(self, place_to_start, user_name):
+    def __init__(self, place_to_start):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
         self.place_to_start = place_to_start
         # server_things
         self.player_id = ''
-        self.name = user_name
+
         # sprite groups setup
         self.visble_sprites = YsortCameraGroup()
         self.obstacle_sprites = YsortCameraGroup()
@@ -75,16 +75,14 @@ class Level:
         self.player_prev_location = self.player.rect[0:2]
 
         # user interface
-        self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites, self.name)
+        self.ui = UI(self.player.objects_on, self.player.items_on, self.item_sprites, self.weapon_sprites)
 
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites, id):
          while not shut_down_event.is_set():
             if len(packets_to_handle_queue) > 0:
-                print('GOT HERE')
                 packet = packets_to_handle_queue.popleft()
-                print(packet.get_packet())
                 self.player_id = id
                 if packet.rotshild_filter():
                     lines = packet.get_packet().split('\r\n')
@@ -104,8 +102,8 @@ class Level:
                                         l2_parts = l2.split()
                                         if l2_parts[0] == 'moved_player_id:':
                                             if packet.get_id() != l2_parts[1]:
-                                                print('HERE')
-                                                packet.handle_player_place(line_parts[1], l2_parts[1], l_parts[1],
+                                                where_to_go = line_parts[1].split(',')
+                                                packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l2_parts[1], l_parts[1],
                                                                            player.rect.center,
                                                                            self.other_players, obstecal_sprits, self.damage_player)
 
@@ -146,12 +144,12 @@ class Level:
                             for l in lines:
                                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                 if l_parts[0] == 'user_name:':
-                                    message = packet.handle_chat(l_parts[1], line_parts[1])  # getting in answer the message to print
-                                    self.ui.print_message(message)
+                                    message = packet.handle_chat(line_parts[1],
+                                                                 l_parts[1])  # getting in answer the message to print
                                     break
                         elif line_parts[0] == 'server_shutdown:':
                             shut_down_event.set()
-                            packet.handle_server_shutdown()
+                            return
 
                         # --------------
 
@@ -304,9 +302,10 @@ class Level:
     def create_attack(self):
         self.current_attack = Weapon(self.player, [self.visble_sprites, self.attack_sprites])
 
-    def create_magic(self, style, strength, cost):
+    def create_magic(self, style, strength, cost, packet_to_send):
         """
 
+        :param packet_to_send:
         :param style:
         :param strength:
         :param cost:
@@ -315,7 +314,8 @@ class Level:
         if style == 'heal':  # need to replace with 'teleport'
             self.magic_player.teleport(self.player, cost)
         if style == 'flame':  # highspeed
-            self.magic_player.highspeed(self.player, cost)
+
+            self.magic_player.highspeed(self.player, cost, packet_to_send)
         if style == 'shield':  # shield
             self.magic_player.shield(self.player, cost, [self.visble_sprites])
 
@@ -403,7 +403,7 @@ class Level:
             image = self.player.weapon
         else:
             image = "no"
-        packet_to_send.add_header_player_place_and_image(self.player.rect.center, f'{self.player.status},{image}')
+        #packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
         self.bullet_group.bullet_record(packet_to_send)
 
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)

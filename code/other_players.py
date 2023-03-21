@@ -9,7 +9,6 @@ class Players(Entity):
         super().__init__(groups)
         # server conection
         self.id = id  # need to get id
-
         self.animations = None
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
