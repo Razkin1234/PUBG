@@ -12,6 +12,7 @@ import time
 
 from bullet import Bullets
 
+
 class Incoming_packets:
 
     ####################################################################################################################
@@ -49,6 +50,7 @@ class Incoming_packets:
             # here to add a message that the user is active in the game already
             return False, 'someone already logged in'
         return True, login_status  # returning the id of the client is given
+
     def handle_first_place(self, first_inventory):
         items = first_inventory.split(",")
         place_to_start = items[-1]
@@ -154,7 +156,6 @@ class Incoming_packets:
                                 player.items_on['ammo']['amount'] = 1
                                 temp_dict.clear()
 
-
     def handle_register_status(self, register_status):
         if register_status == 'taken':
             # here to add that the message is taken
@@ -165,7 +166,8 @@ class Incoming_packets:
             # to go now back to the login page
             return True, None
 
-    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player):  # maybe done
+
+    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player, create_attack, destroy_attack, create_magic, bullet_group):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -174,13 +176,13 @@ class Incoming_packets:
         player_place = (int(player_place[0]), int(player_place[1]))
         where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
         where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
-        if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
-                my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
-            image=image.split(',')
+        #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+                #my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+        image = image.split(',')
 
-            if not visiable_sprites.check_existines(player_id, image, player_place):
-                Players(image[0], player_place,  visiable_sprites, obstecal_sprits, image[1], player_id, damage_player)
-            #time.sleep(0.1)
+        if not visiable_sprites.check_existines(player_id, image, player_place):
+            Players(player_place, visiable_sprites,obstecal_sprits, create_attack, destroy_attack, create_magic, bullet_group, player_id, image[0], image[1], where_to_go)
+            pass
 
 
 
@@ -195,8 +197,6 @@ class Incoming_packets:
         if player_place[0] + MIDDLE_SCREEN[0] > shot_place[0] > player_place[0] - MIDDLE_SCREEN[0] and \
                 player_place[1] + MIDDLE_SCREEN[1] > shot_place[1] > player_place[1] - MIDDLE_SCREEN[1]:
             Bullets(shot_place, bullet, obsicales_sprites, None)
-
-
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 
@@ -245,6 +245,7 @@ class Incoming_packets:
                 # print the object on the screen, you have the type in each_change[1] and the place in each_change[2]
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
+
                 if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots':
                     Item(each_change1, item_sprites, type_for_clients)
                 else:
@@ -261,7 +262,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Weapon(item_place, item_sprites, 'sword')
+                        # Weapon(item_place, item_sprites, 'sword')
                         Weapon_item(item_place, weapon_sprites, 'sword')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'lance':
@@ -271,7 +272,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Weapon(item_place, item_sprites, 'lance')
+                        # Weapon(item_place, item_sprites, 'lance')
                         Weapon_item(item_place, weapon_sprites, 'lance')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'axe':
@@ -281,7 +282,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Weapon(item_place, item_sprites, 'axe')
+                        # Weapon(item_place, item_sprites, 'axe')
                         Weapon_item(item_place, weapon_sprites, 'axe')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'rapier':
@@ -291,7 +292,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Item(item_place, item_sprites, 'rapier')
+                        # Item(item_place, item_sprites, 'rapier')
                         Weapon_item(item_place, weapon_sprites, 'rapier')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'sai':
@@ -301,7 +302,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Item(item_place, item_sprites, 'sai')
+                        # Item(item_place, item_sprites, 'sai')
                         Weapon_item(item_place, weapon_sprites, 'sai')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'gun':
@@ -311,7 +312,7 @@ class Incoming_packets:
                     for i in range(int(place_number[1])):
                         item_place = tuple((place_number[0][1:-1].split(',')))  # converting the place from str to tuple
                         item_place = (int(item_place[0]), int(item_place[1]))
-                        #Item(item_place, item_sprites, 'gun')
+                        # Item(item_place, item_sprites, 'gun')
                         Weapon_item(item_place, weapon_sprites, 'gun')
                 # save it in your thing that you saves things and print it in where the value is place_number[0] and you have the type in each_change1[0]
             elif each_change1[0] == 'ammo':
@@ -366,7 +367,7 @@ class Incoming_packets:
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites,obstecal_sprits):
+    def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites, obstecal_sprits):
         info = header_info.split('-')
         for each_info in info:
             each_info = header_info.split('/')
@@ -375,12 +376,15 @@ class Incoming_packets:
             else:
                 hit = False
 
-                if not visiable_sprites.check_existines(each_info[0], hit, (int(each_info[1][1], int(each_info[1][4])))):
+                if not visiable_sprites.check_existines(each_info[0], hit,
+                                                        (int(each_info[1][1], int(each_info[1][4])))):
                     enemy_place = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
                     enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
-                    if player.rect.center + MIDDLE_SCREEN[0] > enemy_place[0] > player.rect.center - MIDDLE_SCREEN[0] and \
-                            player.rect.center + MIDDLE_SCREEN[1] > enemy_place[1] > player.rect.center - MIDDLE_SCREEN[1]:
-                        Enemy(each_info[3], each_info[2], each_info[1], enemy_place, visiable_sprites, obstecal_sprits, hit)
-
+                    if player.rect.center + MIDDLE_SCREEN[0] > enemy_place[0] > player.rect.center - MIDDLE_SCREEN[
+                        0] and \
+                            player.rect.center + MIDDLE_SCREEN[1] > enemy_place[1] > player.rect.center - MIDDLE_SCREEN[
+                        1]:
+                        Enemy(each_info[3], each_info[2], each_info[1], enemy_place, visiable_sprites, obstecal_sprits,
+                              hit)
 
             # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not

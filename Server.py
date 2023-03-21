@@ -1003,7 +1003,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
                     another = line_parts[1].split(',')
                     where_to_go = tuple(another[1][1:-1].split(','))
-                    reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache, l_parts[1])
+                    #reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache, l_parts[1])
                     break
         # --------------
 

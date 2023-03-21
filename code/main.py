@@ -252,7 +252,7 @@ class Game:
                                 if check:
                                     self.play(packet)  # packet
                             # except Exception as e:
-                            # print(e)
+                            # print(e)w
 
             if log_in or sign_in:
                 server_text_surface = self.font.render(self.server_ip, True, text_color)

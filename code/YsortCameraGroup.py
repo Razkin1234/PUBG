@@ -82,7 +82,7 @@ class YsortCameraGroup(pygame.sprite.Group):
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
 
-    def check_existines(self, player_id, hit, pos):
+    def check_existines(self, player_id, hit, pos,): #need to change
         for sprite in self.sprites():
             if sprite.id == player_id:
 

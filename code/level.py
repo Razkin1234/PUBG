@@ -24,6 +24,7 @@ from Connection_to_server import Connection_to_server
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
 """""
 
+
 class Level:
     def __init__(self, place_to_start):
         # get the display surface
@@ -80,10 +81,9 @@ class Level:
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites, id):
-         while not shut_down_event.is_set():
+        while not shut_down_event.is_set():
             if len(packets_to_handle_queue) > 0:
                 packet = packets_to_handle_queue.popleft()
-                self.player_id = id
                 if packet.rotshild_filter():
                     lines = packet.get_packet().split('\r\n')
                     while '' in lines:
@@ -92,7 +92,7 @@ class Level:
                         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                         # --------------
                         # in this header clients should check the moved_player_id so they wont print their own movement twice.
-                        if line_parts[0] == 'player_place:':
+                        if line_parts[0] == 'player_plac:':
                             # looking for image header
                             for l in lines:
                                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
@@ -103,9 +103,11 @@ class Level:
                                         if l2_parts[0] == 'moved_player_id:':
                                             if packet.get_id() != l2_parts[1]:
                                                 where_to_go = line_parts[1].split(',')
-                                                packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l2_parts[1], l_parts[1],
-                                                                           player.rect.center,
-                                                                           self.other_players, obstecal_sprits, self.damage_player)
+                                                packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l_parts[1],player.rect.center,
+                                                                           self.other_players, self.obstecal_sprits,
+                                                                           self.damage_player, self.create_attack,
+                                                                           self.destroy_attack, self.create_magic,
+                                                                           self.bullet_group)
 
                                             break
                                     break
@@ -125,7 +127,6 @@ class Level:
                                                                  self.obstacle_sprites, self.player.rect.center)
                                     break
                         # --------------
-
 
                         # --------------
                         elif line_parts[0] == 'dead:':
@@ -271,6 +272,9 @@ class Level:
         self.player = Player(self.place_to_start, self.visble_sprites,
                              self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
                              self.bullet_group, self.player_id)
+        self.other_p = Players((self.place_to_start[0]+20,self.place_to_start[1]), self.other_players,
+                self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
+                self.bullet_group, self.player_id, 'left_attack', 'sword',(self.place_to_start[0]+200,self.place_to_start[1]))
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
@@ -361,7 +365,7 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self,packet_to_send, id):  # update and draw the game
+    def run(self, packet_to_send, id):  # update and draw the game
         self.player_id = id
 
         self.cooldown()
@@ -388,11 +392,12 @@ class Level:
 
         self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
-        self.other_players.update()
         self.other_players.custom_draw(self.camera)
+        self.other_players.update(packet_to_send)
         self.visble_sprites.custom_draw(self.camera)
         self.visble_sprites.update()
         self.player.update1(packet_to_send)
+
         # self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic(packet_to_send)
         self.ui.display(self.player)
@@ -411,4 +416,5 @@ class Level:
             packet_to_send.add_header_dead(self.player.id)
             packet_to_send.for_dead_object_update(self.player)
         # print(packet_to_send.get_packet())
+        debug(self.player.rect.center)
         return packet_to_send
