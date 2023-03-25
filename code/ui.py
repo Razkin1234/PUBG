@@ -105,7 +105,6 @@ class UI:
         # chat:
         self.user_text = ''  # the text that the user has used
         self.chat_messages = [
-
         ]  # the mesagges that we will show on the screen
 
         # for the letters cooldown
@@ -274,7 +273,7 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Weapon_item((player.rect[0:2]), self.weapon_sprites, weapon)  # item create
-
+                                    packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("- weapons", weapon)
 
                                     del player.objects_on[weapon]
@@ -293,21 +292,28 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     if weapon_value['name'] == 'backpack':
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- backpack', 1)
                                     if weapon_value['name'] == 'ammo':
-                                        packet_to_send.add_header_inventory_update('- ammo', weapon_value['amount'])
                                         for sprite in range(weapon_value['amount']):
-                                            Item((player.rect[0:2]), self.item_sprites,weapon_value['name'])  # item create
+                                            Item((player.rect[0:2]), self.item_sprites,
+                                                 weapon_value['name'])  # item create
                                         del player.items_on[weapon]
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- ammo', weapon_value['amount'])
                                     if weapon_value['name'] == 'boots':
+                                        packet_to_send.add_header_player_place_and_image(player.rect.center, player.place_to_go, 6, f'{player.status},no')
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- boots', 1)
                                     if weapon_value['name'] == 'medkit':
+                                        packet_to_send.add_object_update('drop', 'med_kit', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- med_kits', 1)
                                     if weapon_value['name'] == 'bendage':
+                                        packet_to_send.add_object_update('drop', 'bandage', player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- bandages', 1)
                                     if weapon_value['name'] != 'ammo':
-                                        del player.items_on[weapon]
                                         Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
                                 else: #only for the backpack erasing
                                     items_copy = player.items_on.copy()
                                     del_flag = True
@@ -318,6 +324,8 @@ class UI:
                                         player.can_pick_item = False
                                         player.drop_item_time = pygame.time.get_ticks()
                                         Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- backpack', 1)
                                         del player.items_on[weapon]
 
                     else: #for the backpack items
@@ -328,7 +336,28 @@ class UI:
                                     player.can_pick_item = False
                                     player.drop_item_time = pygame.time.get_ticks()
                                     Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
-                                    del player.items_on[weapon]
+                                    if weapon_value['name'] == 'backpack':
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- backpack', 1)
+                                    if weapon_value['name'] == 'ammo':
+                                        for sprite in range(weapon_value['amount']):
+                                            Item((player.rect[0:2]), self.item_sprites,
+                                                 weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- ammo', weapon_value['amount'])
+                                    if weapon_value['name'] == 'boots':
+                                        packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- boots', 1)
+                                    if weapon_value['name'] == 'medkit':
+                                        packet_to_send.add_object_update('drop', 'med_kit', player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- med_kits', 1)
+                                    if weapon_value['name'] == 'bendage':
+                                        packet_to_send.add_object_update('drop', 'bandage', player.rect.center, 1)
+                                        packet_to_send.add_header_inventory_update('- bandages', 1)
+                                    if weapon_value['name'] != 'ammo':
+                                        Item((player.rect[0:2]), self.item_sprites, weapon_value['name'])  # item create
+                                        del player.items_on[weapon]
                                 else:  # only for the backpack erasing
                                     items_copy = player.items_on.copy()
                                     del_flag = True
