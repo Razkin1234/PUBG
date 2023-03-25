@@ -172,18 +172,28 @@ class Incoming_packets:
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
         # pass
-        player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
-        player_place = (int(player_place[0]), int(player_place[1]))
-        where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
-        where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
-        #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
-                #my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
-        image = image.split(',')
-
-        if not visiable_sprites.check_existines(player_id, image, player_place):
-            Players(player_place, visiable_sprites,obstecal_sprits, create_attack, destroy_attack, create_magic, bullet_group, player_id, image[0], image[1], where_to_go)
-            pass
-
+        print(3)
+        b = 'not'
+        try:
+            player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
+            player_place = (int(player_place[0]), int(player_place[1]))
+            b = 'player_place'
+            where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
+            where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
+            b = 'where_to_go'
+            #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+                    #my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+            image = image.split(',')
+            b = 'image'
+            if not visiable_sprites.check_existines(player_id, player_place, image[0], image[1], where_to_go):
+                Players(player_place, visiable_sprites,obstecal_sprits, create_attack, destroy_attack, create_magic, bullet_group, player_id, image[0], image[1], where_to_go, int(speed))
+                pass
+            b = 'good'
+        except Exception as e:
+            print(image)
+            print(e)
+            print('fuckkkkk')
+            print(b)
 
 
 

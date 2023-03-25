@@ -17,7 +17,7 @@ class MagicPlayer:
         if player.exp >= cost and player.can_run:
             player.can_run = False
             player.exp -= cost
-            packet_to_send.add_header_player_place_and_image(player.rect.center, player.place_to_go, player.speed,
+            packet_to_send.add_header_player_place_and_image(player.rect.center, player.place_to_go, 16,
                                                              f'{player.status},no')
             player.run_timer = pygame.time.get_ticks()
 

@@ -7,7 +7,7 @@ import math
 from bullet import Bullets
 from Connection_to_server import Connection_to_server
 class Players(Entity):
-    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id,image,hit,place_to_go):
+    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id,image,hit,place_to_go, speed):
         super().__init__(groups)
         # server conection
         self.id = id  # need to get id
@@ -84,7 +84,7 @@ class Players(Entity):
         self.health = self.stats['health']-60 #our current health
         self.energy = self.stats['energy'] #our current energy
         self.exp = 100
-        self.speed = self.stats['speed'] #the speed of the player
+        self.speed = speed
 
         #damage timer
         self.vulnerable =True
@@ -116,7 +116,6 @@ class Players(Entity):
             if abs(self.place_to_go[0]-self.hitbox.center[0]) < 64 and abs(self.place_to_go[1]-self.hitbox.center[1]) <64:
                 self.direction.x = 0
                 self.direction.y = 0
-                self.status = 'down_idle'
                 self.place_to_go = None
 
     def moving_other_players(self):

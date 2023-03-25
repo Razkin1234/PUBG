@@ -26,13 +26,13 @@ from Connection_to_server import Connection_to_server
 
 
 class Level:
-    def __init__(self, place_to_start):
+    def __init__(self, place_to_start, player_id):
         # get the display surface
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
         self.place_to_start = place_to_start
         # server_things
-        self.player_id = ''
+        self.player_id = player_id
 
         # sprite groups setup
         self.visble_sprites = YsortCameraGroup()
@@ -80,107 +80,131 @@ class Level:
 
         self.item = Item
 
-    def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites, id):
+    def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites):
+
+        start = time.perf_counter()
+        count = 1
         while not shut_down_event.is_set():
+            if (time.perf_counter() - start) > count:
+                print(f"{packets_to_handle_queue=}")
+                count += 1
             if len(packets_to_handle_queue) > 0:
                 packet = packets_to_handle_queue.popleft()
+                print(f"\npopping packet from queue {packet.get_packet()}")
                 if packet.rotshild_filter():
                     lines = packet.get_packet().split('\r\n')
                     while '' in lines:
                         lines.remove('')
+                    print(f'\narrived and the data : {lines}')
                     for line in lines:
                         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                        a = ''
+                        try:
                         # --------------
                         # in this header clients should check the moved_player_id so they wont print their own movement twice.
-                        if line_parts[0] == 'player_plac:':
-                            # looking for image header
-                            for l in lines:
-                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                                if l_parts[0] == 'image:':
-                                    # looking for moved player id
-                                    for l2 in lines:
-                                        l2_parts = l2.split()
-                                        if l2_parts[0] == 'moved_player_id:':
-                                            if packet.get_id() != l2_parts[1]:
-                                                where_to_go = line_parts[1].split(',')
-                                                packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l_parts[1],player.rect.center,
-                                                                           self.other_players, self.obstecal_sprits,
-                                                                           self.damage_player, self.create_attack,
-                                                                           self.destroy_attack, self.create_magic,
-                                                                           self.bullet_group)
+                            if line_parts[0] == 'player_place:':
+                                # looking for image header
+                                print(f'first the data : {lines}')
+                                for l in lines:
+                                    a = 'l_parts'
+                                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                    if l_parts[0] == 'image:':
+                                        # looking for moved player id
+                                        print(f'second the data : {lines}')
+                                        for l2 in lines:
+                                            l2_parts = l2.split()
+                                            a = 'l2_parts'
+                                            if l2_parts[0] == 'moved_player_id:':
+                                                #print(line)
+                                                print(f'third the data : {lines}')
+                                                if self.player_id != l2_parts[1]:
+                                                    print(f'last the data : {lines}')
+                                                    where_to_go = line_parts[1].split('/')
+                                                    a = 'where_to_go'
+                                                    try:
+                                                        packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l2_parts[1], l_parts[1],player.rect.center,
+                                                                                   self.other_players, obstecal_sprits,
+                                                                                   self.damage_player, self.create_attack,
+                                                                                   self.destroy_attack, self.create_magic,
+                                                                                   self.bullet_group)
+                                                    except Exception as e:
+                                                        print(e)
+                                                        print(where_to_go + l_parts + l2_parts)
 
-                                            break
-                                    break
-                                    # here calling the function
+                                                break
+                                        break
+                                        # here calling the function
 
-                        # --------------
+                            # --------------
 
-                        # --------------
-                        # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
-                        elif line_parts[0] == 'shot_place:':
-                            # looking for the hit_hp header
-                            for l in lines:
-                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                                if l_parts[0] == 'shooter_id:':
-                                    if l_parts[1] != packet.get_id():
-                                        packet.handle_shot_place(line_parts[1], self.other_bullet_group,
-                                                                 self.obstacle_sprites, self.player.rect.center)
-                                    break
-                        # --------------
+                            # --------------
+                            # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+                            elif line_parts[0] == 'shot_place:':
+                                # looking for the hit_hp header
+                                for l in lines:
+                                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                    if l_parts[0] == 'shooter_id:':
+                                        if l_parts[1] != packet.get_id():
+                                            packet.handle_shot_place(line_parts[1], self.other_bullet_group,
+                                                                     self.obstacle_sprites, self.player.rect.center)
+                                        break
+                            # --------------
 
-                        # --------------
-                        elif line_parts[0] == 'dead:':
-                            packet.handle_dead(int(line_parts[1]), visibale_sprites)
-                        # --------------
+                            # --------------
+                            elif line_parts[0] == 'dead:':
+                                packet.handle_dead(int(line_parts[1]), visibale_sprites)
+                            # --------------
 
-                        # --------------
-                        elif line_parts[0] == 'first_inventory:':
-                            packet.handle_first_inventory(line_parts[1], player)
-                        # --------------
+                            # --------------
+                            elif line_parts[0] == 'first_inventory:':
+                                packet.handle_first_inventory(line_parts[1], player)
+                            # --------------
 
-                        # --------------
-                        # clients will get chats of themselves too.
-                        # so they should print only what comes from the server and don't print their own messages just after sending it.
-                        elif line_parts[0] == 'chat:':
-                            for l in lines:
-                                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                                if l_parts[0] == 'user_name:':
-                                    message = packet.handle_chat(line_parts[1],
-                                                                 l_parts[1])  # getting in answer the message to print
-                                    break
-                        elif line_parts[0] == 'server_shutdown:':
-                            shut_down_event.set()
-                            return
+                            # --------------
+                            # clients will get chats of themselves too.
+                            # so they should print only what comes from the server and don't print their own messages just after sending it.
+                            elif line_parts[0] == 'chat:':
+                                for l in lines:
+                                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                                    if l_parts[0] == 'user_name:':
+                                        message = packet.handle_chat(line_parts[1],
+                                                                     l_parts[1])  # getting in answer the message to print
+                                        break
+                            elif line_parts[0] == 'server_shutdown:':
+                                shut_down_event.set()
+                                return
 
-                        # --------------
+                            # --------------
 
-                        # --------------
-                        elif line_parts[0] == 'disconnect:':
-                            packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+                            # --------------
+                            elif line_parts[0] == 'disconnect:':
+                                packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
 
-                        # --------------
-                        # --------------
-                        elif line_parts[0] == 'first_objects_position:':
-                            self.finished_first_object_event.clear()
-                            packet.handle_first_objects_position(line_parts[1], item_sprites, self.weapon_sprites)
-                            self.finished_first_object_event.set()
-                        # --------------
-                        # --------------
-                        elif line_parts[0] == 'object_update:':
-                            l_parts = line_parts[1].split('?')
-                            if l_parts[0] != player.id:
-                                packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
-                        # --------------
+                            # --------------
+                            # --------------
+                            elif line_parts[0] == 'first_objects_position:':
+                                self.finished_first_object_event.clear()
+                                packet.handle_first_objects_position(line_parts[1], item_sprites, self.weapon_sprites)
+                                self.finished_first_object_event.set()
+                            # --------------
+                            # --------------
+                            elif line_parts[0] == 'object_update:':
+                                l_parts = line_parts[1].split('?')
+                                if l_parts[0] != player.id:
+                                    packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
+                            # --------------
 
-                        # --------------
-                        elif line_parts[0] == 'dead_enemy:':
-                            packet.handle_dead_enemy(line_parts[1])
-                        # --------------
+                            # --------------
+                            elif line_parts[0] == 'dead_enemy:':
+                                packet.handle_dead_enemy(line_parts[1])
+                            # --------------
 
-                        # --------------
-                        elif line_parts[0] == 'enemy_update:':
-                            packet.handle_enemy_player_place_type_hit(line_parts[1])
-
+                            # --------------
+                            # elif line_parts[0] == 'enemy_update:':
+                            #     packet.handle_enemy_player_place_type_hit(line_parts[1])
+                        except Exception as e:
+                            print(e)
+                            print(a)
             time.sleep(0.1)
 
     def get_place_to_start(self, place_to_start):
@@ -272,9 +296,6 @@ class Level:
         self.player = Player(self.place_to_start, self.visble_sprites,
                              self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
                              self.bullet_group, self.player_id)
-        self.other_p = Players((self.place_to_start[0]+20,self.place_to_start[1]), self.other_players,
-                self.obstacle_sprites, self.create_attack, self.destroy_attack, self.create_magic,
-                self.bullet_group, self.player_id, 'left_attack', 'sword',(self.place_to_start[0]+200,self.place_to_start[1]))
         self.player_prev_location = self.player.rect[0:2]
         # Center camera
         self.camera.x = self.player.rect.centerx
@@ -392,10 +413,10 @@ class Level:
 
         self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
-        self.other_players.custom_draw(self.camera)
         self.other_players.update(packet_to_send)
-        self.visble_sprites.custom_draw(self.camera)
+        self.other_players.custom_draw(self.camera)
         self.visble_sprites.update()
+        self.visble_sprites.custom_draw(self.camera)
         self.player.update1(packet_to_send)
 
         # self.visble_sprites.enemy_update(self.player)
@@ -412,7 +433,7 @@ class Level:
         self.bullet_group.bullet_record(packet_to_send)
 
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
-        if self.player.health == 0:
+        if self.player.health <= 0:
             packet_to_send.add_header_dead(self.player.id)
             packet_to_send.for_dead_object_update(self.player)
         # print(packet_to_send.get_packet())

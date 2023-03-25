@@ -82,13 +82,26 @@ class YsortCameraGroup(pygame.sprite.Group):
         for enemy in enemy_sprites:
             enemy.enemy_update(player)
 
-    def check_existines(self, player_id, hit, pos,): #need to change
+    def check_existines(self, player_id, pos, image, hit, place_to_go):  # need to change
         for sprite in self.sprites():
             if sprite.id == player_id:
 
-                sprite.rect.center = pos
-                sprite.hitbox.center = pos
-                sprite.hit = hit
+                sprite.weapon_index = 0  # the offset of the weapons
+
+                sprite.hit = False
+                if hit != 'no':
+                    sprite.hit = True
+
+                    for i in list(weapon_data.keys()):
+                        if 'sword' == i:
+                            break
+                        sprite.weapon_index += 1
+                sprite.weapon = list(weapon_data.keys())[sprite.weapon_index]  # the weapon we are using
+
+                sprite.status = image
+                #sprite.rect.center = pos
+                #sprite.hitbox.center = pos
+                sprite.place_to_go = place_to_go
                 return True
         return False
 
@@ -169,6 +182,8 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict = items_add_data[sprite.sprite_type].copy()
                                     temp_dict['ui'] = i
                                     player.items_on['boots'] = temp_dict.copy()
+                                    packet_to_send.add_header_player_place_and_image(player.rect.center, player.place_to_go,
+                                                                                     player.speed, f'{player.status},no')
                                     packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()

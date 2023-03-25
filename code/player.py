@@ -131,11 +131,11 @@ class Player(Entity):
                 y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
                 self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
-                if self.player.attack_for_moment:
-                    image = self.player.weapon
-                else:
-                    image = "no"
-                packet_to_send.add_header_player_place_and_image(self.rect.center, self.place_to_go, self.speed, f'{self.status},{image}')
+                #if self.player.attack_for_moment:
+                    #image = self.player.weapon
+                #else:
+                    #image = "no"
+            packet_to_send.add_header_player_place_and_image(self.rect.center, (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed, f'{self.status},no')
         #debug(self.place_to_go)
         #debug2(self.hitbox.center)
 
@@ -252,7 +252,7 @@ class Player(Entity):
             if current_time - self.run_timer >= self.run_duration:
                 self.can_run = True
                 self.speed = self.stats['speed']
-                packet_to_send.add_header_player_place_and_image(self.rect.center, self.place_to_go, 16, f'{self.status},no')
+                packet_to_send.add_header_player_place_and_image(self.rect.center, self.place_to_go, self.speed, f'{self.status},no')
             else:
                 self.speed = 16
 
