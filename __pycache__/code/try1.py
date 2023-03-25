@@ -1,0 +1,5 @@
+a =(1,  5)
+a=str(a)
+print(a)
+a = (int(a[1]),int(a[4]))
+print(a)

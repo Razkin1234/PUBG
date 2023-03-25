@@ -5,7 +5,54 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4bf2771f-6bf1-40e7-94ca-2137a9b39790" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/FinalProject.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+      <change beforePath="$PROJECT_DIR$/MyKeyring.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyKeyring.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyKeyringTester.py" beforeDir="false" afterPath="$PROJECT_DIR$/MyKeyringTester.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/My_Keyring.json" beforeDir="false" afterPath="$PROJECT_DIR$/My_Keyring.json" afterDir="false" />
+>>>>>>> 1f8466f39c827471a0bedc6ec40ac9e52d6bd54b
+      <change beforePath="$PROJECT_DIR$/Server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Server.py" afterDir="false" />
+=======
+>>>>>>> 48008c2e8464be98a37ca354b3730621d54c10b6
+      <change beforePath="$PROJECT_DIR$/Server_DB.db" beforeDir="false" afterPath="$PROJECT_DIR$/Server_DB.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/Incoming_packets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/Incoming_packets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/YsortCameraGroup.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/YsortCameraGroup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/level.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/level.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/code/particles.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/particles.py" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/code/other_players.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/other_players.py" afterDir="false" />
+>>>>>>> 48008c2e8464be98a37ca354b3730621d54c10b6
+      <change beforePath="$PROJECT_DIR$/code/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/tesr.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/tesr.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/ui.py" afterDir="false" />
+<<<<<<< HEAD
+      <change beforePath="$PROJECT_DIR$/code/weapon.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/weapon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/weapon_item.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/weapon_item.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graphics/rami.tmx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/map/map_Floor.csv" beforeDir="false" afterPath="$PROJECT_DIR$/map/map_Floor.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/map/map_FloorBlocks.csv" beforeDir="false" afterPath="$PROJECT_DIR$/map/map_FloorBlocks.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notwork.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests.py" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
+>>>>>>> 1f8466f39c827471a0bedc6ec40ac9e52d6bd54b
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
+=======
+>>>>>>> 48008c2e8464be98a37ca354b3730621d54c10b6
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,13 +70,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "C:/Networks/check"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Python.main">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
       <module name="pubg" />
@@ -95,9 +141,87 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+<<<<<<< HEAD
+          <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
+          <line>39</line>
+          <option name="timeStamp" value="45" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/temp_dtls_client.py</url>
+          <line>122</line>
+          <option name="timeStamp" value="46" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/YsortCameraGroup.py</url>
+          <line>95</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="129" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+<<<<<<< HEAD
+          <line>181</line>
+          <option name="timeStamp" value="133" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>445</line>
+          <option name="timeStamp" value="134" />
+=======
+          <line>84</line>
+          <option name="timeStamp" value="142" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+<<<<<<< HEAD
+          <line>160</line>
+          <option name="timeStamp" value="127" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>162</line>
+          <option name="timeStamp" value="128" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="129" />
+=======
+          <line>105</line>
+          <option name="timeStamp" value="143" />
+>>>>>>> d994b7fc5e2b8cb66a4303f848317fa09e1f2715
+<<<<<<< HEAD
+=======
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/level.py</url>
+          <line>180</line>
+          <option name="timeStamp" value="133" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/main.py</url>
+          <line>239</line>
+          <option name="timeStamp" value="147" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/main.py</url>
+          <line>204</line>
+          <option name="timeStamp" value="148" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/code/main.py</url>
+          <line>193</line>
+          <option name="timeStamp" value="150" />
+>>>>>>> 1f8466f39c827471a0bedc6ec40ac9e52d6bd54b
+=======
           <url>file://$PROJECT_DIR$/code/tesr.py</url>
           <line>1</line>
           <option name="timeStamp" value="3" />
+>>>>>>> 48008c2e8464be98a37ca354b3730621d54c10b6
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -105,7 +105,6 @@ class UI:
         # chat:
         self.user_text = ''  # the text that the user has used
         self.chat_messages = [
-        'guy is fat'
         ]  # the mesagges that we will show on the screen
 
         # for the letters cooldown
@@ -303,6 +302,7 @@ class UI:
                                         packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- ammo', weapon_value['amount'])
                                     if weapon_value['name'] == 'boots':
+                                        packet_to_send.add_header_player_place_and_image(player.rect.center, player.place_to_go, 6, f'{player.status},no')
                                         packet_to_send.add_object_update('drop', weapon, player.rect.center, 1)
                                         packet_to_send.add_header_inventory_update('- boots', 1)
                                     if weapon_value['name'] == 'medkit':

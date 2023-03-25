@@ -166,26 +166,38 @@ class Incoming_packets:
             # to go now back to the login page
             return True, None
 
-    def handle_player_place(self, player_place, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,
-                            damage_player, create_attack, destroy_attack, create_magic, bullet_group):  # maybe done
+
+    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player, create_attack, destroy_attack, create_magic, bullet_group):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
         # pass
-        player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
-        player_place = (int(player_place[0]), int(player_place[1]))
-
-        if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
-                my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+        print(3)
+        b = 'not'
+        try:
+            player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
+            player_place = (int(player_place[0]), int(player_place[1]))
+            b = 'player_place'
+            where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
+            where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
+            b = 'where_to_go'
+            #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+                    #my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
             image = image.split(',')
-
-            if not visiable_sprites.check_existines(player_id, image, player_place):
-                Players(player_place, visiable_sprites,
-                        obstecal_sprits, create_attack, destroy_attack, create_magic,
-                        bullet_group, player_id, image[0], image[1])
+            b = 'image'
+            if not visiable_sprites.check_existines(player_id, player_place, image[0], image[1], where_to_go):
+                Players(player_place, visiable_sprites,obstecal_sprits, create_attack, destroy_attack, create_magic, bullet_group, player_id, image[0], image[1], where_to_go, int(speed))
                 pass
+            b = 'good'
+        except Exception as e:
+            print(image)
+            print(e)
+            print('fuckkkkk')
+            print(b)
 
-    def handle_shot_place(self, shot_place, bullet, obsicales_sprites, player_place):
+
+
+    def handle_shot_place(self, shot_place, bullet, obsicales_sprites,player_place):
 
         # add check if hit you
         # to check if its real and if not return false and
@@ -212,7 +224,8 @@ class Incoming_packets:
     def handle_disconnect(self, dead_id, visble_sprites):
         visble_sprites.erase_dead_sprites(dead_id)
 
-    def handle_object_update(self, header_info, item_sprites, weapon_sprites):
+    @staticmethod
+    def handle_object_update(header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         type_for_clients = ''
         for each_change in changes:
@@ -243,13 +256,14 @@ class Incoming_packets:
                 # print the object on the screen, you have the type in each_change[1] and the place in each_change[2]
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
-                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or \
-                        each_change[1] == 'bandage' or each_change[1] == 'boots':
+
+                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots':
                     Item(each_change1, item_sprites, type_for_clients)
                 else:
                     Weapon_item(each_change1, weapon_sprites, each_change[1])
 
-    def handle_first_objects_position(self, header_info, item_sprites, weapon_sprites):
+    @staticmethod
+    def handle_first_objects_position(header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         for each_change in changes:
             each_change1 = each_change.split('-')
@@ -365,24 +379,19 @@ class Incoming_packets:
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites, obstecal_sprits):
-        info = header_info.split('-')
-        for each_info in info:
-            each_info = header_info.split('/')
-            if each_info[3] == 'yes':
-                hit = True
-            else:
-                hit = False
 
-                if not visiable_sprites.check_existines(each_info[0], hit,
-                                                        (int(each_info[1][1], int(each_info[1][4])))):
-                    enemy_place = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
-                    enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
-                    if player.rect.center + MIDDLE_SCREEN[0] > enemy_place[0] > player.rect.center - MIDDLE_SCREEN[
-                        0] and \
-                            player.rect.center + MIDDLE_SCREEN[1] > enemy_place[1] > player.rect.center - MIDDLE_SCREEN[
-                        1]:
-                        Enemy(each_info[3], each_info[2], each_info[1], enemy_place, visiable_sprites, obstecal_sprits,
-                              hit)
+def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites: YsortCameraGroup,
+                                       obstecal_sprits):
+    info = header_info.split('-')
+    for each_info in info:
+        each_info = header_info.split('/')
+        enemy_place_to_go = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
+        enemy_place_to_go = (int(enemy_place_to_go[0]), int(enemy_place_to_go[1]))
+        enemy_place = tuple((each_info[4][1:-1].split(',')))  # converting the place from str to tuple
+        enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
 
-            # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
+        if not visiable_sprites.enemy_check_existines(each_info[0], each_info[3], enemy_place_to_go):
+            Enemy(each_info[3], each_info[2], each_info[1], enemy_place_to_go, visiable_sprites, obstecal_sprits,
+                  each_info[3],enemy_place_to_go)
+
+        # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
