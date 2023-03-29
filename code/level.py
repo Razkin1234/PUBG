@@ -18,7 +18,6 @@ from Incoming_packets import Incoming_packets
 from item import Item
 import threading
 
-from Connection_to_server import Connection_to_server
 
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
@@ -146,7 +145,7 @@ class Level:
                                     if l_parts[0] == 'shooter_id:':
                                         if l_parts[1] != packet.get_id():
                                             packet.handle_shot_place(line_parts[1], self.other_bullet_group,
-                                                                     self.obstacle_sprites, self.player.rect.center)
+                                                                     self.obstacle_sprites)
                                         break
                             # --------------
 
@@ -196,12 +195,12 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'dead_enemy:':
-                                packet.handle_dead_enemy(line_parts[1])
+                                packet.handle_dead_enemy(line_parts[1], player, visibale_sprites,)
                             # --------------
 
                             # --------------
-                            # elif line_parts[0] == 'enemy_update:':
-                            #     packet.handle_enemy_player_place_type_hit(line_parts[1])
+                            elif line_parts[0] == 'enemy_update:':
+                                packet.handle_enemy_player_place_type_hit(line_parts[1], player, visibale_sprites, obstecal_sprits, self.damage_player)
                         except Exception as e:
                             print(e)
                             print(a)
@@ -411,6 +410,7 @@ class Level:
         self.bullet_group.custom_draw(self.camera)
         self.bullet_group.bullet_move()
 
+        self.other_bullet_group.bullet_move()
         self.other_bullet_group.check_if_bullet_hit_me(self.player)
 
         self.other_players.update(packet_to_send)
@@ -419,6 +419,7 @@ class Level:
         self.visble_sprites.custom_draw(self.camera)
         self.player.update1(packet_to_send)
 
+        self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
         # self.visble_sprites.enemy_update(self.player)
         self.player_attack_logic(packet_to_send)
         self.ui.display(self.player)
@@ -430,7 +431,7 @@ class Level:
         else:
             image = "no"
         #packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
-        self.bullet_group.bullet_record(packet_to_send)
+        #self.bullet_group.bullet_record(packet_to_send)
 
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
         if self.player.health <= 0:

@@ -79,13 +79,13 @@ Headers API:                                                                    
               [the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun]                                           |
             - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
               [between every different enemy there is '-']                                                                                                   |
-              [ the coordinates are for where the enemy is about to go]                                                                                      |
+              [ the second coordinates are for where the enemy is about to go]                                                                                      |
             - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
             - dead_enemy: [id_of_enemy]                                                                                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
 =============================================================================================================================================================|
 """
-
+import logging
 import os
 import sys
 import sqlite3
@@ -227,14 +227,15 @@ RACCOON_SPEED = 2  # SPEED OF
 SPIRIT_SPEED = 4  # EACH ENEMY
 BAMBOO_SPEED = 3  #
 
-#BULLET_TIMER = pygame.time.get_ticks()
+# BULLET_TIMER = pygame.time.get_ticks()
 need_to_stop = True
 BULLET_DURATION = 500
 # list of enemies data. its a list of lists of each enemy data.
-# the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type]
+# the sublist of each enemy will be [enemy_id, place_of_enemy, id_of_target_player, enemy_hp_amount, enemy_type, attacked_frame]
 # [enemy_id, id_of_target_player and enemy_type are str.
 # place_of_enemy is a tuple of strs, like (X,Y).
 # enemy_hp_amount is int]
+# attacked frame is int!!
 ENEMY_DATA = []
 # list of the shots with target and the cooldown of enemy be like [[(x,y),(x,y),cooldown],(x1,y1),....]
 ENEMY_SHOTS = []
@@ -262,9 +263,10 @@ FPS = 60
 # each packet in the queue will be like - (payload, (ip, port)) when payload is bytes, ip is str and port is int.
 PACKETS_TO_HANDLE_QUEUE = deque()
 
+logging.basicConfig(level=logging.INFO)
+
 
 # -------------------------
-
 
 def check_if_enemy_need_to_shot_or_to_stop():
     """
@@ -293,15 +295,17 @@ def moving_the_bullets():
         if current_time - shot[2] < BULLET_DURATION:
             # here the code for moving the shots
             enemy_shot = str(shot[0]).replace("'", '').replace(' ', '')
-            distance = calculate_distance(tuple(enemy_shot[1:-1].split(',')), shot[1])
-            shot[0] = get_next_position((int(shot[0][0]), int(shot[0][1])), shot[1], 20)
-            shot_to_send += f'shot_place: {shot[0]}-'
+            #distance = calculate_distance(tuple(enemy_shot[1:-1].split(',')), shot[1])
+            #shot[0] = get_next_position((int(shot[0][0]), int(shot[0][1])), (int(shot[1][0]), int(shot[1][1])), 20)
+            shot_starts = f'({shot[0][0]},{shot[0][1]})'
+            shot_ends = (str(shot[1][0]), str(shot[1][0]))
+            shot_ends = f'({shot_ends[0]},{shot_ends[1]})'
+            shot_to_send += f'shot_place: {shot_starts}/{shot_ends}-'
         else:
             ENEMY_SHOTS.remove(shot)
     if len(ENEMY_SHOTS) > 0:
         shot_to_send = shot_to_send[:-1]
         shot_to_send += '\r\n'
-        shot_to_send += f'hit_hp : {str(3)}\r\n'
     return shot_to_send
 
 
@@ -420,7 +424,8 @@ def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool 
             # Add the text and reset the formatting
             print(escape + 'm' + text + '\033[0m', end='')
 
-    except:
+    except Exception as e:
+        logging.exception(e)
         if new_line:
             print(text)
         else:
@@ -603,7 +608,7 @@ def handle_update_inventory(header_info: str, user_name: str, connector, cursor)
                         updated_weapons.append(weapon)
                     else:
                         count += 1
-                for _ in range(count-1):
+                for _ in range(count - 1):
                     updated_weapons.append(info)
                 value = ','.join(updated_weapons)
             cursor.execute("UPDATE clients_info"
@@ -972,7 +977,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     individual_reply = False  # should the reply for that packet be for an individual client?
     user_name_cache = ''  # saving the user name of the src after found ones (to prevent more scans to find it later)
     id_cache = ''  # saving the id of the src after found ones (to prevent more scans to find it later)
-    #print(rotshild_raw_layer)
+    # print(rotshild_raw_layer)
     lines = rotshild_raw_layer.split('\r\n')
     while '' in lines:
         lines.remove('')
@@ -1028,7 +1033,8 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                     another = line_parts[1].split('/')
                     tuple_place = tuple(another[0][1:-1].split(','))  # converting the place from str to tuple
                     where_to_go = tuple(another[1][1:-1].split(','))
-                    reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache, l_parts[1])
+                    reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache,
+                                                                l_parts[1])
                     break
         # --------------
 
@@ -1133,7 +1139,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # sending the reply to all active clients
         print(f"\nlist of clients: {CLIENTS_ID_IP_PORT_NAME}")
         print(f"\nsending data: {reply_rotshild_layer}")
-        #print(reply_rotshild_layer)
+        # print(reply_rotshild_layer)
         for client in CLIENTS_ID_IP_PORT_NAME:
             print(f"now sending to {client[0]}")
             server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
@@ -1296,12 +1302,12 @@ def creating_enemies():
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             id1 = create_new_id()
             spawn_place = random_spawn_place()
+            spawn_place1 = f'({spawn_place[0]},{spawn_place[1]})'
             target_place = PLAYER_PLACES_BY_ID[CLIENTS_ID_IP_PORT_NAME[index][0]]
-            target_place = (int(target_place[1][0]), int(target_place[1][1]))
-            enemy_place = (int(spawn_place[1][0]), int(spawn_place[1][1]))
-            packet += f'{id1}/{str(target_place).replace(" ", "")}/squid/yes/{str(enemy_place).replace(" ", "")}-'
+            target_place = f'({target_place[0]},{target_place[1]})'
+            packet += f'{id1}/{target_place}/squid/no/{spawn_place1}-'
             ENEMY_DATA.append([id1, spawn_place, CLIENTS_ID_IP_PORT_NAME[index][0], SQUID_HP,
-                               'squid'])
+                               'squid', 0])
 
     if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
         move_them = True
@@ -1311,12 +1317,12 @@ def creating_enemies():
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             id1 = create_new_id()
             spawn_place = random_spawn_place()
+            spawn_place1 = f'({spawn_place[0]},{spawn_place[1]})'
             target_place = PLAYER_PLACES_BY_ID[CLIENTS_ID_IP_PORT_NAME[index][0]]
-            target_place = (int(target_place[1][0]), int(target_place[1][1]))
-            enemy_place = (int(spawn_place[1][0]), int(spawn_place[1][1]))
-            packet += f'{id1}/{str(target_place).replace(" ", "")}/spirit/yes/{str(enemy_place).replace(" ", "")}-'
+            target_place = f'({target_place[0]},{target_place[1]})'
+            packet += f'{id1}/{target_place}/spirit/no/{spawn_place1}-'
             ENEMY_DATA.append([id1, spawn_place, CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
-                               'spirit'])
+                               'spirit', 0])
 
     if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
         move_them = True
@@ -1326,12 +1332,12 @@ def creating_enemies():
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             id1 = create_new_id()
             spawn_place = random_spawn_place()
+            spawn_place1 = f'({spawn_place[0]},{spawn_place[1]})'
             target_place = PLAYER_PLACES_BY_ID[CLIENTS_ID_IP_PORT_NAME[index][0]]
-            target_place = (int(target_place[1][0]), int(target_place[1][1]))
-            enemy_place = (int(spawn_place[1][0]), int(spawn_place[1][1]))
-            packet += f'{id1}/{str(target_place).replace(" ", "")}/raccoon/yes/{str(enemy_place).replace(" ", "")}-'
+            target_place = f'({target_place[0]},{target_place[1]})'
+            packet += f'{id1}/{target_place}/raccoon/no/{spawn_place1}-'
             ENEMY_DATA.append([id1, spawn_place, CLIENTS_ID_IP_PORT_NAME[index][0], RACCOON_HP,
-                               'raccoon'])
+                               'raccoon', 0])
 
     if BAMBOO_AMOUNT != SHOULD_BE_BAMBOO:
         move_them = True
@@ -1341,16 +1347,17 @@ def creating_enemies():
             index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
             id1 = create_new_id()
             spawn_place = random_spawn_place()
+            spawn_place1 = f'({spawn_place[0]},{spawn_place[1]})'
             target_place = PLAYER_PLACES_BY_ID[CLIENTS_ID_IP_PORT_NAME[index][0]]
-            target_place = (int(target_place[1][0]), int(target_place[1][1]))
-            enemy_place = (int(spawn_place[1][0]), int(spawn_place[1][1]))
-            packet += f'{id1}/{str(target_place).replace(" ", "")}/bamboo/yes/{str(enemy_place).replace(" ", "")}-'
+            target_place = f'({target_place[0]},{target_place[1]})'
+            packet += f'{id1}/{target_place}/bamboo/no/{spawn_place1}-'
             ENEMY_DATA.append([id1, spawn_place, CLIENTS_ID_IP_PORT_NAME[index][0], BAMBOO_HP,
-                               'bamboo'])
+                               'bamboo', 0])
     if move_them:
         return move_them, packet
     else:
         return move_them, None
+
 
 def calculate_distance(enemy_place: tuple, player_place: tuple):
     """
@@ -1378,14 +1385,17 @@ def moving_enemies_thread(server_socket: socket):
     # not be cought in the main.
     try:
         clock = pygame.time.Clock()  # Generating a clock object to count and fit the FPS of the game
-        attacked_previous_frame = 0
+        new_shot = False
         while not SHUTDOWN_TRIGGER_EVENT.is_set():
             # waiting for clients to enter
             if not CLIENTS_ID_IP_PORT_NAME:
                 sleep(0.1)  # to avoid waisting CPU cycles
                 continue
             # Making sure there are enough enemies. if some died - spawning new ones
-            can_move, packet = creating_enemies()
+            try:
+                can_move, packet = creating_enemies()
+            except Exception as e:
+                print(e)
 
             # iterate over all the enemies and move 1 step
             for enemy in ENEMY_DATA:
@@ -1413,42 +1423,44 @@ def moving_enemies_thread(server_socket: socket):
                 enemy[1] = enemy_place
                 # calculate if attacking and add the new places of the enemy to the header
                 if enemy[4] != 'bamboo':
-                    enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
+                    enemy_place = f'({enemy_place[0]},{enemy_place[1]})'
                     distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
-                    if distance <= 30 and attacked_previous_frame == 0:
+                    if distance <= 30 and enemy[5] == 0:
                         if not can_move:
                             packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'enemy_update: '
                             can_move = True
-                        enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
-                        packet += f'{enemy[0]}/{str(target_player_place).replace(" ", "")}/{enemy[4]}/yes/{str(enemy_place).replace(" ", "")}-'
-                        attacked_previous_frame += 1
+                        target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
+                        target_player_place = f'({target_player_place[0]},{target_player_place[1]})'
+                        packet += f'{enemy[0]}/{target_player_place}/{enemy[4]}/yes/{enemy_place}-'
+                        enemy[5] += 1
                     else:
-                        attacked_previous_frame += 1
-                    if attacked_previous_frame == 60:
-                        attacked_previous_frame = 0
+                        enemy[5] += 1
+                    if enemy[5] == 60:
+                        enemy[5] = 0
                 else:
                     enemy_place = str(enemy[1]).replace("'", '').replace(' ', '')
                     distance = calculate_distance(tuple(enemy_place[1:-1].split(',')), target_player_place)
-                    if distance <= 600 and attacked_previous_frame == 0:
-                        if not can_move:
-                            packet = ROTSHILD_OPENING_OF_SERVER_PACKETS + 'enemy_update: '
-                            can_move = True
-                        ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
-                        enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
-                        packet += f'{enemy[0]}/{str(target_player_place).replace(" ", "")}/{enemy[4]}/no/{str(enemy_place).replace(" ", "")}-'
+                    if distance <= 600 and enemy[5] == 0:
+                        if not new_shot:
+                            new_shot = True
+                        # ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
                     else:
-                        attacked_previous_frame += 1
-                    if attacked_previous_frame == 60:
-                        attacked_previous_frame = 0
+                        enemy[5] += 1
+                    if enemy[5] == 120:
+                        enemy[5] = 0
             if can_move:
                 # replacing the '-' trailer with a new CRLF characters
                 packet = packet[:-1]
                 packet += '\r\n'
-                packet += moving_the_bullets()
+            if not can_move:
+                packet = ROTSHILD_OPENING_OF_SERVER_PACKETS
+            packet += moving_the_bullets()
+            if packet == ROTSHILD_OPENING_OF_SERVER_PACKETS and not can_move:
+                pass
                 # sending the packet to all clients
+            else:
                 for client in CLIENTS_ID_IP_PORT_NAME:
                     server_socket.sendto(packet.encode('utf-8'), (client[1], int(client[2])))
-
             # delaying to the correct FPS that matches the client code
             clock.tick(FPS)
 
@@ -2352,8 +2364,8 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        executor.submit(moving_enemies_thread, server_socket)
-        # setting threads to handle incomig packets from the queue
+        #executor.submit(moving_enemies_thread, server_socket)
+        # setting threads to handle incoming packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
 

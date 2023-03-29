@@ -1,4 +1,4 @@
-class Connection_to_server:
+class ConnectionToServer:
 
     ####################################################################################################################
     # FOR SENDING PACKETS
@@ -30,9 +30,10 @@ class Connection_to_server:
     def add_header_player_place_and_image(self, player_place, where_to_go, speed, image):
         self.__packet += f'player_place: {str(player_place).replace(" ", "")}/{str(where_to_go).replace(" ", "")}/{speed}\r\nimage: {image}\r\n'
 
-    def add_header_shot_place_and_hit_hp(self, shot_place, hit_hp):
-        shot_place = str(shot_place).replace(' ','')
-        self.__packet += f'shot_place: {shot_place}\r\nhit_hp: {hit_hp}\r\n'
+    def add_header_shot_place_and_hit_hp(self, shot_place_start, shot_place_end, hit_hp):
+        shot_place_start = str(shot_place_start).replace(' ', '')
+        shot_place_end = str(shot_place_end).replace(' ', '')
+        self.__packet += f'shot_place: {shot_place_start}/{shot_place_end}\r\nhit_hp: {hit_hp}\r\n'
 
     def add_header_dead(self, dead):
         self.__packet += f'dead: {dead}\r\n'

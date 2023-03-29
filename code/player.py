@@ -5,9 +5,9 @@ from entity import Entity
 from debug import debug
 import math
 from bullet import Bullets
-from Connection_to_server import Connection_to_server
+from ConnectionToServer import ConnectionToServer
 class Player(Entity):
-    def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id):
+    def __init__(self, pos, groups, obstacle_sprites, create_attack, destroy_attack, create_magic, bullet_group, id):
         super().__init__(groups)
         #server conection
         self.id = id #need to get id
@@ -20,7 +20,10 @@ class Player(Entity):
         # graphics setup
         self.import_player_assets()
         self.status = 'down'
-
+        # for mouse
+        self.can_press_mouse = True
+        self.press_mouse_cooldown = 100
+        self.press_mouse_time = 0
         # movement
         self.attack_for_moment = False
         self.attacking = False
@@ -104,40 +107,42 @@ class Player(Entity):
                 self.status = 'down'
 
     def inputm(self, packet_to_send):  # checks the input from the player, mouse
-
-        if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
-            self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
-            if self.can_teleport == True: #teleport
-                self.can_teleport = False
-                self.hitbox.x -= (MIDDLE_SCREEN[0] - self.place_to_go[0])
-                self.hitbox.y -=(MIDDLE_SCREEN[1] - self.place_to_go[1])
-                self.direction.x=0
-                self.direction.y =0
-            else:
-                # chack where the player prassed in relation to the middle of the screen
-                if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
-                    self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
-                    self.status = 'left'
+        if self.can_press_mouse:
+            self.can_press_mouse = False
+            self.press_mouse_time = pygame.time.get_ticks()
+            if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
+                self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
+                if self.can_teleport == True: #teleport
+                    self.can_teleport = False
+                    self.hitbox.x -= (MIDDLE_SCREEN[0] - self.place_to_go[0])
+                    self.hitbox.y -=(MIDDLE_SCREEN[1] - self.place_to_go[1])
+                    self.direction.x=0
+                    self.direction.y =0
                 else:
-                    self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
-                    self.status = 'right'
-                x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
+                    # chack where the player prassed in relation to the middle of the screen
+                    if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
+                        self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
+                        self.status = 'left'
+                    else:
+                        self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
+                        self.status = 'right'
+                    x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
 
-                if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
-                    # chack if it's higher than the middle or else its lower than the middle
-                    self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
-                else:
-                    self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
-                y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
+                    if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
+                        # chack if it's higher than the middle or else its lower than the middle
+                        self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
+                    else:
+                        self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
+                    y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
-                self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
-                #if self.player.attack_for_moment:
-                    #image = self.player.weapon
-                #else:
-                    #image = "no"
-            packet_to_send.add_header_player_place_and_image(self.rect.center, (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed, f'{self.status},no')
-        #debug(self.place_to_go)
-        #debug2(self.hitbox.center)
+                    self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
+                    #if self.player.attack_for_moment:
+                        #image = self.player.weapon
+                    #else:
+                        #image = "no"
+                packet_to_send.add_header_player_place_and_image(self.rect.center, (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed, f'{self.status},no')
+            #debug(self.place_to_go)
+            #debug2(self.hitbox.center)
 
 
         if not self.chat_input:
@@ -151,6 +156,7 @@ class Player(Entity):
                             if self.items_on[items]['amount'] >= 1:
                                 self.items_on[items]['amount'] -= 1
                                 packet_to_send.add_header_inventory_update("- ammo", 1)
+                                packet_to_send.add_header_shot_place_and_hit_hp(self.rect.center, pygame.mouse.get_pos(), 3)
                                 self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites, pygame.mouse.get_pos())
                                 break
                             else:
@@ -221,6 +227,10 @@ class Player(Entity):
     def cooldowns(self, packet_to_send):
         current_time = pygame.time.get_ticks()
 
+        # mouse_cooldown
+        if not self.can_press_mouse:
+            if current_time - self.press_mouse_time >= self.press_mouse_cooldown:
+                self.can_press_mouse = True
         # attacking cooldown
         if self.attacking:
             self.attack_for_moment = False

@@ -5,7 +5,7 @@ from entity import Entity
 from debug import debug
 import math
 from bullet import Bullets
-from Connection_to_server import Connection_to_server
+from ConnectionToServer import ConnectionToServer
 class Players(Entity):
     def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id,image,hit,place_to_go, speed):
         super().__init__(groups)

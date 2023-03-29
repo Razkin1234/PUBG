@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from settings import *
 # from level import Level
 from other_players import Players
@@ -175,10 +177,10 @@ class Incoming_packets:
         print(3)
         b = 'not'
         try:
-            player_place = tuple((player_place[1:-1].split(',')))  # converting the place from str to tuple
+            player_place = tuple(player_place[1:-1].split(','))  # converting the place from str to tuple
             player_place = (int(player_place[0]), int(player_place[1]))
             b = 'player_place'
-            where_to_go = tuple((where_to_go[1:-1].split(',')))  # converting the place from str to tuple
+            where_to_go = tuple(where_to_go[1:-1].split(','))  # converting the place from str to tuple
             where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
             b = 'where_to_go'
             #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
@@ -197,16 +199,21 @@ class Incoming_packets:
 
 
 
-    def handle_shot_place(self, shot_place, bullet, obsicales_sprites,player_place):
+    def handle_shot_place(self, info , bullet, obsicales_sprites):
 
         # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
-        shot_place = tuple((shot_place[1:-1].split(',')))  # converting the place from str to tuple
-        shot_place = (int(shot_place[0]), int(shot_place[1]))
-        if player_place[0] + MIDDLE_SCREEN[0] > shot_place[0] > player_place[0] - MIDDLE_SCREEN[0] and \
-                player_place[1] + MIDDLE_SCREEN[1] > shot_place[1] > player_place[1] - MIDDLE_SCREEN[1]:
-            Bullets(shot_place, bullet, obsicales_sprites, None)
+        each_shot = info.split('-')
+        for shot in each_shot:
+            shot1 = shot.split('/')
+            shot_place_start = shot1[0]
+            shot_place_start = tuple((shot_place_start[1:-1].split(',')))  # converting the place from str to tuple
+            shot_place_start = (int(shot_place_start[0]), int(shot_place_start[1]))
+            shot_place_end = shot1[1]
+            shot_place_end = tuple((shot_place_end[1:-1].split(',')))  # converting the place from str to tuple
+            shot_place_end = (int(shot_place_end[0]), int(shot_place_end[1]))
+            Bullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 
@@ -377,24 +384,28 @@ class Incoming_packets:
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    def handle_enemy_player_place_type_hit(self, header_info, player, visiable_sprites, obstecal_sprits):
+    def handle_enemy_player_place_type_hit(self, header_info, player, visible_sprites: YsortCameraGroup,
+                                           obstacle_sprites, damage_player):
         info = header_info.split('-')
-        for each_info in info:
-            each_info = header_info.split('/')
-            if each_info[3] == 'yes':
-                hit = True
-            else:
-                hit = False
-
-                if not visiable_sprites.check_existines(each_info[0], hit,
-                                                        (int(each_info[1][1], int(each_info[1][4])))):
-                    enemy_place = tuple((each_info[2][1:-1].split(',')))  # converting the place from str to tuple
-                    enemy_place = (int(enemy_place[0]), int(enemy_place[1]))
-                    if player.rect.center + MIDDLE_SCREEN[0] > enemy_place[0] > player.rect.center - MIDDLE_SCREEN[
-                        0] and \
-                            player.rect.center + MIDDLE_SCREEN[1] > enemy_place[1] > player.rect.center - MIDDLE_SCREEN[
-                        1]:
-                        Enemy(each_info[3], each_info[2], each_info[1], enemy_place, visiable_sprites, obstecal_sprits,
-                              hit)
-
-            # in each_info[0] you have the enemy_id and in each_info[1] you have the place_of_enemy and in each_info[2] you have the type of the enemy and in each_info[3] you have Yes if him hitting ot No if not
+        print(f' what is in info: {info}')
+        try:
+            for each_info in info:
+                each_info = each_info.split('/')
+                enemy_place_to_go = tuple(each_info[1][1:-1].split(','))  # converting the place from str to Tuple[str, str]
+                enemy_place_to_go = (int(enemy_place_to_go[0]), int(enemy_place_to_go[1]))
+                enemy_pos = tuple(each_info[4][1:-1].split(','))  # converting the place from str to Tuple[str, str]
+                enemy_pos = (int(enemy_pos[0]), int(enemy_pos[1]))  # convert to Tuple[int, int]
+                if not visible_sprites.enemy_check_exists(each_info[0], each_info[3], enemy_place_to_go):
+                    Enemy(
+                        monster_name=each_info[2],
+                        enemy_id=each_info[0],
+                        pos=enemy_pos,
+                        groups=visible_sprites,
+                        obstacle_sprites=obstacle_sprites,
+                        damage_player=damage_player,
+                        hit=each_info[3],
+                        place_to_go=enemy_place_to_go,
+                    )
+        except Exception as e:
+            print(e)
+            print("hate cyber")
