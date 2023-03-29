@@ -56,9 +56,9 @@ class ConnectionToServer:
                     how_many[item] = 1
             elif 'ammo' == item:
                 if item in how_many:
-                    how_many[item] += 1
+                    how_many[item] += player.items_on['ammo']['amount']
                 else:
-                    how_many[item] = 1
+                    how_many[item] = player.items_on['ammo']['amount']
             elif 'boots' == item:
                 if item in how_many:
                     how_many[item] += 1
@@ -107,6 +107,7 @@ class ConnectionToServer:
                     how_many[weapon] = 1
         for key in how_many:
             for_this += f'object_update: drop-{key}-{player.rect.center}-{how_many[key]}/'
+        for_this += f'object_update: drop-exp-{player.rect.center}-1/'
         for_this = for_this[:-1]
         for_this += '\r\n'
         self.__packet += for_this

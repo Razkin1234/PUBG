@@ -27,6 +27,7 @@ import threading
 class Level:
     def __init__(self, place_to_start, player_id):
         # get the display surface
+        self.player = None
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
         self.place_to_start = place_to_start
@@ -385,8 +386,8 @@ class Level:
         """
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
-    def run(self, packet_to_send, id):  # update and draw the game
-        self.player_id = id
+    def run(self, packet_to_send, player_id):  # update and draw the game
+        self.player_id = player_id
 
         self.cooldown()
         self.camera.x = self.player.rect.centerx  # updating the camera location
@@ -435,8 +436,8 @@ class Level:
 
         # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
         if self.player.health <= 0:
+            Item((self.player.rect.center), self.item_sprites, 'exp')  # item create
             packet_to_send.add_header_dead(self.player.id)
             packet_to_send.for_dead_object_update(self.player)
         # print(packet_to_send.get_packet())
-        debug(self.player.rect.center)
         return packet_to_send

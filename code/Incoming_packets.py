@@ -231,21 +231,30 @@ class Incoming_packets:
     def handle_disconnect(self, dead_id, visble_sprites):
         visble_sprites.erase_dead_sprites(dead_id)
 
-    def handle_object_update(self, header_info, item_sprites, weapon_sprites):
+    @staticmethod
+    def handle_object_update(header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         type_for_clients = ''
         for each_change in changes:
             each_change = each_change.split('-')
             if 'backpack' == each_change[1]:
                 type_for_clients = 'backpack'
+                how_many_item = each_change[3]
             elif 'boots' == each_change[1]:
                 type_for_clients = 'boots'
+                how_many_item = each_change[3]
             elif 'ammo' == each_change[1]:
                 type_for_clients = 'ammo'
+                how_many_item = each_change[3]
             elif 'med_kit' == each_change[1]:
                 type_for_clients = 'medkit'
+                how_many_item = each_change[3]
             elif 'bandage' == each_change[1]:
                 type_for_clients = 'bendage'
+                how_many_item = each_change[3]
+            elif 'exp' == each_change[1]:
+                type_for_clients = 'exp'
+                how_many_item = each_change[3]
             if each_change[0] == 'pick':
                 # so delete the object that is on the screen, you have the type in each_change[1] and the place in each_change[2]
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
@@ -263,12 +272,14 @@ class Incoming_packets:
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
 
-                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots':
-                    Item(each_change1, item_sprites, type_for_clients)
+                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots' or each_change[1] == 'exp':
+                    for i in range(how_many_item):
+                        Item(each_change1, item_sprites, type_for_clients)
                 else:
                     Weapon_item(each_change1, weapon_sprites, each_change[1])
 
-    def handle_first_objects_position(self, header_info, item_sprites, weapon_sprites):
+    @staticmethod
+    def handle_first_objects_position(header_info, item_sprites, weapon_sprites):
         changes = header_info.split('/')
         for each_change in changes:
             each_change1 = each_change.split('-')

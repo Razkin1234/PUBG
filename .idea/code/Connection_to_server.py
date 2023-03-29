@@ -27,8 +27,8 @@ class Connection_to_server:
         self.__packet += f'inventory_update: {header_name} {name_of_item}\r\n'
 
 
-    def add_header_player_place_and_image(self, player_place, image):
-        self.__packet += f'player_place: {str(player_place).replace(" ", "")}\r\nimage: {image}\r\n'
+    def add_header_player_place_and_image(self, player_place, where_to_go, speed, image):
+        self.__packet += f'player_place: {str(player_place).replace(" ", "")}/{str(where_to_go).replace(" ", "")}/{speed}\r\nimage: {image}\r\n'
 
     def add_header_shot_place_and_hit_hp(self, shot_place, hit_hp):
         shot_place = str(shot_place).replace(' ','')

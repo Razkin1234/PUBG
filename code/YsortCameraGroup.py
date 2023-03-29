@@ -116,7 +116,6 @@ class YsortCameraGroup(pygame.sprite.Group):
                 if hit != 'no':
                     sprite.hit = True
                     for i in list(weapon_data.keys()):
-
                         if hit == i:
                             break
                         sprite.weapon_index += 1
@@ -156,6 +155,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                 packet_to_send.add_object_update('pick', 'ammo', sprite.rect.center, 1)
                                 sprite.kill()
                     if sprite.sprite_type == 'exp':
+                        packet_to_send.add_object_update('pick', 'exp', sprite.rect.center, 1)
                         player.exp += 20
                         sprite.kill()
 

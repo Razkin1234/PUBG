@@ -13,7 +13,7 @@ MIDDLE_SCREEN = (WIDTH/2, HEIGTH/2)
 SOCKET_BUFFER_SIZE = 8192
 shut_down_event = Event()
 SERVER_IP = '192.168.172.244'
-SERVER_PORT = 56789
+SERVER_PORT = 56791
 packets_to_handle_queue = deque()
 #map setup
 ROW_LOAD_TILE_DISTANCE = 8  #8 is the good one
@@ -52,11 +52,11 @@ weapon_data = {
 
 item_data = {
 	'backpack': {'graphic': '../graphics/items/backpack.png'},
-
 	'ammo': {'amount': 20, 'graphic': '../graphics/items/ammo.png'},
 	'boots': {'speed': 1, 'graphic': '../graphics/items/boots.png'},
 	'medkit': {'health': 50, 'graphic': '../graphics/items/medkit.png'},
-	'bendage': {'health': 7, 'graphic': '../graphics/items/bendage.png'}
+	'bendage': {'health': 7, 'graphic': '../graphics/items/bendage.png'},
+	'exp': {'graphic': '../graphics/items/exp.png'}
 }
 items_add_data = {
             'backpack': {'name': 'backpack','ui':0},

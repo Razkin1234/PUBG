@@ -16,7 +16,6 @@ class Enemy(Entity):
         # general setup
         logging.info("ENEMY __INIT__ FUNCTION CALLED")
         super().__init__(groups)
-
         self.sprite_type = 'enemy'
         self.id = enemy_id
         self.hit = False

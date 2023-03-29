@@ -79,7 +79,7 @@ Headers API:                                                                    
               [the type can be: ammo, med_kit, backpack, bandage, boots, exp, sword, lance, axe, rapier, sai, gun]                                           |
             - enemy_update: [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-...         [only server sends]       |
               [between every different enemy there is '-']                                                                                                   |
-              [ the second coordinates are for where the enemy is about to go]                                                                                      |
+              [ the second coordinates are for where the enemy is about to go]                                                                               |
             - hit_an_enemy: [id_of_enemy],[how much hp to sub]                                                                     [only clients sends]      |
             - dead_enemy: [id_of_enemy]                                                                                            [only server sends]       |
 ------------------------------------------------------------------                                                                                           |
@@ -106,7 +106,7 @@ from cryptography.fernet import Fernet
 from random import randint, choice
 
 # ------------------------ socket
-SERVER_UDP_PORT = 56789
+SERVER_UDP_PORT = 56791
 SERVER_IP = '0.0.0.0'
 SOCKET_BUFFER_SIZE = 2048
 SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to

@@ -102,6 +102,8 @@ class Game:
         sign_in = False
         log_in = False
         check = True
+        push = False
+        id1 = ''
         while True:
             self.display_surface.fill('black')
 
@@ -198,6 +200,14 @@ class Game:
                         sign_in = False
                         log_in = True
 
+                    if not  push:
+                        if sign_up_button.checkForInput(event.pos):
+                            sign_in = True
+
+                        elif log_in_button.checkForInput(event.pos):
+                            sign_in = False
+                            log_in = True
+                        push = True
                     if play_button.checkForInput(event.pos):
 
                         if len(self.user_name) > 0 and len(self.passward) > 0 and len(self.server_ip) > 0:
@@ -226,6 +236,7 @@ class Game:
                                 if not check:
                                     sign_in = False
                                     log_in = False
+                                    push = False
                             # except Exception as e:
                             #    print(e)
                             #    sign_in = False
@@ -253,6 +264,10 @@ class Game:
                                     #packet.set_player_id(id1)
                                     self.player_id = id1
                                     self.play(packet)  # packet
+                                else:
+                                    sign_in = False
+                                    log_in = False
+                                    push = False
                             # except Exception as e:
                             # print(e)w
 
@@ -325,6 +340,8 @@ class Game:
                             pygame.quit()
                             self.my_socket.close()
                             sys.exit()
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            print("a")
 
                     packet_to_send = self.level.run(packet_to_send, self.player_id)
                     if len(packet_to_send.get_packet().split('\r\n')) > 3:
