@@ -55,11 +55,11 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def earase_non_relevant_sprites(self, player):
         for sprite in self.sprites():
-            if player.rect[0] - (COL_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[0] or sprite.rect[0] > player.rect[
-                0] + (COL_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[0] - (COL_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[0] or \
+                    sprite.rect[0] > player.rect[0] + (COL_LOAD_TILE_DISTANCE * TILESIZE):
                 sprite.kill()
-            if player.rect[1] - (ROW_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[1] or sprite.rect[1] > player.rect[
-                1] + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[1] - (ROW_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[1] or \
+                    sprite.rect[1] > player.rect[1] + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
                 sprite.kill()
 
     def erase_dead_sprites(self, id):
@@ -103,11 +103,13 @@ class YsortCameraGroup(pygame.sprite.Group):
             if sprite.id == player_id:
 
                 sprite.weapon_index = 0  # the offset of the weapons
-
+                sprite.place_to_go = place_to_go
                 sprite.hit = False
                 if hit != 'no':
                     sprite.hit = True
-
+                    sprite.direction.x = 0
+                    sprite.direction.y = 0
+                    sprite.place_to_go = None
                     for i in list(weapon_data.keys()):
                         if hit == i:
                             break
@@ -117,7 +119,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                 sprite.status = image
                 # sprite.rect.center = pos
                 # sprite.hitbox.center = pos
-                sprite.place_to_go = place_to_go
+
                 return True
         return False
 

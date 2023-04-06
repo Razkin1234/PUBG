@@ -82,7 +82,7 @@ class Level:
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites):
-
+        packet : Incoming_packets
         start = time.perf_counter()
         count = 1
         while not shut_down_event.is_set():
@@ -197,12 +197,13 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'dead_enemy:':
-                                packet.handle_dead_enemy(line_parts[1])
+                                packet.handle_dead_enemy(line_parts[1],self.visble_sprites)
                             # --------------
 
                             # --------------
                             elif line_parts[0] == 'enemy_update:':
-                                packet.handle_enemy_player_place_type_hit(line_parts[1])
+                                packet.handle_enemy_player_place_type_hit(line_parts[1],self.player,self.visble_sprites,
+                                                                          self.obstacle_sprites, self.damage_player)
                         except Exception as e:
                             print(e)
                             print(a)
