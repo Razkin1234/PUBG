@@ -14,8 +14,6 @@ class Enemy(Entity):
     def __init__(self, monster_name: str, enemy_id: str, pos: Tuple[int, int], groups: YsortCameraGroup,
                  obstacle_sprites: YsortCameraGroup, damage_player, hit: str, place_to_go: Tuple[int, int]):
         # general setup
-        logging.info("ENEMY __INIT__ FUNCTION CALLED")
-        super().__init__(groups)
         self.sprite_type = 'enemy'
         self.id = enemy_id
         self.hit = False
@@ -23,19 +21,14 @@ class Enemy(Entity):
         # graphics setup
         self.animations = {'idle': [], 'move': [], 'attack': []}
         self.import_graphics(monster_name)
-
+        self.status = 'move'
         if hit != 'no':
             self.hit = True
-            self.status = 'attack'
         else:
             self.hit = False
-            self.status = 'move'
 
-        self.image = self.animations[self.status][self.frame_index]
 
         # movement
-        self.rect = self.image.get_rect(topleft=pos)
-        self.hitbox = self.rect.inflate(0, -10)
         self.obstacle_sprites = obstacle_sprites
         # self.direction = pygame.math.Vector2()
         self.place_to_go = place_to_go
@@ -56,7 +49,7 @@ class Enemy(Entity):
 
         # player interaction
         self.can_attack = True
-        self.attack_time = None
+        self.attack_time = 0
         self.attack_cooldown = 400
         self.damage_player = damage_player
         # self.trigger_death_particles = trigger_death_particles
@@ -65,6 +58,10 @@ class Enemy(Entity):
         self.vulnerable = True
         self.hit_time = None
         self.invincibility_duration = 300
+        super().__init__(groups)
+        self.image = self.animations[self.status][self.frame_index]
+        self.rect = self.image.get_rect(center=pos)
+        self.hitbox = self.rect.inflate(0, -10)
 
     def import_graphics(self, name):
         main_path = f'../graphics/monsters/{name}/'
@@ -74,8 +71,7 @@ class Enemy(Entity):
     def get_player_distance_direction(self, player):
         enemy_vec = pygame.math.Vector2(self.rect.center)
         player_vec = pygame.math.Vector2(player.rect.center)
-        distance = (
-                    player_vec - enemy_vec).magnitude()  # the vector between the player and the enemy converts to the distance
+        distance = (player_vec - enemy_vec).magnitude()  # the vector between the player and the enemy converts to the distance
 
         if distance > 0:  # if the player is not on the exact spot as the player
             direction = (player_vec - enemy_vec).normalize()  # moving the bot towords the player
@@ -87,10 +83,10 @@ class Enemy(Entity):
     def get_status(self, player):
         distance = self.get_player_distance_direction(player)[0]
 
-        if self.hit != 'no':  # changing the bot to attack mode
+        if distance <= self.attack_radius and self.hit != 'no':  # changing the bot to attack mode
             if self.status != 'attack':
                 self.frame_index = 0  # that the enemy will attack again (animation)
-            self.status = 'attack'
+                self.status = 'attack'
         elif distance <= self.notice_radius:  # changing the bot to move mode
             self.status = 'move'
         else:
@@ -99,41 +95,50 @@ class Enemy(Entity):
     def actions(self, player):
         if self.status == 'attack':
             self.attack_time = pygame.time.get_ticks()
-            self.damage_player(self.attack_damage, self.hit)
+            if self.rect.colliderect(player.hitbox):
+                self.damage_player(self.attack_damage, self.attack_type)
         elif self.status == 'move':
-            self.direction = self.get_player_distance_direction(player)[1]
+            pass
         else:
-            self.direction = pygame.math.Vector2()  # the bot will not move
+            self.direction = pygame.math.Vector2()
 
     def animate(self):
-        animation = self.animations[self.status]  # the animations photo
+        try:
+            animation = self.animations[self.status]  # the animations photo
 
-        self.frame_index += self.animation_speed
-        if self.frame_index >= len(animation):
-            if self.status == 'attack':
-                self.can_attack = False
-            self.frame_index = 0
+            self.frame_index += self.animation_speed
+            if self.frame_index >= len(animation):
+                if self.status == 'attack':
+                    self.can_attack = False
+                self.frame_index = 0
 
-        self.image = animation[int(self.frame_index)]
-        self.rect = self.image.get_rect(center=self.hitbox.center)
+            self.image = animation[int(self.frame_index)]
+            self.rect = self.image.get_rect(center=self.hitbox.center)
 
-        if not self.vulnerable:
-            alpha = self.wave_value()
-            self.image.set_alpha(alpha)
-        else:
-            self.image.set_alpha(255)
+            if not self.vulnerable:
+                alpha = self.wave_value()
+                self.image.set_alpha(alpha)
+            else:
+                self.image.set_alpha(255)
+        except Exception as e:
+            print(e)
+            print('animate')
 
     def cooldown(self):
-        current_time = pygame.time.get_ticks()
-        if not self.can_attack:
-            if current_time - self.attack_time >= self.attack_cooldown:
-                self.can_attack = True
+        try:
+            current_time = pygame.time.get_ticks()
+            if not self.can_attack:
+                if current_time - self.attack_time >= self.attack_cooldown:
+                    self.can_attack = True
 
-        if not self.vulnerable:  # chack if the timer is equal or higher than 'self.invincibility_duration'
-            if current_time - self.hit_time >= self.invincibility_duration:
-                self.vulnerable = True
+            if not self.vulnerable:  # chack if the timer is equal or higher than 'self.invincibility_duration'
+                if current_time - self.hit_time >= self.invincibility_duration:
+                    self.vulnerable = True
+        except Exception as e:
+            print(e)
+            print('cooldown')
 
-    def get_damage(self, player, attack_type, packet_to_send : ConnectionToServer):
+    def get_damage(self, player, attack_type, packet_to_send: ConnectionToServer):
         """
 
         :param player: the player
@@ -154,26 +159,38 @@ class Enemy(Entity):
         check if the enemy lost all of his health and kill him if so
         :return:
         """
-        if self.health <= 0:
-            self.kill()
-            self.trigger_death_particles(self.rect.center,self.monster_name)
+        try:
+            if self.health <= 0:
+                self.kill()
+               # self.trigger_death_particles(self.rect.center, self.monster_name)
+        except Exception as e:
+            print(e)
+            print('chack_death')
 
     def hit_reaction(self):
         """
         move the enemy to ather direction after a hit
         :return:
         """
-        if not self.vulnerable:
-            self.direction *= -self.resistance
+        try:
+            if not self.vulnerable:
+                self.direction *= -self.resistance
+        except Exception as e:
+            print(e)
+            print('hit_reaction')
 
     def move(self, speed):  # moves the player around
-        if self.direction.magnitude() != 0:
-            self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
-        self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
-        self.collision('horizontal')
-        self.hitbox.y += self.direction.y * speed  # making the player move verticaly
-        self.collision('vertical')
-        self.rect.center = self.hitbox.center
+        try:
+            if self.direction.magnitude() != 0:
+                self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
+            self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
+            #self.collision('horizontal')
+            self.hitbox.y += self.direction.y * speed  # making the player move verticaly
+            #self.collision('vertical')
+            self.rect.center = self.hitbox.center
+        except Exception as e:
+            print(e)
+            print('move')
 
     def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
@@ -187,19 +204,27 @@ class Enemy(Entity):
                     self.direction.y = 0
 
     def stop(self):  # chack if the character in the place the player prassed on
-        if self.place_to_go is not None:
-            if abs(self.place_to_go[0] - self.hitbox.center[0]) < 64 and abs(
-                    self.place_to_go[1] - self.hitbox.center[1]) < 64:
-                self.direction.x = 0
-                self.direction.y = 0
-                # self.status = 'down_idle'
-                self.place_to_go = None
+        try:
+            if self.place_to_go is not None:
+                if abs(self.place_to_go[0] - self.hitbox.center[0]) < 64 and abs(
+                        self.place_to_go[1] - self.hitbox.center[1]) < 64:
+                    self.direction.x = 0
+                    self.direction.y = 0
+                    # self.status = 'down_idle'
+                    self.place_to_go = None
+        except Exception as e:
+            print(e)
+            print('stop ')
 
     def moving_enemy(self):
         if self.place_to_go is not None:
-            pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
-            target_pos_vector = pygame.math.Vector2(self.place_to_go[0], self.place_to_go[1])
-            self.direction = target_pos_vector - pos_vector
+            try:
+                pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
+                target_pos_vector = pygame.math.Vector2(self.place_to_go[0], self.place_to_go[1])
+                self.direction = target_pos_vector - pos_vector
+            except Exception as e:
+                print(e)
+                print('pygame')
 
     def update(self):
         self.hit_reaction()

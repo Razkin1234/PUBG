@@ -11,7 +11,7 @@ from debug import debug
 from bullet import Bullets
 from entity import Entity
 import itertools
-from other_players import Players
+from Players import Players
 from ConnectionToServer import ConnectionToServer
 import threading
 
@@ -42,10 +42,6 @@ class YsortCameraGroup(pygame.sprite.Group):
         for sprite in sorted(current_frame_sprites, key=lambda x: x.rect.centery):
             # print(f'{sprite=}')
             # print('hello')
-            if isinstance(sprite, Enemy):
-                logging.info("skipped enemy")
-                print("skipped enemy")
-                continue
             # Display the sprite on screen, moving it by the calculated offset
             offset_position = sprite.rect.topleft - camera + self.screen_center
             self.display_surface.blit(sprite.image, offset_position)
@@ -66,11 +62,11 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def earase_non_relevant_sprites(self, player):
         for sprite in self.sprites():
-            if player.rect[0] - (COL_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[0] or sprite.rect[0] > player.rect[
-                0] + (COL_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[0] - (COL_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[0] or sprite.rect[0] > player.rect[0]\
+                    + (COL_LOAD_TILE_DISTANCE * TILESIZE):
                 sprite.kill()
-            if player.rect[1] - (ROW_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[1] or sprite.rect[1] > player.rect[
-                1] + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
+            if player.rect[1] - (ROW_LOAD_TILE_DISTANCE * TILESIZE) > sprite.rect[1] or sprite.rect[1] > player.rect[1]\
+                    + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
                 sprite.kill()
 
     def erase_dead_sprites(self, id: int):
@@ -107,6 +103,25 @@ class YsortCameraGroup(pygame.sprite.Group):
                 sprite.place_to_go = place_to_go
                 return True
         return False
+
+    def other_player_update(self):
+        for sprite in self.sprites():
+            sprite.update()
+        # attributes = dir(Players)
+        # print(f"attributes: {attributes}")
+        # doesnt_have = 0
+        # parent_classes = Players.__bases__
+        # for parent in parent_classes:
+        #     print(f'parent : {dir(parent)}')
+        # for sprite in self.sprites():
+        #     #print(f'the object: {sprite}')
+        #     for attribute in attributes:
+        #         if not hasattr(sprite, attribute):
+        #             #print(f'dont have this attribute: {attribute}')
+        #             doesnt_have = 1
+        #     if doesnt_have == 0:
+        #         print('did update')
+        #         sprite.update()
 
     def check_existines(self, player_id, pos, image, hit, place_to_go):  # need to change
         for sprite in self.sprites():
@@ -212,8 +227,10 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     temp_dict = items_add_data[sprite.sprite_type].copy()
                                     temp_dict['ui'] = i
                                     player.items_on['boots'] = temp_dict.copy()
-                                    packet_to_send.add_header_player_place_and_image((int(player.rect.center[0]), int(player.rect.center[1])), (int(player.place_to_go[0]), int(player.place_to_go[1])),
-                                                                                     player.speed, f'{player.status},no')
+                                    packet_to_send.add_header_player_place_and_image(
+                                        (int(player.rect.center[0]), int(player.rect.center[1])),
+                                        (int(player.place_to_go[0]), int(player.place_to_go[1])),
+                                        player.speed, f'{player.status},no')
                                     packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()

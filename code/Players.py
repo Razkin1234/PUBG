@@ -6,9 +6,10 @@ from debug import debug
 import math
 from bullet import Bullets
 from ConnectionToServer import ConnectionToServer
+
+
 class Players(Entity):
     def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack,create_magic,bullet_group,id,image,hit,place_to_go, speed):
-        super().__init__(groups)
         # server conection
         self.id = id  # need to get id
         self.animations = None
@@ -99,7 +100,7 @@ class Players(Entity):
 
         #chat stuff:
         self.chat_input = False
-
+        super().__init__(groups)
 
 
     def import_player_assets(self):
@@ -112,13 +113,14 @@ class Players(Entity):
             self.animations[animation] = import_folder(full_path)
 
     def stop(self):  # chack if the character in the place the player prassed on
-        if self.place_to_go is not None:
+        if self.place_to_go != None:
             if abs(self.place_to_go[0]-self.hitbox.center[0]) < 64 and abs(self.place_to_go[1]-self.hitbox.center[1]) <64:
                 self.direction.x = 0
                 self.direction.y = 0
                 self.place_to_go = None
 
     def moving_other_players(self):
+        #print(f' fuck guy {self=}')
         if self.place_to_go != None:
             pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
             target_pos_vector = pygame.math.Vector2(self.place_to_go[0], self.place_to_go[1])
@@ -312,15 +314,19 @@ class Players(Entity):
         weapon_damage = weapon_data[self.weapon]['damage']
         return base_damage + weapon_damage
 
+    # def __repr__(self):
+    #     print(f'{self.}')
 
-    def update(self, packet_to_send):
-
-        self.moving_other_players()
+    def update(self):
+        try:
+            self.moving_other_players()
+        except Exception as e:
+            print(f"sprite info : {self=}")
+            print(e)
         self.cooldowns()
         self.get_status()
         self.animate()
         self.move(self.speed)  # making the player move
-
         self.stop()
 
         for items in self.items_on:

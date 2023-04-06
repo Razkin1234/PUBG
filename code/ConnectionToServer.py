@@ -26,7 +26,6 @@ class ConnectionToServer:
 
         self.__packet += f'inventory_update: {header_name} {name_of_item}\r\n'
 
-
     def add_header_player_place_and_image(self, player_place, where_to_go, speed, image):
         self.__packet += f'player_place: {str(player_place).replace(" ", "")}/{str(where_to_go).replace(" ", "")}/{speed}\r\nimage: {image}\r\n'
 
@@ -47,7 +46,7 @@ class ConnectionToServer:
     def for_dead_object_update(self, player):
         # how_many = {'sword' : 0,'lance': 0, 'axe' : 0, 'rapier' : 0, 'sai' : 0, 'gun' : 0, 'backpack' : 0, 'ammo' : 0, 'boots' : 0, 'medkit' : 0, 'bendage' : 0}
         how_many = {}
-        for_this = ''
+        for_this = 'object_update: '
         for item in player.items_on():
             if 'backpack' == item:
                 if item in how_many:
@@ -106,8 +105,8 @@ class ConnectionToServer:
                 else:
                     how_many[weapon] = 1
         for key in how_many:
-            for_this += f'object_update: drop-{key}-{player.rect.center}-{how_many[key]}/'
-        for_this += f'object_update: drop-exp-{player.rect.center}-1/'
+            for_this += f'drop-{key}-{player.rect.center}-{how_many[key]}/'
+        for_this += f'drop-exp-{player.rect.center}-1/'
         for_this = for_this[:-1]
         for_this += '\r\n'
         self.__packet += for_this

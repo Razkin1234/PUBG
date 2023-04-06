@@ -2,7 +2,7 @@ from typing import Tuple
 
 from settings import *
 # from level import Level
-from other_players import Players
+from Players import Players
 from weapon_item import Weapon_item
 from player import Player
 from YsortCameraGroup import YsortCameraGroup
@@ -204,17 +204,20 @@ class Incoming_packets:
         # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
-        each_shot = info.split('-')
-        for shot in each_shot:
-            shot1 = shot.split('/')
-            shot_place_start = shot1[0]
-            shot_place_start = tuple((shot_place_start[1:-1].split(',')))  # converting the place from str to tuple
-            shot_place_start = (int(shot_place_start[0]), int(shot_place_start[1]))
-            shot_place_end = shot1[1]
-            shot_place_end = tuple((shot_place_end[1:-1].split(',')))  # converting the place from str to tuple
-            shot_place_end = (int(shot_place_end[0]), int(shot_place_end[1]))
-            Bullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
-
+        try:
+            each_shot = info.split('-')
+            for shot in each_shot:
+                shot1 = shot.split('/')
+                shot_place_start = shot1[0]
+                shot_place_start = tuple((shot_place_start[1:-1].split(',')))  # converting the place from str to tuple
+                shot_place_start = (int(shot_place_start[0]), int(shot_place_start[1]))
+                shot_place_end = shot1[1]
+                shot_place_end = tuple((shot_place_end[1:-1].split(',')))  # converting the place from str to tuple
+                shot_place_end = (int(shot_place_end[0]), int(shot_place_end[1]))
+                Bullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
+        except Exception as e:
+            print(e)
+            print('hers shot')
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 
         # remove the dead id from your list
@@ -237,6 +240,7 @@ class Incoming_packets:
         type_for_clients = ''
         for each_change in changes:
             each_change = each_change.split('-')
+            print(f'object update info : {each_change}')
             if 'backpack' == each_change[1]:
                 type_for_clients = 'backpack'
                 how_many_item = each_change[3]
@@ -273,7 +277,7 @@ class Incoming_packets:
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
 
                 if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots' or each_change[1] == 'exp':
-                    for i in range(how_many_item):
+                    for i in range(int(how_many_item)):
                         Item(each_change1, item_sprites, type_for_clients)
                 else:
                     Weapon_item(each_change1, weapon_sprites, each_change[1])
@@ -395,8 +399,8 @@ class Incoming_packets:
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    def handle_enemy_player_place_type_hit(self, header_info, player, visible_sprites: YsortCameraGroup,
-                                           obstacle_sprites, damage_player):
+    def handle_enemy_player_place_type_hit(self, header_info, visible_sprites: YsortCameraGroup,
+                                           obstacle_sprites, damage_player, attackable_sprites):
         info = header_info.split('-')
         print(f' what is in info: {info}')
         try:
@@ -411,7 +415,7 @@ class Incoming_packets:
                         monster_name=each_info[2],
                         enemy_id=each_info[0],
                         pos=enemy_pos,
-                        groups=visible_sprites,
+                        groups=[visible_sprites, attackable_sprites],
                         obstacle_sprites=obstacle_sprites,
                         damage_player=damage_player,
                         hit=each_info[3],
