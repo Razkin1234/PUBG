@@ -108,7 +108,7 @@ from random import randint, choice
 # ------------------------ socket
 SERVER_UDP_PORT = 56791
 SERVER_IP = '0.0.0.0'
-SOCKET_BUFFER_SIZE = 2048
+SOCKET_BUFFER_SIZE = 20000
 SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
 # check the main loop trigger event sometimes.
 # The bigger you'll set this timeout - you will check the trigger event less often,
@@ -318,7 +318,7 @@ def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
                 index = randint(0, len(OBJECTS_PLACES) - 1)
                 place_dead_enemy = f'({enemy[1][0]},{enemy[1][1]})'
                 return f'dead_enemy: {enemy_id}\r\nobject_update: drop-{keys_list[index]}-{place_dead_enemy}-1/drop-exp-{place_dead_enemy}-1\r\n'
-        return ''
+    return ''
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -999,6 +999,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # in this header clients should check the moved_player_id so they wont print their own movement twice.
         if line_parts[0] == 'player_place:':
             # looking for image header
+            print('got_player_place')
             did_something = True
             for l in lines:
                 l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
@@ -1055,6 +1056,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             if id_cache == '':
                 id_cache = lines[0].split()[1]
                 enemy_id, hit_hp = line_parts[1].split(',')
+            print('got_hit_an_enemy')
             reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
         # --------------
 
@@ -1469,7 +1471,7 @@ def moving_enemies_thread(server_socket: socket):
                     if distance <= 600 and enemy[5] == 0:
                         # if not new_shot:
                         #     new_shot = True
-                        shots_to_send.append([enemy[1], target_player_place])
+                        #shots_to_send.append([enemy[1], target_player_place])
                         #ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
                         enemy[5] += 1
                     else:
@@ -2409,7 +2411,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        #executor.submit(moving_enemies_thread, server_socket)
+        executor.submit(moving_enemies_thread, server_socket)
         # setting threads to handle incoming packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------

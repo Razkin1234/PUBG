@@ -47,7 +47,7 @@ class ConnectionToServer:
         # how_many = {'sword' : 0,'lance': 0, 'axe' : 0, 'rapier' : 0, 'sai' : 0, 'gun' : 0, 'backpack' : 0, 'ammo' : 0, 'boots' : 0, 'medkit' : 0, 'bendage' : 0}
         how_many = {}
         for_this = 'object_update: '
-        for item in player.items_on():
+        for item in player.items_on:
             if 'backpack' == item:
                 if item in how_many:
                     how_many[item] += 1
@@ -73,7 +73,7 @@ class ConnectionToServer:
                     how_many[item] += 1
                 else:
                     how_many[item] = 1
-        for weapon in player.objects_on():
+        for weapon in player.objects_on:
             if 'sword' == weapon:
                 if weapon in how_many:
                     how_many[weapon] += 1

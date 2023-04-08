@@ -1,18 +1,20 @@
+
 from typing import Tuple
 
 from settings import *
 # from level import Level
 from Players import Players
-from weapon_item import Weapon_item
-from player import Player
-from YsortCameraGroup import YsortCameraGroup
-from item import Item
-from enemy import Enemy
-import pygame
 import sys
-import time
 
+import pygame
+
+from YsortCameraGroup import YsortCameraGroup
 from bullet import Bullets
+from enemy import Enemy
+from item import Item
+# from level import Level
+from settings import *
+from weapon_item import Weapon_item
 
 
 class Incoming_packets:
@@ -168,8 +170,9 @@ class Incoming_packets:
             # to go now back to the login page
             return True, None
 
-
-    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites, obstecal_sprits,damage_player, create_attack, destroy_attack, create_magic, bullet_group):  # maybe done
+    def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites,
+                            obstecal_sprits, damage_player, create_attack, destroy_attack, create_magic,
+                            bullet_group):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -183,12 +186,13 @@ class Incoming_packets:
             where_to_go = tuple(where_to_go[1:-1].split(','))  # converting the place from str to tuple
             where_to_go = (int(where_to_go[0]), int(where_to_go[1]))
             b = 'where_to_go'
-            #if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
-                    #my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
+            # if my_player_pos[0] + MIDDLE_SCREEN[0] > player_place[0] > my_player_pos[0] - MIDDLE_SCREEN[0] and \
+            # my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
             image = image.split(',')
             b = 'image'
             if not visiable_sprites.check_existines(player_id, player_place, image[0], image[1], where_to_go):
-                Players(player_place, visiable_sprites,obstecal_sprits, create_attack, destroy_attack, create_magic, bullet_group, player_id, image[0], image[1], where_to_go, int(speed))
+                Players(player_place, visiable_sprites, obstecal_sprits, create_attack, destroy_attack, create_magic,
+                        bullet_group, player_id, image[0], image[1], where_to_go, int(speed))
                 pass
             b = 'good'
         except Exception as e:
@@ -225,6 +229,7 @@ class Incoming_packets:
 
     def handle_chat(self, user_name, message):
         # print here the message and the user name
+        message = message.replace('_', " ")
         return f'{user_name}: {message}'
 
     def handle_server_shutdown(self):

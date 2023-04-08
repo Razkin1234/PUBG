@@ -71,7 +71,7 @@ class Player(Entity):
 
         # stats
         self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 6}  # ma health , max energy
-        self.health = self.stats['health'] - 60  # our current health
+        self.health = self.stats['health']   # our current health
         self.energy = self.stats['energy']  # our current energy
         self.exp = 100
         self.speed = self.stats['speed']  # the speed of the player
@@ -144,7 +144,7 @@ class Player(Entity):
                     # image = self.player.weapon
                     # else:
                     # image = "no"
-                packet_to_send.add_header_player_place_and_image(self.rect.center,
+                packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])),
                                                                  (int(self.place_to_go[0]), int(self.place_to_go[1])),
                                                                  self.speed, f'{self.status},no')
             # debug(self.place_to_go)
@@ -270,7 +270,7 @@ class Player(Entity):
             if current_time - self.run_timer >= self.run_duration:
                 self.can_run = True
                 self.speed = self.stats['speed']
-                packet_to_send.add_header_player_place_and_image(self.rect.center, self.place_to_go, self.speed,
+                packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])), (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed,
                                                                  f'{self.status},no')
             else:
                 self.speed = 16

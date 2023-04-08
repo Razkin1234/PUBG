@@ -148,6 +148,8 @@ class Enemy(Entity):
         if self.vulnerable:
             if attack_type == 'weapon':
                 packet_to_send.add_hit_an_enemy(self.id, player.get_full_weapon_damege())
+                print(packet_to_send.get_packet())
+                print('sending hit an enemy')
             else:
                 pass
                 # away_damage

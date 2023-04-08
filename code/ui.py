@@ -492,7 +492,8 @@ class UI:
                     key_pressed = True #for the cooldown
                     self.writing = False
                     player.chat_input = False
-                    self.chat_messages.append(self.user_text)
+                    packet_to_send.add_header_chat(self.user_text.replace(' ', '_'))
+                    #self.chat_messages.append(self.user_text)
                     self.user_text = ''
                     #checking if we display to much messages:
                     if len(self.chat_messages) > 7:

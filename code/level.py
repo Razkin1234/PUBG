@@ -75,7 +75,6 @@ class Level:
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites):
-
         start = time.perf_counter()
         count = 1
         while not shut_down_event.is_set():
@@ -165,9 +164,11 @@ class Level:
                                 for l in lines:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'user_name:':
-                                        message = packet.handle_chat(line_parts[1],
-                                                                     l_parts[
-                                                                         1])  # getting in answer the message to print
+                                        message = packet.handle_chat(l_parts[1], line_parts[1])  # getting in answer the message to print
+                                        self.ui.chat_messages.append(message)
+                                        # checking if we display to much messages:
+                                        if len(self.ui.chat_messages) > 7:
+                                            self.ui.chat_messages.pop(0)
                                         break
                             elif line_parts[0] == 'server_shutdown:':
                                 shut_down_event.set()
@@ -195,7 +196,7 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'dead_enemy:':
-                                packet.handle_dead_enemy(line_parts[1], player, visibale_sprites, )
+                                packet.handle_dead_enemy(line_parts[1], visibale_sprites)
                             # --------------
 
                             # --------------
@@ -388,99 +389,99 @@ class Level:
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
     def run(self, packet_to_send, player_id):  # update and draw the game
-        # try:
-        self.player_id = player_id
+        try:
+            self.player_id = player_id
 
-        self.cooldown()
-        self.camera.x = self.player.rect.centerx  # updating the camera location
-        self.camera.y = self.player.rect.centery
+            self.cooldown()
+            self.camera.x = self.player.rect.centerx  # updating the camera location
+            self.camera.y = self.player.rect.centery
 
-        # for cleaning the exeptions of the tiles that have not bean earased
-        # self.visble_sprites.earase_non_relevant_sprites(self.player)
-        self.obstacle_sprites.earase_non_relevant_sprites(self.player)
-        try:
-            self.floor_update()
-            self.floor_sprites.custom_draw(self.camera)
-            self.floor_sprites.update()
-        except Exception as e:
-            print(e)
-            print('floor')
-        try:
-            self.finished_first_object_event.wait()
-            self.item_sprites.custom_draw(self.camera)
-            self.weapon_sprites.custom_draw(self.camera)
-        except Exception as e:
-            print(e)
-            print('item')
+            # for cleaning the exeptions of the tiles that have not bean earased
+            # self.visble_sprites.earase_non_relevant_sprites(self.player)
+            self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+            try:
+                self.floor_update()
+                self.floor_sprites.custom_draw(self.camera)
+                self.floor_sprites.update()
+            except Exception as e:
+                print(e)
+                print('floor')
+            try:
+                self.finished_first_object_event.wait()
+                self.item_sprites.custom_draw(self.camera)
+                self.weapon_sprites.custom_draw(self.camera)
+            except Exception as e:
+                print(e)
+                print('item')
 
-        try:
-            self.item_sprites.item_picking(self.player, packet_to_send)
-            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
-        except Exception as e:
-            print(e)
-            print('weapon')
-        try:
-            self.bullet_group.custom_draw(self.camera)
-            self.bullet_group.bullet_move()
-        except Exception as e:
-            print(e)
-            print('bullet')
-        try:
-            a = 'here'
-            self.other_bullet_group.bullet_move()
-            a = 'there'
-            self.other_bullet_group.check_if_bullet_hit_me(self.player)
-        except Exception as e:
-            print(a)
-            print(e)
-        self.other_players.other_player_update()
-        self.other_players.custom_draw(self.camera)
-        try:
-            d = 'w'
-            self.visble_sprites.update()
-            d = '3'
-            self.visble_sprites.enemy_update(self.player)
-            self.visble_sprites.custom_draw(self.camera)
-        except Exception as e:
-            print(e)
-            print('nuce')
-        self.player.update1(packet_to_send)
+            try:
+                self.item_sprites.item_picking(self.player, packet_to_send)
+                self.weapon_sprites.weapon_picking(self.player, packet_to_send)
+            except Exception as e:
+                print(e)
+                print('weapon')
+            try:
+                self.bullet_group.custom_draw(self.camera)
+                self.bullet_group.bullet_move()
+            except Exception as e:
+                print(e)
+                print('bullet')
+            try:
+                a = 'here'
+                self.other_bullet_group.bullet_move()
+                a = 'there'
+                self.other_bullet_group.check_if_bullet_hit_me(self.player)
+            except Exception as e:
+                print(a)
+                print(e)
+            self.other_players.other_player_update()
+            self.other_players.custom_draw(self.camera)
+            try:
+                d = 'w'
+                self.visble_sprites.update()
+                d = '3'
+                self.visble_sprites.enemy_update(self.player)
+                self.visble_sprites.custom_draw(self.camera)
+            except Exception as e:
+                print(e)
+                print('nuce')
+            self.player.update1(packet_to_send)
 
-        try:
-            self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
-        except Exception as e:
-            print('right_here')
-            print(e)
-        try:
-            self.player_attack_logic(packet_to_send)
-        except Exception as e:
-            print(e)
-            print('player_attack')
-        self.ui.display(self.player)
-        if self.player.i_pressed:
-            self.ui.ui_screen(self.player, packet_to_send)
+            try:
+                self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
+            except Exception as e:
+                print('right_here')
+                print(e)
+            try:
+                self.player_attack_logic(packet_to_send)
+            except Exception as e:
+                print(e)
+                print('player_attack')
+            self.ui.display(self.player)
+            if self.player.i_pressed:
+                self.ui.ui_screen(self.player, packet_to_send)
 
-        if self.player.attack_for_moment:
-            image = self.player.weapon
-        else:
-            image = "no"
-        # packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
-        # self.bullet_group.bullet_record(packet_to_send)
+            if self.player.attack_for_moment:
+                image = self.player.weapon
+            else:
+                image = "no"
+            # packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
+            # self.bullet_group.bullet_record(packet_to_send)
 
-        # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
-        if self.player.health <= 0:
-            Item(self.player.rect.center, self.item_sprites, 'exp')  # item create
-            packet_to_send.add_header_dead(self.player.id)
-            packet_to_send.for_dead_object_update(self.player)
-            self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
-            packets_to_handle_queue.clear()
-            shut_down_event.set()  # for the thread closing
-            pygame.quit()
-            self.my_socket.close()
-            sys.exit()
-        # print(packet_to_send.get_packet())
-        debug(self.player.rect.center)
-        return packet_to_send
-        # except Exception as e:
-        #     print('nigger')
-        #     print(e)
+            # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
+            if self.player.health <= 0:
+                print('dead')
+                packet_to_send.add_header_dead(self.player.id)
+                packet_to_send.for_dead_object_update(self.player)
+                self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
+                packets_to_handle_queue.clear()
+                shut_down_event.set()  # for the thread closing
+                pygame.quit()
+                self.my_socket.close()
+                sys.exit()
+            # print(packet_to_send.get_packet())
+            #debug(self.player.rect.center)
+            return packet_to_send
+        except Exception as e:
+            print('nigger')
+            print(e)
