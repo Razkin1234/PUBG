@@ -1,10 +1,8 @@
 import pygame
 from math import sin
 from debug import debug
-
-
 class Entity(pygame.sprite.Sprite):
-    def __init__(self, groups: pygame.sprite.Group):
+    def __init__(self,groups):
         super().__init__(groups)
 
         self.frame_index = 0
@@ -20,7 +18,9 @@ class Entity(pygame.sprite.Sprite):
         self.collision('vertical')
         self.rect.center = self.hitbox.center
 
-    def collision(self, direction: str):  # checking for collisions
+
+
+    def collision(self, direction):  # checking for collisions
         if direction == 'horizontal':
             for sprite in self.obstacle_sprites:
                 if sprite.hitbox.colliderect(self.hitbox):
@@ -39,8 +39,7 @@ class Entity(pygame.sprite.Sprite):
                         self.hitbox.top = sprite.hitbox.bottom
                     self.direction.y = 0
 
-    @staticmethod
-    def wave_value():
+    def wave_value(self):
         value = sin(pygame.time.get_ticks())
         if value >= 0:
             return 255

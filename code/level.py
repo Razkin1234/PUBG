@@ -1,24 +1,17 @@
-import time
-import pygame, sys
-from settings import *
-from tile import Tile
-from debug import debug
-from YsortCameraGroup import *
-from support import *
-from weapon import Weapon
-from weapon_item import Weapon_item
-from ui import UI
-from enemy import Enemy
-from player import Player
-from typing import Dict
-from particles import AnimationPlayer
-from magic import MagicPlayer
-import socket
-from Incoming_packets import Incoming_packets
-from item import Item
+import os
 import threading
+import time
 
-from Connection_to_server import Connection_to_server
+from typing import List
+
+from YsortCameraGroup import *
+from item import Item
+from magic import MagicPlayer
+from particles import AnimationPlayer
+from player import Player
+from support import *
+from ui import UI
+from weapon import Weapon
 
 """""
     לעשות שכשאני מקבל שחקן אחר זה לא יצור אותו מחדש ופשות יעדכן את המיקום שלו.
@@ -56,7 +49,7 @@ class Level:
         self.update_floor_cooldown = 1000
         self.floor_update_time = 0
         self.player_first_location = (22 * TILESIZE, 33 * TILESIZE)
-        self.layout: dict[str: list[list[int]]] = {
+        self.layout: dict[str: List[list[int]]] = {
             'floor': import_csv_layout('../map/map_Floor.csv'),
             'boundary': import_csv_layout('../map/map_FloorBlocks.csv')
             # ,'entities': import_csv_layout('../map/map_Entities.csv')
@@ -82,7 +75,7 @@ class Level:
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites):
-        packet : Incoming_packets
+
         start = time.perf_counter()
         count = 1
         while not shut_down_event.is_set():
@@ -101,8 +94,8 @@ class Level:
                         line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                         a = ''
                         try:
-                        # --------------
-                        # in this header clients should check the moved_player_id so they wont print their own movement twice.
+                            # --------------
+                            # in this header clients should check the moved_player_id, so they won't print their own movement twice.
                             if line_parts[0] == 'player_place:':
                                 # looking for image header
                                 print(f'first the data : {lines}')
@@ -116,18 +109,24 @@ class Level:
                                             l2_parts = l2.split()
                                             a = 'l2_parts'
                                             if l2_parts[0] == 'moved_player_id:':
-                                                #print(line)
+                                                # print(line)
                                                 print(f'third the data : {lines}')
                                                 if self.player_id != l2_parts[1]:
                                                     print(f'last the data : {lines}')
                                                     where_to_go = line_parts[1].split('/')
                                                     a = 'where_to_go'
                                                     try:
-                                                        packet.handle_player_place(where_to_go[0], where_to_go[1], where_to_go[2], l2_parts[1], l_parts[1],player.rect.center,
+                                                        packet.handle_player_place(where_to_go[0], where_to_go[1],
+                                                                                   where_to_go[2], l2_parts[1],
+                                                                                   l_parts[1], player.rect.center,
                                                                                    self.other_players, obstecal_sprits,
-                                                                                   self.damage_player, self.create_attack,
-                                                                                   self.destroy_attack, self.create_magic,
-                                                                                   self.bullet_group)
+                                                                                   self.damage_player,
+                                                                                   self.create_attack,
+                                                                                   self.destroy_attack,
+                                                                                   self.create_magic,
+                                                                                   self.bullet_group,
+                                                                                   self.attack_sprites,
+                                                                                   self.visble_sprites)
                                                     except Exception as e:
                                                         print(e)
                                                         print(where_to_go + l_parts + l2_parts)
@@ -139,7 +138,7 @@ class Level:
                             # --------------
 
                             # --------------
-                            # in this header clients should check the shooter_id so they wont print their own shot twice (if don't hit)
+                            # in this header clients should check the shooter_id so they won't print their own shot twice (if don't hit)
                             elif line_parts[0] == 'shot_place:':
                                 # looking for the hit_hp header
                                 for l in lines:
@@ -147,7 +146,7 @@ class Level:
                                     if l_parts[0] == 'shooter_id:':
                                         if l_parts[1] != packet.get_id():
                                             packet.handle_shot_place(line_parts[1], self.other_bullet_group,
-                                                                     self.obstacle_sprites, self.player.rect.center)
+                                                                     self.obstacle_sprites)
                                         break
                             # --------------
 
@@ -169,7 +168,8 @@ class Level:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'user_name:':
                                         message = packet.handle_chat(line_parts[1],
-                                                                     l_parts[1])  # getting in answer the message to print
+                                                                     l_parts[
+                                                                         1])  # getting in answer the message to print
                                         break
                             elif line_parts[0] == 'server_shutdown:':
                                 shut_down_event.set()
@@ -192,18 +192,19 @@ class Level:
                             elif line_parts[0] == 'object_update:':
                                 l_parts = line_parts[1].split('?')
                                 if l_parts[0] != player.id:
-                                    packet.handle_object_update(item_sprites, self.weapon_sprites, )
+                                    packet.handle_object_update(l_parts[1], item_sprites, self.weapon_sprites)
                             # --------------
 
                             # --------------
                             elif line_parts[0] == 'dead_enemy:':
-                                packet.handle_dead_enemy(line_parts[1],self.visble_sprites)
+                                packet.handle_dead_enemy(line_parts[1], player, visibale_sprites)
                             # --------------
 
                             # --------------
                             elif line_parts[0] == 'enemy_update:':
-                                packet.handle_enemy_player_place_type_hit(line_parts[1],self.player,self.visble_sprites,
-                                                                          self.obstacle_sprites, self.damage_player)
+                                packet.handle_enemy_player_place_type_hit(line_parts[1], visibale_sprites,
+                                                                          obstecal_sprits, self.damage_player,
+                                                                          self.attackable_sprites)
                         except Exception as e:
                             print(e)
                             print(a)
@@ -260,10 +261,10 @@ class Level:
         if self.player_move[0] != 0:
             if self.player_move[0] > 0:
                 col_index_add = int(player_tile.x + (COL_LOAD_TILE_DISTANCE - 1))
-                col_index_remove = int(player_tile.x - (COL_LOAD_TILE_DISTANCE))
+                col_index_remove = int(player_tile.x - COL_LOAD_TILE_DISTANCE)
             else:
                 col_index_add = int(player_tile.x - (COL_LOAD_TILE_DISTANCE - 1))
-                col_index_remove = int(player_tile.x + (COL_LOAD_TILE_DISTANCE))
+                col_index_remove = int(player_tile.x + COL_LOAD_TILE_DISTANCE)
             self.floor_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
             self.obstacle_sprites.remove_sprites_in_rect((col_index_remove * TILESIZE), 0)
 
@@ -377,6 +378,7 @@ class Level:
                 if collision_sprites:
                     for target_sprite in collision_sprites:
                         if target_sprite.sprite_type == 'enemy':
+                            target_sprite: Enemy
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type, packet_to_send)
 
     def trigger_death_particles(self, pos, particles_type):
@@ -389,55 +391,74 @@ class Level:
         self.animation_player.create_particles(particles_type, pos, [self.visble_sprites])
 
     def run(self, packet_to_send, player_id):  # update and draw the game
-        self.player_id = player_id
+        try:
+            self.player_id = player_id
 
-        self.cooldown()
-        self.camera.x = self.player.rect.centerx  # updating the camera location
-        self.camera.y = self.player.rect.centery
+            self.cooldown()
+            self.camera.x = self.player.rect.centerx  # updating the camera location
+            self.camera.y = self.player.rect.centery
 
-        # for cleaning the exeptions of the tiles that have not bean earased
-        # self.visble_sprites.earase_non_relevant_sprites(self.player)
-        self.obstacle_sprites.earase_non_relevant_sprites(self.player)
+            # for cleaning the exeptions of the tiles that have not bean earased
+            # self.visble_sprites.earase_non_relevant_sprites(self.player)
+            self.obstacle_sprites.earase_non_relevant_sprites(self.player)
 
-        self.floor_update()
-        self.floor_sprites.custom_draw(self.camera)
-        self.floor_sprites.update()
+            self.floor_update()
+            self.floor_sprites.custom_draw(self.camera)
+            self.floor_sprites.update()
 
-        self.finished_first_object_event.wait()
-        self.item_sprites.custom_draw(self.camera)
-        self.weapon_sprites.custom_draw(self.camera)
+            self.finished_first_object_event.wait()
+            self.item_sprites.custom_draw(self.camera)
+            self.weapon_sprites.custom_draw(self.camera)
 
-        self.item_sprites.item_picking(self.player, packet_to_send)
-        self.weapon_sprites.weapon_picking(self.player, packet_to_send)
+            self.item_sprites.item_picking(self.player, packet_to_send)
+            self.weapon_sprites.weapon_picking(self.player, packet_to_send)
 
-        self.bullet_group.custom_draw(self.camera)
-        self.bullet_group.bullet_move()
+            self.bullet_group.bullet_move()
+            self.bullet_group.custom_draw(self.camera)
 
-        self.other_bullet_group.check_if_bullet_hit_me(self.player)
+            self.other_bullet_group.bullet_move()
+            self.other_bullet_group.check_if_bullet_hit_me(self.player)
+            self.other_bullet_group.custom_draw(self.camera)
+            self.other_players.other_player_update(self.player)
+            self.other_players.custom_draw(self.camera)
+            try:
+                d = 'w'
+                self.visble_sprites.update()
+                d = '3'
+                self.visble_sprites.enemy_update(self.player)
+                self.visble_sprites.custom_draw(self.camera)
+            except Exception as e:
+                print(e)
+                print('nuce')
+            self.player.update1(packet_to_send)
 
-        self.other_players.update(packet_to_send)
-        self.other_players.custom_draw(self.camera)
-        self.visble_sprites.update()
-        self.visble_sprites.custom_draw(self.camera)
-        self.player.update1(packet_to_send)
+            self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
 
-        # self.visble_sprites.enemy_update(self.player)
-        self.player_attack_logic(packet_to_send)
-        self.ui.display(self.player)
-        if self.player.i_pressed:
-            self.ui.ui_screen(self.player, packet_to_send)
+            self.player_attack_logic(packet_to_send)
+            self.ui.display(self.player)
+            if self.player.i_pressed:
+                self.ui.ui_screen(self.player, packet_to_send)
 
-        if self.player.attack_for_moment:
-            image = self.player.weapon
-        else:
-            image = "no"
-        #packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
-        self.bullet_group.bullet_record(packet_to_send)
+            if self.player.attack_for_moment:
+                image = self.player.weapon
+            else:
+                image = "no"
+            # packet_to_send.add_header_player_place_and_image(self.player.rect.center, self.player.place_to_go, f'{self.player.status},{image}')
+            # self.bullet_group.bullet_record(packet_to_send)
 
-        # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
-        if self.player.health <= 0:
-            Item((self.player.rect.center), self.item_sprites, 'exp')  # item create
-            packet_to_send.add_header_dead(self.player.id)
-            packet_to_send.for_dead_object_update(self.player)
-        # print(packet_to_send.get_packet())
-        return packet_to_send
+            # packet_to_send.add_object_update(self, pick_drop, type_object, place, amount, how_many_dropped_picked)
+            if self.player.health <= 0:
+                print("dead")
+                Item(self.player.rect.center, self.item_sprites, 'exp')  # item create
+                packet_to_send.add_header_dead(self.player.id)
+                packet_to_send.for_dead_object_update(self.player)
+
+            # print(packet_to_send.get_packet())
+            debug(self.player.rect.center)
+            return packet_to_send
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print('nigger')
+            print(e)

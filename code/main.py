@@ -4,7 +4,7 @@ from level import Level
 from button import Button
 import socket
 from Incoming_packets import Incoming_packets
-from Connection_to_server import Connection_to_server
+from ConnectionToServer import ConnectionToServer
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -192,7 +192,15 @@ class Game:
                             text_color = 'red'
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if not  push:
+
+                    if sign_up_button.checkForInput(event.pos):
+                        sign_in = True
+
+                    elif log_in_button.checkForInput(event.pos):
+                        sign_in = False
+                        log_in = True
+
+                    if not push:
                         if sign_up_button.checkForInput(event.pos):
                             sign_in = True
 
@@ -212,7 +220,7 @@ class Game:
                                 print(type(self.server_ip))
                                 self.my_socket.connect((self.server_ip, SERVER_PORT))
                                 print("connected")
-                                send_packet = Connection_to_server(None)
+                                send_packet = ConnectionToServer(None)
                                 send_packet.add_header_register_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 print(send_packet.get_packet())
@@ -240,7 +248,7 @@ class Game:
                                 # try:
                                 if log_in:
                                     self.my_socket.connect((self.server_ip, SERVER_PORT))
-                                send_packet = Connection_to_server(None)
+                                send_packet = ConnectionToServer(None)
                                 send_packet.add_header_login_request(self.user_name, self.passward)
                                 self.my_socket.send(send_packet.get_packet().encode('utf-8'))
                                 # here the tttttl
@@ -303,7 +311,7 @@ class Game:
     # self.my_socket.bind(('0.0.0.0', 62227))
     # -------------------
 
-    def play(self, packet: Incoming_packets):
+    def play(self, packet):
         try:
             with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
                 place_to_start = give_me_first_place(packet)
@@ -321,7 +329,7 @@ class Game:
                 executor.submit(self.handle_of_incoming_packets)
                 print('receiving packets thread started')
                 while not shut_down_event.is_set():
-                    packet_to_send = Connection_to_server(self.player_id)
+                    packet_to_send = ConnectionToServer(self.player_id)
 
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
@@ -337,12 +345,13 @@ class Game:
 
                     packet_to_send = self.level.run(packet_to_send, self.player_id)
                     if len(packet_to_send.get_packet().split('\r\n')) > 3:
+                        print(f'packet_to_send:    {packet_to_send.get_packet()}')
                         self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
                     pygame.display.update()
                     self.clock.tick(FPS)
         except Exception as e:
             print(e)
-            packet_to_send = Connection_to_server(self.player_id)
+            packet_to_send = ConnectionToServer(self.player_id)
             packet_to_send.add_header_disconnect(self.player_id)
             self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
             packets_to_handle_queue.clear()
