@@ -127,4 +127,4 @@ class ConnectionToServer:
         return self.__packet
 
     def add_hit_an_enemy(self, id_of_enemy, hp_to_sub):
-        self.__packet += f'hit_an_enemy: {id_of_enemy},{hp_to_sub}'
+        self.__packet += f'hit_an_enemy: {id_of_enemy},{hp_to_sub}\r\n'

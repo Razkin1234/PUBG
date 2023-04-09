@@ -396,7 +396,7 @@ class Incoming_packets:
 
     def handle_dead_enemy(self, id, visble_sprites):
         # delete enemy from your list
-        visble_sprites.erase_dead_sprites(int(id))
+        visble_sprites.erase_dead_sprites(id)
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 

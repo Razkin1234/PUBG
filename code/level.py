@@ -145,7 +145,8 @@ class Level:
                                 for l in lines:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'shooter_id:':
-                                        if l_parts[1] != packet.get_id():
+                                        if l_parts[1] != self.player_id:
+                                            print('fuck guy')
                                             packet.handle_shot_place(line_parts[1], self.other_bullet_group,
                                                                      self.obstacle_sprites)
                                         break
