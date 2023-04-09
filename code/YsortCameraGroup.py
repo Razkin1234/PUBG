@@ -14,7 +14,7 @@ import itertools
 from Players import Players
 from ConnectionToServer import ConnectionToServer
 import threading
-
+from other_bullet import OtherBullets
 
 class YsortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -125,13 +125,14 @@ class YsortCameraGroup(pygame.sprite.Group):
         #         print('did update')
         #         sprite.update()
 
-    def check_existines(self, player_id, pos, image, hit, place_to_go,visibale_sprites, attack_sprites):  # need to change
+    def check_existines(self, player_id, pos, image, hit, place_to_go,visibale_sprites, attack_sprites, speed):  # need to change
         for sprite in self.sprites():
             sprite: Players
             if sprite.id == player_id:
 
                 sprite.weapon_index = 0  # the offset of the weapons
                 sprite.place_to_go = place_to_go
+                sprite.speed = speed
                 sprite.hit = False
                 if hit != 'no':
                     sprite.hit = True
@@ -156,14 +157,22 @@ class YsortCameraGroup(pygame.sprite.Group):
 
     def check_if_bullet_hit_me(self, player):
         for sprite in self.sprites():
+            sprite: OtherBullets
             if sprite.rect.colliderect(player.hitbox):
                 player.health = - 7
+                sprite.need_to_stop = False
+                sprite.kill()
+                print("done")
 
-    def check_if_bullet_hit_enemy(self, visibal_sprites, packet_to_send: ConnectionToServer):
+    def check_if_bullet_hit_enemy(self, attackable_sprites, packet_to_send: ConnectionToServer):
         for sprite in self.sprites():
-            for enemies in visibal_sprites:
+            sprite: Bullets
+            for enemies in attackable_sprites:
                 if sprite.rect.colliderect(enemies.hitbox):
                     packet_to_send.add_hit_an_enemy(enemies.id, 7)
+                    sprite.need_to_stop = False
+                    sprite.kill()
+                    print("shak")
 
     def delete_every_bullet(self):
         for sprite in self.sprites():

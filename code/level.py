@@ -126,7 +126,8 @@ class Level:
                                                                                    self.create_magic,
                                                                                    self.bullet_group,
                                                                                    self.attack_sprites,
-                                                                                   self.visble_sprites)
+                                                                                   self.visble_sprites,
+                                                                                   self.attackable_sprites)
                                                     except Exception as e:
                                                         print(e)
                                                         print(where_to_go + l_parts + l2_parts)
@@ -197,7 +198,7 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'dead_enemy:':
-                                packet.handle_dead_enemy(line_parts[1], player, visibale_sprites)
+                                packet.handle_dead_enemy(line_parts[1], visibale_sprites)
                             # --------------
 
                             # --------------
@@ -432,7 +433,7 @@ class Level:
                 print('nuce')
             self.player.update1(packet_to_send)
 
-            self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
+            self.bullet_group.check_if_bullet_hit_enemy(self.attackable_sprites, packet_to_send)
 
             self.player_attack_logic(packet_to_send)
             self.ui.display(self.player)

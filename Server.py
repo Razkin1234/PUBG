@@ -108,7 +108,7 @@ from random import randint, choice
 # ------------------------ socket
 SERVER_UDP_PORT = 56791
 SERVER_IP = '0.0.0.0'
-SOCKET_BUFFER_SIZE = 2048
+SOCKET_BUFFER_SIZE = 20000
 SERVER_SOCKET_TIMEOUT = 10  # to prevent permanent blocking while not getting any input for a while and still enable to
 # check the main loop trigger event sometimes.
 # The bigger you'll set this timeout - you will check the trigger event less often,
@@ -212,15 +212,15 @@ RACCOON_AMOUNT = 0  # EACH ENEMY
 SPIRIT_AMOUNT = 0  # AT THE
 BAMBOO_AMOUNT = 0  # MOMENT
 
-SHOULD_BE_SQUID =0 #25  # AMOUNTS OF
+SHOULD_BE_SQUID = 0#25  # AMOUNTS OF
 SHOULD_BE_RACCOON =0#10  # EACH ENEMY
 SHOULD_BE_SPIRIT =0#25  # THAT SHOULD
 SHOULD_BE_BAMBOO =0#40  # BE
 
-SQUID_HP = 100  #
-RACCOON_HP = 300  # HP OF
-SPIRIT_HP = 100  # EACH ENEMY
-BAMBOO_HP = 70  #
+SQUID_HP = 20  #
+RACCOON_HP = 27  # HP OF
+SPIRIT_HP = 20  # EACH ENEMY
+BAMBOO_HP = 10  #
 
 SQUID_SPEED = 3  #
 RACCOON_SPEED = 2  # SPEED OF
@@ -318,7 +318,7 @@ def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
                 index = randint(0, len(OBJECTS_PLACES) - 1)
                 place_dead_enemy = f'({enemy[1][0]},{enemy[1][1]})'
                 return f'dead_enemy: {enemy_id}\r\nobject_update: drop-{keys_list[index]}-{place_dead_enemy}-1/drop-exp-{place_dead_enemy}-1\r\n'
-        return ''
+    return ''
 
 
 def print_ansi(text: str, color: str = 'white', bold: bool = False, blink: bool = False, italic: bool = False,
@@ -830,7 +830,7 @@ def handle_register_request(user_name: str, password: str, connector, cursor) ->
     return 'register_status: success\r\n'
 
 
-def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
+def handle_shot_place(shot_place: tuple, shot_end, hp: str, shooter_id: str) -> str:
     """
     Return the following Rotshild headers:
     *shot_place - to inform the clients about the shot location.
@@ -845,8 +845,8 @@ def handle_shot_place(shot_place: tuple, hp: str, shooter_id: str) -> str:
     # now the shot_place it a tuple of strings, and when casting it to str it will be like - "('1', '1')".
     # So changing it to be '(1,1)'
     place = f'({shot_place[0]},{shot_place[1]})'
-
-    return f'shot_place: {place}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
+    end = f'({shot_end[0]},{shot_end[1]})'
+    return f'shot_place: {place}/{end}\r\nhit_hp: {hp}\r\n\r\nshooter_id: {shooter_id}\r\n'
 
 
 def handle_dead(dead_id: str, user_name: str, connector, cursor) -> str:
@@ -966,212 +966,220 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
     lines = rotshild_raw_layer.split('\r\n')
     while '' in lines:
         lines.remove('')
+    try:
+        # Recognize and handle each header
+        for line in lines:
+            line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
 
-    # Recognize and handle each header
-    for line in lines:
-        line_parts = line.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+            # -------------
+            if line_parts[0] == 'login_request:':
+                did_something = True
+                # open db connector and cursor if not open already
+                if not (connector and cursor):
+                    connector, cursor = connect_to_db_and_build_cursor()
+                user_name, password = line_parts[1].split(',')
+                reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port, cursor)
+                individual_reply = True
+                break
+            # -------------
 
-        # -------------
-        if line_parts[0] == 'login_request:':
-            did_something = True
-            # open db connector and cursor if not open already
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
-            user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_login_request(user_name, password, src_ip, src_port, cursor)
-            individual_reply = True
-            break
-        # -------------
+            # -------------
+            if line_parts[0] == 'register_request:':
+                # open db connector and cursor if not open already
+                did_something = True
+                if not (connector and cursor):
+                    connector, cursor = connect_to_db_and_build_cursor()
+                user_name, password = line_parts[1].split(',')
+                reply_rotshild_layer += handle_register_request(user_name, password, connector, cursor)
+                individual_reply = True
+                break
+            # --------------
 
-        # -------------
-        if line_parts[0] == 'register_request:':
-            # open db connector and cursor if not open already
-            did_something = True
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
-            user_name, password = line_parts[1].split(',')
-            reply_rotshild_layer += handle_register_request(user_name, password, connector, cursor)
-            individual_reply = True
-            break
-        # --------------
+            # --------------
+            # in this header clients should check the moved_player_id so they won't print their own movement twice.
+            if line_parts[0] == 'player_place:':
+                # looking for image header
+                print('got_player_place')
+                did_something = True
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'image:':
+                        if id_cache == '':
+                            id_cache = lines[0].split()[1]
+                            have_on = False
+                            for enemy in ENEMY_DATA:
+                                if enemy[2] == id_cache:
+                                    if not have_on:
+                                        reply_rotshild_layer += 'enemy_update: '
+                                        have_on = True
+                                    new_player_place = PLAYER_PLACES_BY_ID[id_cache]
+                                    new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
+                                    enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
+                                    reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
+                            if have_on:
+                                reply_rotshild_layer = reply_rotshild_layer[:-1]
+                                reply_rotshild_layer += '\r\n'
+                        another = line_parts[1].split('/')
+                        tuple_place = tuple(another[0][1:-1].split(','))  # converting the place from str to tuple
+                        where_to_go = tuple(another[1][1:-1].split(','))
+                        reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache,
+                                                                    l_parts[1])
+                        break
+            # --------------
 
-        # --------------
-        # in this header clients should check the moved_player_id so they won't print their own movement twice.
-        if line_parts[0] == 'player_place:':
-            # looking for image header
-            did_something = True
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'image:':
-                    if id_cache == '':
-                        id_cache = lines[0].split()[1]
-                        have_on = False
-                        for enemy in ENEMY_DATA:
-                            if enemy[2] == id_cache:
-                                if not have_on:
-                                    reply_rotshild_layer += 'enemy_update: '
-                                    have_on = True
-                                new_player_place = PLAYER_PLACES_BY_ID[id_cache]
-                                new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
-                                enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
-                                reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
-                        if have_on:
-                            reply_rotshild_layer = reply_rotshild_layer[:-1]
-                            reply_rotshild_layer += '\r\n'
-                    another = line_parts[1].split('/')
-                    tuple_place = tuple(another[0][1:-1].split(','))  # converting the place from str to tuple
-                    where_to_go = tuple(another[1][1:-1].split(','))
-                    reply_rotshild_layer += handle_player_place(tuple_place, where_to_go, another[2], id_cache,
-                                                                l_parts[1])
-                    break
-        # --------------
+            # --------------
+            # in this header clients should check the shooter_id so they wont take self-fire.
+            elif line_parts[0] == 'shot_place:':
+                # looking for the hit_hp header
+                did_something = True
+                for l in lines:
+                    l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
+                    if l_parts[0] == 'hit_hp:':
+                        if id_cache == '':
+                            id_cache = lines[0].split()[1]
+                        each_shot = line_parts[1].split('/')
+                        tuple_place = tuple(each_shot[0][1:-1].split(','))  # converting the place from str to tuple
+                        tuple_place1 = tuple(each_shot[1][1:-1].split(','))  # converting the place from str to tuple
+                        reply_rotshild_layer += handle_shot_place(tuple_place, tuple_place1, l_parts[1], id_cache)
+                        break
+            # --------------
 
-        # --------------
-        # in this header clients should check the shooter_id so they wont take self-fire.
-        elif line_parts[0] == 'shot_place:':
-            # looking for the hit_hp header
-            did_something = True
-            for l in lines:
-                l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
-                if l_parts[0] == 'hit_hp:':
-                    if id_cache == '':
-                        id_cache = lines[0].split()[1]
-                    tuple_place = tuple(line_parts[1][1:-1].split(','))  # converting the place from str to tuple
-                    reply_rotshild_layer += handle_shot_place(tuple_place, l_parts[1], id_cache)
-                    break
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'object_update:':
-            did_something = True
-            if id_cache == '':
-                id_cache = lines[0].split()[1]
-            reply_rotshild_layer += handle_object_update(line_parts[1], id_cache)
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'hit_an_enemy:':
-            did_something = True
-            if id_cache == '':
-                id_cache = lines[0].split()[1]
-                enemy_id, hit_hp = line_parts[1].split(',')
-            reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
-        # --------------
-
-        # --------------
-        elif line_parts[0] == 'inventory_update:':
-            did_something = True
-            # open db connector and cursor if not open already
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
-
-            if user_name_cache == '':
+            # --------------
+            elif line_parts[0] == 'object_update:':
+                did_something = True
                 if id_cache == '':
                     id_cache = lines[0].split()[1]
-                for client in CLIENTS_ID_IP_PORT_NAME:
-                    if client[0] == id_cache:
-                        user_name_cache = client[3]
-                        break
-            handle_update_inventory(line[18::], user_name_cache, connector, cursor)
-        # --------------
+                reply_rotshild_layer += handle_object_update(line_parts[1], id_cache)
+            # --------------
 
-        # --------------
-        # clients will get chats of themselves too.
-        # so they should print only what comes from the server and don't print their own messages just after sending it.
-        elif line_parts[0] == 'chat:':
-            did_something = True
-            if user_name_cache == '':
+            # --------------
+            elif line_parts[0] == 'hit_an_enemy:':
+                did_something = True
                 if id_cache == '':
                     id_cache = lines[0].split()[1]
-                for client in CLIENTS_ID_IP_PORT_NAME:
-                    if client[0] == id_cache:
-                        user_name_cache = client[3]
-                        break
-            reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
-        # --------------
+                keep_information = line_parts[1].split(',')
+                enemy_id = keep_information[0]
+                hit_hp = keep_information[1]
+                print('got_hit_an_enemy')
+                reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
+            # --------------
 
-        # --------------
-        elif line_parts[0] == 'disconnect:':
-            did_something = True
-            # open db connector and cursor if not open already
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
+            # --------------
+            elif line_parts[0] == 'inventory_update:':
+                did_something = True
+                # open db connector and cursor if not open already
+                if not (connector and cursor):
+                    connector, cursor = connect_to_db_and_build_cursor()
 
-            if user_name_cache == '':
-                if id_cache == '':
-                    id_cache = line_parts[1]
-                for client in CLIENTS_ID_IP_PORT_NAME:
-                    if client[0] == id_cache:
-                        user_name_cache = client[3]
-                        break
-            reply_rotshild_layer += handle_disconnect(id_cache, user_name_cache, connector, cursor)
-            if len(CLIENTS_ID_IP_PORT_NAME) > 0:
-                have_on = False
-                for enemy in ENEMY_DATA:
-                    if enemy[2] == id_cache:
-                        if not have_on:
-                            reply_rotshild_layer += 'enemy_update: '
-                            have_on = True
-                        index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-                        id_of_player = CLIENTS_ID_IP_PORT_NAME[index][0]
-                        new_player_place = PLAYER_PLACES_BY_ID[id_of_player]
-                        new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
-                        enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
-                        reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
-                if have_on:
-                    reply_rotshild_layer = reply_rotshild_layer[:-1]
-                    reply_rotshild_layer += '\r\n'
-        # --------------
+                if user_name_cache == '':
+                    if id_cache == '':
+                        id_cache = lines[0].split()[1]
+                    for client in CLIENTS_ID_IP_PORT_NAME:
+                        if client[0] == id_cache:
+                            user_name_cache = client[3]
+                            break
+                handle_update_inventory(line[18::], user_name_cache, connector, cursor)
+            # --------------
 
-        # --------------
-        elif line_parts[0] == 'dead:':
-            did_something = True
-            # open db connector and cursor if not open already
-            if not (connector and cursor):
-                connector, cursor = connect_to_db_and_build_cursor()
+            # --------------
+            # clients will get chats of themselves too.
+            # so they should print only what comes from the server and don't print their own messages just after sending it.
+            elif line_parts[0] == 'chat:':
+                did_something = True
+                if user_name_cache == '':
+                    if id_cache == '':
+                        id_cache = lines[0].split()[1]
+                    for client in CLIENTS_ID_IP_PORT_NAME:
+                        if client[0] == id_cache:
+                            user_name_cache = client[3]
+                            break
+                reply_rotshild_layer += line + '\r\n' + 'user_name: ' + user_name_cache + '\r\n'
+            # --------------
 
-            if user_name_cache == '':
-                if id_cache == '':
-                    id_cache = line_parts[1]
-                for client in CLIENTS_ID_IP_PORT_NAME:
-                    if client[0] == id_cache:
-                        user_name_cache = client[3]
-                        break
-            reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
-            if len(CLIENTS_ID_IP_PORT_NAME) > 0:
-                have_on = False
-                for enemy in ENEMY_DATA:
-                    if enemy[2] == id_cache:
-                        if not have_on:
-                            reply_rotshild_layer += 'enemy_update: '
-                            have_on = True
-                        index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
-                        id_of_player = CLIENTS_ID_IP_PORT_NAME[index][0]
-                        new_player_place = PLAYER_PLACES_BY_ID[id_of_player]
-                        new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
-                        enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
-                        reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
-                if have_on:
-                    reply_rotshild_layer = reply_rotshild_layer[:-1]
-                    reply_rotshild_layer += '\r\n'
-        # --------------
-    if not individual_reply:
-        # sending the reply to all active clients
-        print(f"\nlist of clients: {CLIENTS_ID_IP_PORT_NAME}")
-        print(f"\nsending data: {reply_rotshild_layer}")
-        # print(reply_rotshild_layer)
-        for client in CLIENTS_ID_IP_PORT_NAME:
-            print(f"now sending to {client[0]}")
-            server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
+            # --------------
+            elif line_parts[0] == 'disconnect:':
+                did_something = True
+                # open db connector and cursor if not open already
+                if not (connector and cursor):
+                    connector, cursor = connect_to_db_and_build_cursor()
 
-    else:
-        # sending the reply to the specific client
-        print('fuck siber')
-        server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
+                if user_name_cache == '':
+                    if id_cache == '':
+                        id_cache = line_parts[1]
+                    for client in CLIENTS_ID_IP_PORT_NAME:
+                        if client[0] == id_cache:
+                            user_name_cache = client[3]
+                            break
+                reply_rotshild_layer += handle_disconnect(id_cache, user_name_cache, connector, cursor)
+                if len(CLIENTS_ID_IP_PORT_NAME) > 0:
+                    have_on = False
+                    for enemy in ENEMY_DATA:
+                        if enemy[2] == id_cache:
+                            if not have_on:
+                                reply_rotshild_layer += 'enemy_update: '
+                                have_on = True
+                            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+                            id_of_player = CLIENTS_ID_IP_PORT_NAME[index][0]
+                            new_player_place = PLAYER_PLACES_BY_ID[id_of_player]
+                            new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
+                            enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
+                            reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
+                    if have_on:
+                        reply_rotshild_layer = reply_rotshild_layer[:-1]
+                        reply_rotshild_layer += '\r\n'
+            # --------------
 
-    if connector or cursor:
-        close_connection_to_db_and_cursor(connector, cursor)
+            # --------------
+            elif line_parts[0] == 'dead:':
+                did_something = True
+                # open db connector and cursor if not open already
+                if not (connector and cursor):
+                    connector, cursor = connect_to_db_and_build_cursor()
 
+                if user_name_cache == '':
+                    if id_cache == '':
+                        id_cache = line_parts[1]
+                    for client in CLIENTS_ID_IP_PORT_NAME:
+                        if client[0] == id_cache:
+                            user_name_cache = client[3]
+                            break
+                reply_rotshild_layer += handle_dead(id_cache, user_name_cache, connector, cursor)
+                if len(CLIENTS_ID_IP_PORT_NAME) > 0:
+                    have_on = False
+                    for enemy in ENEMY_DATA:
+                        if enemy[2] == id_cache:
+                            if not have_on:
+                                reply_rotshild_layer += 'enemy_update: '
+                                have_on = True
+                            index = randint(0, len(CLIENTS_ID_IP_PORT_NAME) - 1)
+                            id_of_player = CLIENTS_ID_IP_PORT_NAME[index][0]
+                            new_player_place = PLAYER_PLACES_BY_ID[id_of_player]
+                            new_player_place = f'({new_player_place[0]},{new_player_place[1]})'
+                            enemy_place = f'({enemy[1][0]},{enemy[1][1]})'
+                            reply_rotshild_layer += f'{enemy[0]}/{new_player_place}/{enemy[4]}/no/{enemy_place}-'
+                    if have_on:
+                        reply_rotshild_layer = reply_rotshild_layer[:-1]
+                        reply_rotshild_layer += '\r\n'
+            # --------------
+        if not individual_reply:
+            # sending the reply to all active clients
+            print(f"\nlist of clients: {CLIENTS_ID_IP_PORT_NAME}")
+            print(f"\nsending data: {reply_rotshild_layer}")
+            # print(reply_rotshild_layer)
+            for client in CLIENTS_ID_IP_PORT_NAME:
+                print(f"now sending to {client[0]}")
+                server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (client[1], int(client[2])))
+
+        else:
+            # sending the reply to the specific client
+            print('fuck siber')
+            server_socket.sendto(reply_rotshild_layer.encode('utf-8'), (src_ip, int(src_port)))
+
+        if connector or cursor:
+            close_connection_to_db_and_cursor(connector, cursor)
+    except Exception as e:
+        print('enemy_problem')
+        print(e)
 
 def check_if_id_matches_ip_port(src_id: str, src_ip: str, src_port: str) -> bool:
     """
@@ -1469,12 +1477,12 @@ def moving_enemies_thread(server_socket: socket):
                     if distance <= 600 and enemy[5] == 0:
                         # if not new_shot:
                         #     new_shot = True
-                        shots_to_send.append([enemy[1], target_player_place])
+                        #shots_to_send.append([enemy[1], target_player_place])
                         #ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
                         enemy[5] += 1
                     else:
                         enemy[5] += 1
-                    if enemy[5] == 241:
+                    if enemy[5] == 60:
                         enemy[5] = 0
             if can_move:
                 # replacing the '-' trailer with a new CRLF characters
