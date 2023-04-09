@@ -127,7 +127,8 @@ class Level:
                                                                                    self.create_magic,
                                                                                    self.bullet_group,
                                                                                    self.attack_sprites,
-                                                                                   self.visble_sprites)
+                                                                                   self.visble_sprites,
+                                                                                   self.attackable_sprites)
                                                     except Exception as e:
                                                         print(e)
                                                         print(where_to_go + l_parts + l2_parts)
@@ -146,7 +147,6 @@ class Level:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'shooter_id:':
                                         if l_parts[1] != self.player_id:
-                                            print('fuck guy')
                                             packet.handle_shot_place(line_parts[1], self.other_bullet_group,
                                                                      self.obstacle_sprites)
                                         break
@@ -344,7 +344,7 @@ class Level:
         :return:
         """
         if style == 'heal':  # need to replace with 'teleport'
-            self.magic_player.teleport(self.player, cost)
+            self.magic_player.ammo_add(self.player, cost, packet_to_send)
         if style == 'flame':  # highspeed
 
             self.magic_player.highspeed(self.player, cost, packet_to_send)
@@ -427,8 +427,8 @@ class Level:
                 print(e)
                 print('weapon')
             try:
-                self.bullet_group.custom_draw(self.camera)
                 self.bullet_group.bullet_move()
+                self.bullet_group.custom_draw(self.camera)
             except Exception as e:
                 print(e)
                 print('bullet')
@@ -453,7 +453,6 @@ class Level:
                 print(e)
                 print('nuce')
             self.player.update1(packet_to_send)
-
             try:
                 self.bullet_group.check_if_bullet_hit_enemy(self.visble_sprites, packet_to_send)
             except Exception as e:

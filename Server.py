@@ -2419,7 +2419,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        executor.submit(moving_enemies_thread, server_socket)
+        #executor.submit(moving_enemies_thread, server_socket)
         # setting threads to handle incoming packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------

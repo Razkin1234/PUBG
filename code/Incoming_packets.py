@@ -10,7 +10,7 @@ from enemy import Enemy
 import pygame
 import sys
 import time
-
+from other_bullet import OtherBullets
 from bullet import Bullets
 
 
@@ -169,7 +169,7 @@ class Incoming_packets:
 
     def handle_player_place(self, player_place, where_to_go, speed, player_id, image, my_player_pos, visiable_sprites,
                             obstecal_sprits, damage_player, create_attack, destroy_attack, create_magic,
-                            bullet_group, attack_sprites, sprites):  # maybe done
+                            bullet_group, attack_sprites, sprites,attackable_sprites):  # maybe done
         # to add a check this is real
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
@@ -187,8 +187,8 @@ class Incoming_packets:
             # my_player_pos[1] + MIDDLE_SCREEN[1] > player_place[1] > my_player_pos[1] - MIDDLE_SCREEN[1]:
             image = image.split(',')
             b = 'image'
-            if not visiable_sprites.check_existines(player_id, player_place, image[0], image[1], where_to_go, sprites, attack_sprites):
-                Players(player_place, visiable_sprites, obstecal_sprits, create_attack, destroy_attack, create_magic,
+            if not visiable_sprites.check_existines(player_id, player_place, image[0], image[1], where_to_go, sprites, attack_sprites, int(speed)):
+                Players(player_place, [visiable_sprites, attackable_sprites], obstecal_sprits, create_attack, destroy_attack, create_magic,
                         bullet_group, player_id, image[0], image[1], where_to_go, int(speed), damage_player)
                 pass
             b = 'good'
@@ -217,7 +217,8 @@ class Incoming_packets:
                 Bullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
         except Exception as e:
             print(e)
-            print('hers shot')
+            print('here shot')
+
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 
         # remove the dead id from your list
