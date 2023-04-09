@@ -13,12 +13,10 @@ class MagicPlayer:
             player.shield_timer = pygame.time.get_ticks()
 
 
-    def highspeed(self,player,cost, packet_to_send):
+    def highspeed(self,player,cost):
         if player.exp >= cost and player.can_run:
             player.can_run = False
             player.exp -= cost
-            packet_to_send.add_header_player_place_and_image((int(player.rect.center[0]), int(player.rect.center[1])), (int(player.place_to_go[0]), int(player.place_to_go[1])), 16,
-                                                             f'{player.status},no')
             player.run_timer = pygame.time.get_ticks()
 
     def teleport(self,player,cost): # not good need to change or to make better

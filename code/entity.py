@@ -29,6 +29,7 @@ class Entity(pygame.sprite.Sprite):
                     if self.direction.x < 0:  # when we are moving left
                         self.hitbox.left = sprite.hitbox.right
                     self.direction.x = 0
+                    self.direction.y = 0
 
         if direction == 'vertical':
             for sprite in self.obstacle_sprites:
@@ -38,6 +39,7 @@ class Entity(pygame.sprite.Sprite):
                     if self.direction.y < 0:  # when we are moving up
                         self.hitbox.top = sprite.hitbox.bottom
                     self.direction.y = 0
+                    self.direction.x = 0
 
     @staticmethod
     def wave_value():

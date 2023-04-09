@@ -1,6 +1,6 @@
 import pygame
 from support import import_folder
-from  random import  choice
+from random import choice
 
 
 class AnimationPlayer:
@@ -35,7 +35,8 @@ class AnimationPlayer:
         """
 
         animation_frames = self.frames[animation_type]
-        ParticleEffeect(pos,animation_frames,groups)
+        ParticleEffeect(pos, animation_frames, groups)
+
 
 class ParticleEffeect(pygame.sprite.Sprite):
     def __init__(self,pos,animation_frames,groups):

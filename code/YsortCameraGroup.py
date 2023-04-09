@@ -69,7 +69,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                     + (ROW_LOAD_TILE_DISTANCE * TILESIZE):
                 sprite.kill()
 
-    def erase_dead_sprites(self, id: int):
+    def erase_dead_sprites(self, id: str):
         for sprite in self.sprites():
             if sprite.id == id:
                 sprite.kill()
@@ -104,9 +104,9 @@ class YsortCameraGroup(pygame.sprite.Group):
                 return True
         return False
 
-    def other_player_update(self):
+    def other_player_update(self, player):
         for sprite in self.sprites():
-            sprite.update()
+            sprite.update(player)
         # attributes = dir(Players)
         # print(f"attributes: {attributes}")
         # doesnt_have = 0
@@ -123,18 +123,26 @@ class YsortCameraGroup(pygame.sprite.Group):
         #         print('did update')
         #         sprite.update()
 
-    def check_existines(self, player_id, pos, image, hit, place_to_go):  # need to change
+    def check_existines(self, player_id, pos, image, hit, place_to_go,visibale_sprites, attack_sprites):  # need to change
         for sprite in self.sprites():
+            sprite: Players
             if sprite.id == player_id:
                 sprite.weapon_index = 0  # the offset of the weapons
                 sprite.hit = False
                 if hit != 'no':
                     sprite.hit = True
+                    sprite.attacking = True
+                    sprite.direction.x = 0
+                    sprite.direction.y = 0
+                    sprite.place_to_go = None
+                    sprite.attack_time = pygame.time.get_ticks()
                     for i in list(weapon_data.keys()):
                         if hit == i:
                             break
                         sprite.weapon_index += 1
-                sprite.weapon = list(weapon_data.keys())[sprite.weapon_index]  # the weapon we are using
+                    sprite.weapon = list(weapon_data.keys())[sprite.weapon_index]  # the weapon we are using
+                    print(f'weapon {sprite.weapon}')
+                    sprite.create_attack(sprite, visibale_sprites=visibale_sprites, attack_sprites=attack_sprites)
                 sprite.status = image
                 sprite.place_to_go = place_to_go
                 return True
@@ -230,7 +238,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     packet_to_send.add_header_player_place_and_image(
                                         (int(player.rect.center[0]), int(player.rect.center[1])),
                                         (int(player.place_to_go[0]), int(player.place_to_go[1])),
-                                        player.speed, f'{player.status},no')
+                                        7, f'{player.status},no')
                                     packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()

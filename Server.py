@@ -217,10 +217,10 @@ SHOULD_BE_RACCOON =10  # EACH ENEMY
 SHOULD_BE_SPIRIT =25  # THAT SHOULD
 SHOULD_BE_BAMBOO =40  # BE
 
-SQUID_HP = 100  #
-RACCOON_HP = 300  # HP OF
-SPIRIT_HP = 100  # EACH ENEMY
-BAMBOO_HP = 70  #
+SQUID_HP = 20  #
+RACCOON_HP = 27  # HP OF
+SPIRIT_HP = 20  # EACH ENEMY
+BAMBOO_HP = 10  #
 
 SQUID_SPEED = 3  #
 RACCOON_SPEED = 2  # SPEED OF
@@ -996,7 +996,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
         # --------------
 
         # --------------
-        # in this header clients should check the moved_player_id so they wont print their own movement twice.
+        # in this header clients should check the moved_player_id so they won't print their own movement twice.
         if line_parts[0] == 'player_place:':
             # looking for image header
             print('got_player_place')
@@ -1471,12 +1471,12 @@ def moving_enemies_thread(server_socket: socket):
                     if distance <= 600 and enemy[5] == 0:
                         # if not new_shot:
                         #     new_shot = True
-                        #shots_to_send.append([enemy[1], target_player_place])
+                        shots_to_send.append([enemy[1], target_player_place])
                         #ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
                         enemy[5] += 1
                     else:
                         enemy[5] += 1
-                    if enemy[5] == 241:
+                    if enemy[5] == 60:
                         enemy[5] = 0
             if can_move:
                 # replacing the '-' trailer with a new CRLF characters
@@ -2411,7 +2411,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        executor.submit(moving_enemies_thread, server_socket)
+        #executor.submit(moving_enemies_thread, server_socket)
         # setting threads to handle incoming packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------

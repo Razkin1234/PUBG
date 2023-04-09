@@ -1,3 +1,5 @@
+
+import os
 import threading
 import time
 
@@ -123,7 +125,9 @@ class Level:
                                                                                    self.create_attack,
                                                                                    self.destroy_attack,
                                                                                    self.create_magic,
-                                                                                   self.bullet_group)
+                                                                                   self.bullet_group,
+                                                                                   self.attack_sprites,
+                                                                                   self.visble_sprites)
                                                     except Exception as e:
                                                         print(e)
                                                         print(where_to_go + l_parts + l2_parts)
@@ -377,6 +381,7 @@ class Level:
                 if collision_sprites:
                     for target_sprite in collision_sprites:
                         if target_sprite.sprite_type == 'enemy':
+                            target_sprite: Enemy
                             target_sprite.get_damage(self.player, attack_sprite.sprite_type, packet_to_send)
 
     def trigger_death_particles(self, pos, particles_type):
@@ -431,10 +436,11 @@ class Level:
                 self.other_bullet_group.bullet_move()
                 a = 'there'
                 self.other_bullet_group.check_if_bullet_hit_me(self.player)
+                self.other_bullet_group.custom_draw(self.camera)
             except Exception as e:
                 print(a)
                 print(e)
-            self.other_players.other_player_update()
+            self.other_players.other_player_update(self.player)
             self.other_players.custom_draw(self.camera)
             try:
                 d = 'w'
@@ -480,7 +486,7 @@ class Level:
                 self.my_socket.close()
                 sys.exit()
             # print(packet_to_send.get_packet())
-            #debug(self.player.rect.center)
+            debug(self.player.rect.center)
             return packet_to_send
         except Exception as e:
             print('nigger')

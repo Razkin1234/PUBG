@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 from typing import Tuple
 
 import pygame
@@ -26,7 +28,7 @@ class Enemy(Entity):
             self.hit = True
         else:
             self.hit = False
-
+            self.can_attack = True
 
         # movement
         self.obstacle_sprites = obstacle_sprites
@@ -130,6 +132,7 @@ class Enemy(Entity):
             if not self.can_attack:
                 if current_time - self.attack_time >= self.attack_cooldown:
                     self.can_attack = True
+                    self.hit = False
 
             if not self.vulnerable:  # chack if the timer is equal or higher than 'self.invincibility_duration'
                 if current_time - self.hit_time >= self.invincibility_duration:
@@ -229,13 +232,19 @@ class Enemy(Entity):
                 print('pygame')
 
     def update(self):
-        self.hit_reaction()
-        self.moving_enemy()
-        self.move(self.speed)
-        self.animate()
-        self.cooldown()
-        self.chack_death()
-        self.stop()
+        try:
+            self.hit_reaction()
+            self.moving_enemy()
+            self.move(self.speed)
+            self.animate()
+            self.cooldown()
+            self.chack_death()
+            self.stop()
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print("now we'll see")
 
     def enemy_update(self, player):
         self.get_status(player)

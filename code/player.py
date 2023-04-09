@@ -145,8 +145,7 @@ class Player(Entity):
                     # else:
                     # image = "no"
                 packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])),
-                                                                 (int(self.place_to_go[0]), int(self.place_to_go[1])),
-                                                                 self.speed, f'{self.status},no')
+                                                                 (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed, f'{self.status},no')
             # debug(self.place_to_go)
             # debug2(self.hitbox.center)
 
@@ -168,13 +167,21 @@ class Player(Entity):
                                 break
                             else:
                                 pass
-
+                    packet_to_send.add_header_player_place_and_image(
+                        (int(self.rect.center[0]), int(self.rect.center[1])),
+                        (int(self.place_to_go[0]), int(self.place_to_go[1])),
+                        self.speed,
+                        f'{self.status}_attack, sword')
                 else:
                     self.create_attack()
+                    packet_to_send.add_header_player_place_and_image(
+                        (int(self.rect.center[0]), int(self.rect.center[1])),
+                        (int(self.place_to_go[0]), int(self.place_to_go[1])),
+                        self.speed,
+                        f'{self.status}_attack,{self.weapon}')
                 self.attack_for_moment = True
                 self.attacking = True
                 self.attack_time = pygame.time.get_ticks()
-
             # magic input
             if keys[pygame.K_LCTRL] and not self.attacking:
                 # the magic we will use:
