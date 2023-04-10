@@ -105,7 +105,7 @@ class Player(Entity):
                     self.place_to_go[1] - self.hitbox.center[1]) < 64:
                 self.direction.x = 0
                 self.direction.y = 0
-                self.status = 'down'
+                #self.status = 'down'
 
     def inputm(self, packet_to_send: ConnectionToServer):  # checks the input from the player, mouse
         if self.can_press_mouse:
@@ -174,11 +174,17 @@ class Player(Entity):
                         f'{self.status}_attack, sword')
                 else:
                     self.create_attack()
+                    status = self.status
+                    if '_idle' in self.status:
+                        status.replace('_idle', '_attack')
+                    else:
+                        status = status + '_attack'
+
                     packet_to_send.add_header_player_place_and_image(
                         (int(self.rect.center[0]), int(self.rect.center[1])),
                         (int(self.place_to_go[0]), int(self.place_to_go[1])),
                         self.speed,
-                        f'{self.status}_attack,{self.weapon}')
+                        f'{status},{self.weapon}')
                 self.attack_for_moment = True
                 self.attacking = True
                 self.attack_time = pygame.time.get_ticks()

@@ -43,7 +43,7 @@ class Level:
         # attack sprites
         self.current_attack = None
         self.attack_sprites = pygame.sprite.Group()
-        self.attackable_sprites = pygame.sprite.Group()
+        self.enemy_sprites = pygame.sprite.Group()
 
         self.can_update_floor = False
         self.update_floor_cooldown = 1000
@@ -116,18 +116,15 @@ class Level:
                                                     where_to_go = line_parts[1].split('/')
                                                     a = 'where_to_go'
                                                     try:
-                                                        packet.handle_player_place(where_to_go[0], where_to_go[1],
-                                                                                   where_to_go[2], l2_parts[1],
-                                                                                   l_parts[1], player.rect.center,
+                                                        packet.handle_player_place(where_to_go[1], where_to_go[2],
+                                                                                   l2_parts[1], l_parts[1],
                                                                                    self.other_players, obstecal_sprits,
                                                                                    self.damage_player,
                                                                                    self.create_attack,
                                                                                    self.destroy_attack,
-                                                                                   self.create_magic,
-                                                                                   self.bullet_group,
+                                                                                   self.create_magic, self.bullet_group,
                                                                                    self.attack_sprites,
-                                                                                   self.visble_sprites,
-                                                                                   self.attackable_sprites)
+                                                                                   self.visble_sprites)
                                                     except Exception as e:
                                                         print(e)
                                                         print(where_to_go + l_parts + l2_parts)
@@ -205,7 +202,7 @@ class Level:
                             elif line_parts[0] == 'enemy_update:':
                                 packet.handle_enemy_player_place_type_hit(line_parts[1], visibale_sprites,
                                                                           obstecal_sprits, self.damage_player,
-                                                                          self.attackable_sprites)
+                                                                          self.enemy_sprites)
                         except Exception as e:
                             print(e)
                             print(a)
@@ -375,7 +372,7 @@ class Level:
         if self.attack_sprites:  # chack if there is somting in attack_sprites
             for attack_sprite in self.attack_sprites:  # go over all the things in attack_sprites and chack if it
                 # hit somting in attackable_sprite in delete it or give it demage
-                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, False)
+                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.enemy_sprites, False)
                 if collision_sprites:
                     for target_sprite in collision_sprites:
                         if target_sprite.sprite_type == 'enemy':
@@ -433,7 +430,7 @@ class Level:
                 print('nuce')
             self.player.update1(packet_to_send)
 
-            self.bullet_group.check_if_bullet_hit_enemy(self.attackable_sprites, packet_to_send)
+            self.bullet_group.check_if_bullet_hit_enemy(self.enemy_sprites, packet_to_send)
 
             self.player_attack_logic(packet_to_send)
             self.ui.display(self.player)
