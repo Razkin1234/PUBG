@@ -123,7 +123,7 @@ class YsortCameraGroup(pygame.sprite.Group):
         #         print('did update')
         #         sprite.update()
 
-    def check_existines(self, player_id, pos, image, hit, place_to_go,visibale_sprites, attack_sprites, speed):  # need to change
+    def check_existines(self, player_id, pos, image, hit, place_to_go, visibale_sprites, other_weapons, speed):  # need to change
         for sprite in self.sprites():
             sprite: Players
             if sprite.id == player_id:
@@ -131,6 +131,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                 sprite.place_to_go = place_to_go
                 sprite.speed = speed
                 sprite.hit = False
+                sprite.place_to_go = place_to_go
                 if hit != 'no':
                     sprite.hit = True
                     sprite.attacking = True
@@ -144,9 +145,9 @@ class YsortCameraGroup(pygame.sprite.Group):
                         sprite.weapon_index += 1
                     sprite.weapon = list(weapon_data.keys())[sprite.weapon_index]  # the weapon we are using
                     print(f'weapon {sprite.weapon}')
-                    sprite.create_attack(sprite, visibale_sprites=visibale_sprites, attack_sprites=attack_sprites)
+                    sprite.create_attack(sprite, visibale_sprites=visibale_sprites, other_weapons=other_weapons)
                 sprite.status = image
-                sprite.place_to_go = place_to_go
+
                 return True
         return False
 

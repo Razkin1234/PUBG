@@ -38,14 +38,14 @@ class Level:
         self.other_bullet_group = YsortCameraGroup()
         self.item_sprites = YsortCameraGroup()
         self.weapon_sprites = YsortCameraGroup()
-
+        self.other_weapons = YsortCameraGroup()
         self.finished_first_object_event = threading.Event()
 
         self.other_players = YsortCameraGroup()
         # attack sprites
         self.current_attack = None
-        self.attack_sprites = pygame.sprite.Group()
-        self.enemy_sprites = pygame.sprite.Group()
+        self.attack_sprites = YsortCameraGroup()
+        self.enemy_sprites = YsortCameraGroup()
 
         self.can_update_floor = False
         self.update_floor_cooldown = 1000
@@ -126,7 +126,7 @@ class Level:
                                                                                    self.destroy_attack,
                                                                                    self.create_magic,
                                                                                    self.bullet_group,
-                                                                                   self.attack_sprites,
+                                                                                   self.other_weapons,
                                                                                    self.visble_sprites)
                                                     except Exception as e:
                                                         print(e)
@@ -146,14 +146,14 @@ class Level:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'shooter_id:':
                                         if l_parts[1] != self.player_id:
-                                            packet.handle_shot_place(line_parts[1],l_parts[1], self.other_bullet_group,
+                                            packet.handle_shot_place(line_parts[1], l_parts[1], self.other_bullet_group,
                                                                      self.obstacle_sprites)
                                         break
                             # --------------
 
                             # --------------
                             elif line_parts[0] == 'dead:':
-                                packet.handle_dead(line_parts[1], visibale_sprites)
+                                packet.handle_dead(line_parts[1], self.other_players)
                             # --------------
 
                             # --------------
@@ -182,7 +182,7 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'disconnect:':
-                                packet.handle_disconnect(int(line_parts[1]), visibale_sprites)
+                                packet.handle_disconnect(line_parts[1], self.other_players)
 
                             # --------------
                             # --------------

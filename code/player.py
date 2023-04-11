@@ -243,63 +243,70 @@ class Player(Entity):
                 self.status = self.status.replace('_attack', '')
 
     def cooldowns(self, packet_to_send):
-        current_time = pygame.time.get_ticks()
-        # mouse_cooldown
-        if not self.can_press_mouse:
-            if current_time - self.press_mouse_time >= self.press_mouse_cooldown:
-                self.can_press_mouse = True
-        # attacking cooldown
-        if self.attacking:
-            self.attack_for_moment = False
-            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
-                self.attacking = False
-                self.destroy_attack()
+        try:
+            current_time = pygame.time.get_ticks()
+            # mouse_cooldown
+            if not self.can_press_mouse:
+                if current_time - self.press_mouse_time >= self.press_mouse_cooldown:
+                    self.can_press_mouse = True
+            # attacking cooldown
+            if self.attacking:
+                self.attack_for_moment = False
+                if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
+                    self.attacking = False
+                    self.destroy_attack()
 
-        # weapon switching cooldown
-        if not self.can_switch_weapon:
-            if current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
-                self.can_switch_weapon = True
+            # weapon switching cooldown
+            if not self.can_switch_weapon:
+                if current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
+                    self.can_switch_weapon = True
 
-        # magic switching cooldown
-        if not self.can_switch_magic:
-            if current_time - self.magic_switch_time >= self.switch_duration_cooldown:
-                self.can_switch_magic = True
+            # magic switching cooldown
+            if not self.can_switch_magic:
+                if current_time - self.magic_switch_time >= self.switch_duration_cooldown:
+                    self.can_switch_magic = True
 
-        # hit cooldown
-        if not self.vulnerable:
-            if current_time - self.hurt_time >= self.invulnerability_duration:
-                self.vulnerable = True
+            # hit cooldown
+            if not self.vulnerable:
+                if current_time - self.hurt_time >= self.invulnerability_duration:
+                    self.vulnerable = True
 
-        # shiled cooldown
-        if not self.can_shield:
-            if current_time - self.shield_timer >= self.shield_duration:
-                self.can_shield = True
+            # shiled cooldown
+            if not self.can_shield:
+                if current_time - self.shield_timer >= self.shield_duration:
+                    self.can_shield = True
 
-        if not self.can_run:
-            if current_time - self.run_timer >= self.run_duration:
-                self.can_run = True
-                self.speed = self.stats['speed']
-                packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])),
-                                                                 (int(self.place_to_go[0]), int(self.place_to_go[1])),
-                                                                 self.speed,
-                                                                 f'{self.status},no')
-            else:
-                self.speed = 16
+            if not self.can_run:
+                if current_time - self.run_timer >= self.run_duration:
+                    self.can_run = True
+                    self.speed = self.stats['speed']
+                    # packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])),
+                    #                                                  (int(self.place_to_go[0]), int(self.place_to_go[1])),
+                    #                                                  self.speed,
+                    #                                                  f'{self.status},no')
+                else:
+                    self.speed = 16
 
-        # ui screen
-        if not self.can_press_i:
-            if current_time - self.i_pressed_time >= self.i_pressed_cooldown:
-                self.can_press_i = True
+            # ui screen
+            if not self.can_press_i:
+                if current_time - self.i_pressed_time >= self.i_pressed_cooldown:
+                    self.can_press_i = True
 
-        # item picking after droping theme:
-        if not self.can_pick_item:
-            if current_time - self.drop_item_time >= self.pick_item_cooldown:
-                self.can_pick_item = True
+            # item picking after droping theme:
+            if not self.can_pick_item:
+                if current_time - self.drop_item_time >= self.pick_item_cooldown:
+                    self.can_pick_item = True
 
-        # ammo adding magic:
-        if not self.can_ammo:
-            if current_time - self.ammo_time >= self.ammo_cooldown:
-                self.can_ammo = True
+            # ammo adding magic:
+            if not self.can_ammo:
+                if current_time - self.ammo_time >= self.ammo_cooldown:
+                    self.can_ammo = True
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print(e)
+            print("rer")
 
     def animate(self):  # shows us the animations
         animation = self.animations[self.status]
@@ -344,10 +351,11 @@ class Player(Entity):
                     if self.items_on[items]['amount'] == 0:
                         del self.items_on[items]
                         break
-            if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
-                self.speed = self.stats['speed'] + 2
-            else:
-                self.speed = self.stats['speed']
+            if self.speed != 16:
+                if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
+                    self.speed = self.stats['speed'] + 2
+                else:
+                    self.speed = self.stats['speed']
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

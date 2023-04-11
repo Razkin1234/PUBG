@@ -175,7 +175,7 @@ class Incoming_packets:
         # if not so return false
         # and if its okay to do here the checking if its in your map to print it
         # pass
-        print(3)
+        print('speed: '+speed)
         b = 'not'
         try:
             player_place = tuple(player_place[1:-1].split(','))  # converting the place from str to tuple
@@ -224,10 +224,10 @@ class Incoming_packets:
             print(e)
             print('here shot')
 
-    def handle_dead(self, dead_id, visble_sprites):  # dont need
+    def handle_dead(self, dead_id, other_player):  # dont need
 
         # remove the dead id from your list
-        visble_sprites.erase_dead_sprites(dead_id)
+        other_player.erase_dead_sprites(dead_id)
 
     def handle_chat(self, user_name, message):
         # print here the message and the user name
@@ -417,7 +417,7 @@ class Incoming_packets:
                 enemy_place_to_go = (int(enemy_place_to_go[0]), int(enemy_place_to_go[1]))
                 enemy_pos = tuple(each_info[4][1:-1].split(','))  # converting the place from str to Tuple[str, str]
                 enemy_pos = (int(enemy_pos[0]), int(enemy_pos[1]))  # convert to Tuple[int, int]
-                if not visible_sprites.enemy_check_exists(each_info[0], each_info[3], enemy_place_to_go):
+                if not attackable_sprites.enemy_check_exists(each_info[0], each_info[3], enemy_place_to_go):
                     Enemy(
                         monster_name=each_info[2],
                         enemy_id=each_info[0],
