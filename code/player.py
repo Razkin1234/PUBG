@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pygame
 from settings import *
 from support import import_folder
@@ -108,14 +111,13 @@ class Player(Entity):
                     self.place_to_go[1] - self.hitbox.center[1]) < 64:
                 self.direction.x = 0
                 self.direction.y = 0
-                self.status = 'down'
+                #self.status = 'down'
 
     def inputm(self, packet_to_send):  # checks the input from the player, mouse
         if self.can_press_mouse:
             self.can_press_mouse = False
             self.press_mouse_time = pygame.time.get_ticks()
-            if pygame.mouse.get_pressed()[
-                0]:  # chack if the player prassed the mouse and insert the place on the screen in
+            if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
                 self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
                 # chack where the player prassed in relation to the middle of the screen
                 if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
@@ -124,16 +126,14 @@ class Player(Entity):
                 else:
                     self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
                     self.status = 'right'
-                x_in_place_to_go = self.hitbox.center[
-                                       0] + self.direction.x  # the x of 'place_to_go' in relation to map
+                x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
 
                 if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
                     # chack if it's higher than the middle or else its lower than the middle
                     self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
                 else:
                     self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
-                y_in_place_to_go = self.hitbox.center[
-                                       1] + self.direction.y  # the y of 'place_to_go' in relation to map
+                y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
                 self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
                 # if self.player.attack_for_moment:
@@ -170,11 +170,17 @@ class Player(Entity):
                         f'{self.status}_attack, sword')
                 else:
                     self.create_attack()
+                    status = self.status
+                    if '_idle' in self.status:
+                        status.replace('_idle', '_attack')
+                    else:
+                        status = status + '_attack'
+
                     packet_to_send.add_header_player_place_and_image(
                         (int(self.rect.center[0]), int(self.rect.center[1])),
                         (int(self.place_to_go[0]), int(self.place_to_go[1])),
                         self.speed,
-                        f'{self.status}_attack,{self.weapon}')
+                        f'{status},{self.weapon}')
                 self.attack_for_moment = True
                 self.attacking = True
                 self.attack_time = pygame.time.get_ticks()
@@ -324,21 +330,27 @@ class Player(Entity):
         return base_damage + weapon_damage
 
     def update1(self, packet_to_send):
+        try:
+            self.inputm(packet_to_send)  # checking the input diraction
+            self.cooldowns(packet_to_send)
+            self.get_status()
+            self.animate()
+            self.move(self.speed)  # making the player move
 
-        self.inputm(packet_to_send)  # checking the input diraction
-        self.cooldowns(packet_to_send)
-        self.get_status()
-        self.animate()
-        self.move(self.speed)  # making the player move
+            self.stop()
 
-        self.stop()
-
-        for items in self.items_on:
-            if self.items_on[items]["name"] == 'ammo':
-                if self.items_on[items]['amount'] == 0:
-                    del self.items_on[items]
-                    break
-        if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
-            self.speed = self.stats['speed'] + 2
-        else:
-            self.speed = self.stats['speed']
+            for items in self.items_on:
+                if self.items_on[items]["name"] == 'ammo':
+                    if self.items_on[items]['amount'] == 0:
+                        del self.items_on[items]
+                        break
+            if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
+                self.speed = self.stats['speed'] + 2
+            else:
+                self.speed = self.stats['speed']
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print(e)
+            print("someting")

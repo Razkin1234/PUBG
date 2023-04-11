@@ -205,7 +205,6 @@ class Game:
                             sign_in = True
 
                         elif log_in_button.checkForInput(event.pos):
-                            sign_in = False
                             log_in = True
                         push = True
                     if play_button.checkForInput(event.pos):
@@ -340,8 +339,6 @@ class Game:
                             pygame.quit()
                             self.my_socket.close()
                             sys.exit()
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            print("a")
 
                     packet_to_send = self.level.run(packet_to_send, self.player_id)
                     if len(packet_to_send.get_packet().split('\r\n')) > 3:

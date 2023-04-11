@@ -54,6 +54,7 @@ class Players(Entity):
                     break
                 self.weapon_index += 1
         self.weapon = list(weapon_data.keys())[self.weapon_index]  # the weapon we are using
+        self.current_attack: Weapon
         self.current_attack = None
 
         self.can_switch_weapon = True  # that we will switch only one weapon every time we press {
@@ -141,103 +142,7 @@ class Players(Entity):
             pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
             target_pos_vector = pygame.math.Vector2(self.place_to_go[0], self.place_to_go[1])
             self.direction = target_pos_vector - pos_vector
-
-    def inputm(self, packet_to_send):  # checks the input from the player, mouse
-
-        if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
-            self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
-            if self.can_teleport:  # teleport
-                self.can_teleport = False
-                self.hitbox.x -= (MIDDLE_SCREEN[0] - self.place_to_go[0])
-                self.hitbox.y -= (MIDDLE_SCREEN[1] - self.place_to_go[1])
-                self.direction.x = 0
-                self.direction.y = 0
-            else:
-                # chack where the player prassed in relation to the middle of the screen
-                if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
-                    self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
-                    self.status = 'left'
-                else:
-                    self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
-                    self.status = 'right'
-                x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
-
-                if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
-                    # chack if it's higher than the middle or else its lower than the middle
-                    self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
-                else:
-                    self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
-                y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
-
-                self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
-
-        # debug(self.place_to_go)
-        # debug2(self.hitbox.center)
-
-        if not self.chat_input:
-            keys = pygame.key.get_pressed()
-            # attack input
-            if keys[pygame.K_SPACE] and not self.attacking:
-                if self.weapon == 'gun':
-
-                    for items in self.items_on:
-                        if self.items_on[items]["name"] == 'ammo':
-                            if self.items_on[items]['amount'] >= 1:
-                                self.items_on[items]['amount'] -= 1
-                                packet_to_send.add_header_inventory_update("- ammo", 1)
-                                self.a = Bullets(self.rect.center, self.bullet_group, self.obstacle_sprites,
-                                                 pygame.mouse.get_pos())
-                                break
-                            else:
-                                pass
-
-                else:
-                    self.create_attack()
-                self.attack_for_moment = True
-                self.attacking = True
-                self.attack_time = pygame.time.get_ticks()
-                print("checking shit")
-
-            # magic input
-            if keys[pygame.K_LCTRL] and not self.attacking:
-                # the magic we will use:
-                style = list(magic_data.keys())[self.magic_index]
-                strength = list(magic_data.values())[self.magic_index]['strength'] + self.stats[
-                    'magic']  # the strength of the magic + our player power
-                cost = list(magic_data.values())[self.magic_index]['cost']
-                self.create_magic(style, strength, cost)
-
-            if keys[pygame.K_q] and self.can_switch_weapon:
-                self.can_switch_weapon = False
-                self.weapon_switch_time = pygame.time.get_ticks()
-
-                if self.weapon_index < len(list(self.objects_on.keys())) - 1:
-                    self.weapon_index += 1  # new weapon
-                else:
-                    self.weapon_index = 0
-                self.weapon = list(self.objects_on.keys())[self.weapon_index]  # the weapon we are using
-
-            # for the ui screen
-            if keys[pygame.K_i]:
-                if self.can_press_i:
-                    self.i_pressed_time = pygame.time.get_ticks()
-                    self.can_press_i = False
-                    if self.i_pressed:
-                        self.i_pressed = False
-                    else:
-                        self.i_pressed = True
-
-            if keys[pygame.K_e] and self.can_switch_magic:
-                self.can_switch_magic = False
-                self.magic_switch_time = pygame.time.get_ticks()
-
-                if self.magic_index < len(list(magic_data.keys())) - 1:
-                    self.magic_index += 1  # new weapon
-                else:
-                    self.magic_index = 0
-                self.magic = list(magic_data.keys())[self.magic_index]  # the weapon we are using
-
-    def get_status(self,player):
+    def get_status(self, player):
 
         # idle status
         if self.direction.x == 0 and self.direction.y == 0:
@@ -251,7 +156,8 @@ class Players(Entity):
                     self.status = self.status.replace('idle', 'attack')
                 else:
                     self.status = self.status + '_attack'
-                if self.rect.colliderect(player.hitbox):
+                if self.current_attack is not None and self.current_attack.rect.colliderect(player.hitbox) \
+                        or self.rect.colliderect(player.hitbox):
                     self.damage_player(weapon_data[self.weapon]['damage'], 'slash')
         else:
             if 'attack' in self.status:

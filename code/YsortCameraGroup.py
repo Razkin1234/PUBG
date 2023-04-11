@@ -150,23 +150,26 @@ class YsortCameraGroup(pygame.sprite.Group):
                 return True
         return False
 
-    def check_if_bullet_hit_me(self, player):
+    def check_if_bullet_hit_me(self, player: Player):
         for sprite in self.sprites():
-            sprite: OtherBullets
-            if sprite.rect.colliderect(player.hitbox):
-                player.health = - 7
-                sprite.need_to_stop = False
-                sprite.kill()
+            if sprite.rect.colliderect(player.hitbox) and player.vulnerable and player.can_shield:
+                player.health -= 7
+                player.vulnerable = False
+                player.hurt_time = pygame.time.get_ticks()
+                # sprite.need_to_stop = False
+                # sprite.kill()
                 print("done")
 
     def check_if_bullet_hit_enemy(self, attackable_sprites, packet_to_send: ConnectionToServer):
         for sprite in self.sprites():
-            sprite: Bullets
             for enemies in attackable_sprites:
-                if sprite.rect.colliderect(enemies.hitbox):
+                enemies: Enemy
+                if sprite.rect.colliderect(enemies.hitbox) and enemies.vulnerable:
                     packet_to_send.add_hit_an_enemy(enemies.id, 7)
-                    #sprite.need_to_stop = False
-                    #sprite.kill()
+                    enemies.vulnerable = False
+                    enemies.hit_time = pygame.time.get_ticks()
+                    # sprite.need_to_stop = False
+                    # sprite.kill()
                     print("shak")
 
     def delete_every_bullet(self):
