@@ -154,7 +154,7 @@ class Level:
 
                             # --------------
                             elif line_parts[0] == 'dead:':
-                                packet.handle_dead(int(line_parts[1]), visibale_sprites)
+                                packet.handle_dead(line_parts[1], visibale_sprites)
                             # --------------
 
                             # --------------

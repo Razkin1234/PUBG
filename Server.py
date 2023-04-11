@@ -312,7 +312,9 @@ def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
                     BAMBOO_AMOUNT = BAMBOO_AMOUNT - 1
                 elif enemy[4] == 'spirit':
                     SPIRIT_AMOUNT = SPIRIT_AMOUNT - 1
+                print(f'the old enemy data: {ENEMY_DATA}')
                 ENEMY_DATA.remove(enemy)
+                print(f'the new enemy data: {ENEMY_DATA}')
                 ACTIVE_ID_SET.remove(enemy_id)
                 keys_list = list(OBJECTS_PLACES.keys())
                 index = randint(0, len(OBJECTS_PLACES) - 1)
@@ -1316,7 +1318,7 @@ def get_next_position(initial_pos: tuple, target_pos: tuple, speed: int) -> tupl
 
 def creating_enemies():
     """
-    Making sure there are 100 alive enemies.
+    Making sure that there are 100 alive enemies.
     """
 
     global SQUID_AMOUNT, RACCOON_AMOUNT, SPIRIT_AMOUNT, BAMBOO_AMOUNT, ENEMY_DATA, CLIENTS_ID_IP_PORT_NAME, \
@@ -1340,6 +1342,7 @@ def creating_enemies():
                                'squid', 0, 'no'])
 
     if SPIRIT_AMOUNT != SHOULD_BE_SPIRIT:
+        print('\nkilled spirit')
         move_them = True
         i = SHOULD_BE_SPIRIT - SPIRIT_AMOUNT
         SPIRIT_AMOUNT = SHOULD_BE_SPIRIT
@@ -1353,7 +1356,7 @@ def creating_enemies():
             packet += f'{id1}/{target_place}/spirit/no/{spawn_place1}-'
             ENEMY_DATA.append([id1, spawn_place, CLIENTS_ID_IP_PORT_NAME[index][0], SPIRIT_HP,
                                'spirit', 0, 'no'])
-
+        print(f'second new enemy data: {ENEMY_DATA}')
     if RACCOON_AMOUNT != SHOULD_BE_RACCOON:
         move_them = True
         i = SHOULD_BE_RACCOON - RACCOON_AMOUNT
@@ -2419,7 +2422,7 @@ def main():
         # setting a thread to handle user's terminal commends
         executor.submit(check_user_input_thread, server_socket)
         # setting a thread to handle the enemies (bots) behavior
-        #executor.submit(moving_enemies_thread, server_socket)
+        executor.submit(moving_enemies_thread, server_socket)
         # setting threads to handle incoming packets from the queue
         executor.submit(verify_and_handle_packet_thread, server_socket)
         # ---------------------------------------------------
