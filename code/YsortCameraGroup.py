@@ -105,9 +105,7 @@ class YsortCameraGroup(pygame.sprite.Group):
         return False
 
     def other_player_update(self, player):
-
         for sprite in self.sprites():
-            sprite: Players
             sprite.update(player)
         # attributes = dir(Players)
         # print(f"attributes: {attributes}")
@@ -129,7 +127,6 @@ class YsortCameraGroup(pygame.sprite.Group):
         for sprite in self.sprites():
             sprite: Players
             if sprite.id == player_id:
-
                 sprite.weapon_index = 0  # the offset of the weapons
                 sprite.place_to_go = place_to_go
                 sprite.speed = speed
@@ -149,29 +146,30 @@ class YsortCameraGroup(pygame.sprite.Group):
                     print(f'weapon {sprite.weapon}')
                     sprite.create_attack(sprite, visibale_sprites=visibale_sprites, attack_sprites=attack_sprites)
                 sprite.status = image
-                # sprite.rect.center = pos
-                # sprite.hitbox.center = pos
-
+                sprite.place_to_go = place_to_go
                 return True
         return False
 
-    def check_if_bullet_hit_me(self, player):
+    def check_if_bullet_hit_me(self, player: Player):
         for sprite in self.sprites():
-            sprite: OtherBullets
-            if sprite.rect.colliderect(player.hitbox):
-                player.health = - 7
-                sprite.need_to_stop = False
-                sprite.kill()
+            if sprite.rect.colliderect(player.hitbox) and player.vulnerable and player.can_shield:
+                player.health -= 7
+                player.vulnerable = False
+                player.hurt_time = pygame.time.get_ticks()
+                # sprite.need_to_stop = False
+                # sprite.kill()
                 print("done")
 
     def check_if_bullet_hit_enemy(self, attackable_sprites, packet_to_send: ConnectionToServer):
         for sprite in self.sprites():
-            sprite: Bullets
             for enemies in attackable_sprites:
-                if sprite.rect.colliderect(enemies.hitbox):
+                enemies: Enemy
+                if sprite.rect.colliderect(enemies.hitbox) and enemies.vulnerable:
                     packet_to_send.add_hit_an_enemy(enemies.id, 7)
-                    sprite.need_to_stop = False
-                    sprite.kill()
+                    enemies.vulnerable = False
+                    enemies.hit_time = pygame.time.get_ticks()
+                    # sprite.need_to_stop = False
+                    # sprite.kill()
                     print("shak")
 
     def delete_every_bullet(self):
@@ -253,7 +251,7 @@ class YsortCameraGroup(pygame.sprite.Group):
                                     packet_to_send.add_header_player_place_and_image(
                                         (int(player.rect.center[0]), int(player.rect.center[1])),
                                         (int(player.place_to_go[0]), int(player.place_to_go[1])),
-                                        player.speed, f'{player.status},no')
+                                        7, f'{player.status},no')
                                     packet_to_send.add_object_update('pick', 'boots', sprite.rect.center, 1)
                                     packet_to_send.add_header_inventory_update("+ boots", 1)
                                     temp_dict.clear()

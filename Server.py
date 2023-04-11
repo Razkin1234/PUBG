@@ -213,9 +213,9 @@ SPIRIT_AMOUNT = 0  # AT THE
 BAMBOO_AMOUNT = 0  # MOMENT
 
 SHOULD_BE_SQUID = 0#25  # AMOUNTS OF
-SHOULD_BE_RACCOON =0#10  # EACH ENEMY
-SHOULD_BE_SPIRIT =0#25  # THAT SHOULD
-SHOULD_BE_BAMBOO =0#40  # BE
+SHOULD_BE_RACCOON = 0#10  # EACH ENEMY
+SHOULD_BE_SPIRIT = 0#25  # THAT SHOULD
+SHOULD_BE_BAMBOO = 0#40  # BE
 
 SQUID_HP = 20  #
 RACCOON_HP = 27  # HP OF
@@ -317,7 +317,7 @@ def handle_hit_an_enemy(enemy_id: str, shooter_id: str, hp: str) -> str:
                 keys_list = list(OBJECTS_PLACES.keys())
                 index = randint(0, len(OBJECTS_PLACES) - 1)
                 place_dead_enemy = f'({enemy[1][0]},{enemy[1][1]})'
-                return f'dead_enemy: {enemy_id}\r\nobject_update: drop-{keys_list[index]}-{place_dead_enemy}-1/drop-exp-{place_dead_enemy}-1\r\n'
+                return f'dead_enemy: {enemy_id}\r\nobject_update: -1?drop-{keys_list[index]}-{place_dead_enemy}-1/drop-exp-{place_dead_enemy}-1\r\n'
     return ''
 
 
@@ -1031,6 +1031,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
             # in this header clients should check the shooter_id so they wont take self-fire.
             elif line_parts[0] == 'shot_place:':
                 # looking for the hit_hp header
+                print('here at shot place')
                 did_something = True
                 for l in lines:
                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
@@ -1061,6 +1062,7 @@ def packet_handler(rotshild_raw_layer: str, src_ip: str, src_port: str, server_s
                 enemy_id = keep_information[0]
                 hit_hp = keep_information[1]
                 print('got_hit_an_enemy')
+                #print(f'\nthe packet : {lines}')
                 reply_rotshild_layer += handle_hit_an_enemy(enemy_id, id_cache, hit_hp)
             # --------------
 
@@ -1433,7 +1435,7 @@ def moving_enemies_thread(server_socket: socket):
                 enemy_place = (int(enemy[1][0]), int(enemy[1][1]))
                 # get the target player place as a tuple of ints
                 target_player_id = enemy[2]
-                target_player_place = PLAYER_PLACES_BY_ID[target_player_id]
+                target_player_place = PLAYER_PLACES_BY_ID[target_player_id] #problem
                 target_player_place = (int(target_player_place[0]), int(target_player_place[1]))
 
                 # get the next place of the enemy
@@ -1477,7 +1479,7 @@ def moving_enemies_thread(server_socket: socket):
                     if distance <= 600 and enemy[5] == 0:
                         # if not new_shot:
                         #     new_shot = True
-                        #shots_to_send.append([enemy[1], target_player_place])
+                        shots_to_send.append([enemy[1], target_player_place])
                         #ENEMY_SHOTS.append([enemy[1], target_player_place, pygame.time.get_ticks()])
                         enemy[5] += 1
                     else:
@@ -2426,7 +2428,7 @@ def main():
         # ==============================================| GAME LOOP |=============================================# !!
         while not SHUTDOWN_TRIGGER_EVENT.is_set():  # !!
             try:  # !!
-                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !!
+                data, client_address = server_socket.recvfrom(SOCKET_BUFFER_SIZE)  # getting incoming packets     # !! #problem
             except socket_timeout:  # !!
                 continue  # !!
                 # !!

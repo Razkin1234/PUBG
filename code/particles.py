@@ -39,13 +39,13 @@ class AnimationPlayer:
 
 
 class ParticleEffeect(pygame.sprite.Sprite):
-    def __init__(self, pos, animation_frames, groups):
-        super().__init__(groups)
+    def __init__(self,pos,animation_frames,groups):
         self.frame_index = 0
         self.animation_speed = 0.15
         self.frames = animation_frames
         self.image = self.frames[self.frame_index]
         self.rect = self.image.get_rect(center=pos)
+        super().__init__(groups)
 
     def animate(self):
         """

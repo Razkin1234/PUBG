@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pygame
 from settings import *
 from support import import_folder
@@ -10,13 +13,12 @@ from ConnectionToServer import ConnectionToServer
 
 class Player(Entity):
     def __init__(self, pos, groups, obstacle_sprites, create_attack, destroy_attack, create_magic, bullet_group, id):
-        super().__init__(groups)
         # server conection
         self.id = id  # need to get id
 
         self.animations = None
         self.image = pygame.image.load('../graphics/ninjarobot/down/down_0.png').convert_alpha()
-        self.rect = self.image.get_rect(topleft=pos)
+        self.rect = self.image.get_rect(center=pos)
         self.hitbox = self.rect.inflate(0, -26)  # if i want to overlap itemes
 
         # graphics setup
@@ -67,11 +69,13 @@ class Player(Entity):
         self.run_timer = None
         self.can_run = True
         self.run_duration = 2000
-        self.can_teleport = False
+        self.ammo_time = None  # for the ammo adding magic
+        self.can_ammo = True
+        self.ammo_cooldown = 2000
 
         # stats
         self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 6}  # ma health , max energy
-        self.health = self.stats['health'] - 60  # our current health
+        self.health = self.stats['health']   # our current health
         self.energy = self.stats['energy']  # our current energy
         self.exp = 100
         self.speed = self.stats['speed']  # the speed of the player
@@ -89,6 +93,8 @@ class Player(Entity):
 
         # chat stuff:
         self.chat_input = False
+        self.first_switch = True
+        super().__init__(groups)
 
     def import_player_assets(self):
         character_path = '../graphics/ninjarobot/'
@@ -107,45 +113,35 @@ class Player(Entity):
                 self.direction.y = 0
                 #self.status = 'down'
 
-    def inputm(self, packet_to_send: ConnectionToServer):  # checks the input from the player, mouse
+    def inputm(self, packet_to_send):  # checks the input from the player, mouse
         if self.can_press_mouse:
             self.can_press_mouse = False
             self.press_mouse_time = pygame.time.get_ticks()
             if pygame.mouse.get_pressed()[0]:  # chack if the player prassed the mouse and insert the place on the screen in
                 self.place_to_go = pygame.mouse.get_pos()  # "self.place_to_go"
-                if self.can_teleport:  # teleport
-                    self.can_teleport = False
-                    self.hitbox.x -= (MIDDLE_SCREEN[0] - self.place_to_go[0])
-                    self.hitbox.y -= (MIDDLE_SCREEN[1] - self.place_to_go[1])
-                    self.direction.x = 0
-                    self.direction.y = 0
+                # chack where the player prassed in relation to the middle of the screen
+                if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
+                    self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
+                    self.status = 'left'
                 else:
-                    # chack where the player prassed in relation to the middle of the screen
-                    if MIDDLE_SCREEN[0] >= self.place_to_go[0]:  # chack if its behaind the middle or else it's after the middle
-                        self.direction.x = -(MIDDLE_SCREEN[0] - self.place_to_go[0])
-                        self.status = 'left'
-                    else:
-                        self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
-                        self.status = 'right'
-                    x_in_place_to_go = self.hitbox.center[
-                                           0] + self.direction.x  # the x of 'place_to_go' in relation to map
+                    self.direction.x = (self.place_to_go[0] - MIDDLE_SCREEN[0])
+                    self.status = 'right'
+                x_in_place_to_go = self.hitbox.center[0] + self.direction.x  # the x of 'place_to_go' in relation to map
 
-                    if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
-                        # chack if it's higher than the middle or else its lower than the middle
-                        self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
-                    else:
-                        self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
-                    y_in_place_to_go = self.hitbox.center[
-                                           1] + self.direction.y  # the y of 'place_to_go' in relation to map
+                if MIDDLE_SCREEN[1] >= self.place_to_go[1]:
+                    # chack if it's higher than the middle or else its lower than the middle
+                    self.direction.y = -(MIDDLE_SCREEN[1] - self.place_to_go[1])
+                else:
+                    self.direction.y = (self.place_to_go[1] - MIDDLE_SCREEN[1])
+                y_in_place_to_go = self.hitbox.center[1] + self.direction.y  # the y of 'place_to_go' in relation to map
 
-                    self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
-                    # if self.player.attack_for_moment:
-                    # image = self.player.weapon
-                    # else:
-                    # image = "no"
+                self.place_to_go = (x_in_place_to_go, y_in_place_to_go)
+                # if self.player.attack_for_moment:
+                # image = self.player.weapon
+                # else:
+                # image = "no"
                 packet_to_send.add_header_player_place_and_image((int(self.rect.center[0]), int(self.rect.center[1])),
-                                                                 (int(self.place_to_go[0]), int(self.place_to_go[1])),
-                                                                 self.speed, f'{self.status},no')
+                                                                 (int(self.place_to_go[0]), int(self.place_to_go[1])), self.speed, f'{self.status},no')
             # debug(self.place_to_go)
             # debug2(self.hitbox.center)
 
@@ -197,7 +193,8 @@ class Player(Entity):
                 cost = list(magic_data.values())[self.magic_index]['cost']
                 self.create_magic(style, strength, cost, packet_to_send)
 
-            if keys[pygame.K_q] and self.can_switch_weapon:
+            if (keys[pygame.K_q] and self.can_switch_weapon) or self.first_switch:
+                self.first_switch = False
                 self.can_switch_weapon = False
                 self.weapon_switch_time = pygame.time.get_ticks()
 
@@ -247,7 +244,6 @@ class Player(Entity):
 
     def cooldowns(self, packet_to_send):
         current_time = pygame.time.get_ticks()
-
         # mouse_cooldown
         if not self.can_press_mouse:
             if current_time - self.press_mouse_time >= self.press_mouse_cooldown:
@@ -300,6 +296,11 @@ class Player(Entity):
             if current_time - self.drop_item_time >= self.pick_item_cooldown:
                 self.can_pick_item = True
 
+        # ammo adding magic:
+        if not self.can_ammo:
+            if current_time - self.ammo_time >= self.ammo_cooldown:
+                self.can_ammo = True
+
     def animate(self):  # shows us the animations
         animation = self.animations[self.status]
 
@@ -329,21 +330,27 @@ class Player(Entity):
         return base_damage + weapon_damage
 
     def update1(self, packet_to_send):
+        try:
+            self.inputm(packet_to_send)  # checking the input diraction
+            self.cooldowns(packet_to_send)
+            self.get_status()
+            self.animate()
+            self.move(self.speed)  # making the player move
 
-        self.inputm(packet_to_send)  # checking the input diraction
-        self.cooldowns(packet_to_send)
-        self.get_status()
-        self.animate()
-        self.move(self.speed)  # making the player move
+            self.stop()
 
-        self.stop()
-
-        for items in self.items_on:
-            if self.items_on[items]["name"] == 'ammo':
-                if self.items_on[items]['amount'] == 0:
-                    del self.items_on[items]
-                    break
-        if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
-            self.speed = self.stats['speed'] + 2
-        else:
-            self.speed = self.stats['speed']
+            for items in self.items_on:
+                if self.items_on[items]["name"] == 'ammo':
+                    if self.items_on[items]['amount'] == 0:
+                        del self.items_on[items]
+                        break
+            if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
+                self.speed = self.stats['speed'] + 2
+            else:
+                self.speed = self.stats['speed']
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print(e)
+            print("someting")

@@ -7,7 +7,11 @@ from bullet import Bullets
 from entity import Entity
 from settings import *
 from support import import_folder
-from  weapon_other import Weapon_other
+from entity import Entity
+from debug import debug
+import math
+from bullet import Bullets
+from ConnectionToServer import ConnectionToServer
 from weapon import Weapon
 
 class Players(Entity):
@@ -128,14 +132,12 @@ class Players(Entity):
 
     def stop(self):  # chack if the character in the place the player prassed on
         if self.place_to_go != None:
-            if abs(self.place_to_go[0] - self.hitbox.center[0]) < 64 and abs(
-                    self.place_to_go[1] - self.hitbox.center[1]) < 64:
+            if abs(self.place_to_go[0]-self.hitbox.center[0]) < 64 and abs(self.place_to_go[1]-self.hitbox.center[1]) <64:
                 self.direction.x = 0
                 self.direction.y = 0
                 self.place_to_go = None
 
     def moving_other_players(self):
-        # print(f' fuck guy {self=}')
         if self.place_to_go != None:
             pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
             target_pos_vector = pygame.math.Vector2(self.place_to_go[0], self.place_to_go[1])
@@ -154,7 +156,8 @@ class Players(Entity):
                     self.status = self.status.replace('idle', 'attack')
                 else:
                     self.status = self.status + '_attack'
-                if self.current_attack.rect.colliderect(player.hitbox) or self.rect.colliderect(player.hitbox):
+                if self.current_attack is not None and self.current_attack.rect.colliderect(player.hitbox) \
+                        or self.rect.colliderect(player.hitbox):
                     self.damage_player(weapon_data[self.weapon]['damage'], 'slash')
         else:
             if 'attack' in self.status:
@@ -265,9 +268,6 @@ class Players(Entity):
             self.animate()
             self.move(self.speed)  # making the player move
             self.stop()
-
-
-
             for items in self.items_on:
                 if self.items_on[items]["name"] == 'ammo':
                     if self.items_on[items]['amount'] == 0:

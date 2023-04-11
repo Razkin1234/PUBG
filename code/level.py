@@ -1,3 +1,4 @@
+
 import os
 import threading
 import time
@@ -19,8 +20,9 @@ from weapon import Weapon
 
 
 class Level:
-    def __init__(self, place_to_start, player_id):
+    def __init__(self, place_to_start, player_id, my_socket):
         # get the display surface
+        self.my_socket = my_socket
         self.player = None
         self.display_surface = pygame.display.get_surface()
         self.camera = pygame.math.Vector2()
@@ -75,7 +77,6 @@ class Level:
         self.item = Item
 
     def handeler_of_incoming_packets(self, visibale_sprites, player, obstecal_sprits, item_sprites):
-
         start = time.perf_counter()
         count = 1
         while not shut_down_event.is_set():
@@ -116,13 +117,15 @@ class Level:
                                                     where_to_go = line_parts[1].split('/')
                                                     a = 'where_to_go'
                                                     try:
-                                                        packet.handle_player_place(where_to_go[1], where_to_go[2],
-                                                                                   l2_parts[1], l_parts[1],
+                                                        packet.handle_player_place(where_to_go[0], where_to_go[1],
+                                                                                   where_to_go[2], l2_parts[1],
+                                                                                   l_parts[1],
                                                                                    self.other_players, obstecal_sprits,
                                                                                    self.damage_player,
                                                                                    self.create_attack,
                                                                                    self.destroy_attack,
-                                                                                   self.create_magic, self.bullet_group,
+                                                                                   self.create_magic,
+                                                                                   self.bullet_group,
                                                                                    self.attack_sprites,
                                                                                    self.visble_sprites)
                                                     except Exception as e:
@@ -142,15 +145,15 @@ class Level:
                                 for l in lines:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'shooter_id:':
-                                        if l_parts[1] != packet.get_id():
-                                            packet.handle_shot_place(line_parts[1], self.other_bullet_group,
+                                        if l_parts[1] != self.player_id:
+                                            packet.handle_shot_place(line_parts[1],l_parts[1], self.other_bullet_group,
                                                                      self.obstacle_sprites)
                                         break
                             # --------------
 
                             # --------------
                             elif line_parts[0] == 'dead:':
-                                packet.handle_dead(int(line_parts[1]), visibale_sprites)
+                                packet.handle_dead(line_parts[1], visibale_sprites)
                             # --------------
 
                             # --------------
@@ -165,9 +168,11 @@ class Level:
                                 for l in lines:
                                     l_parts = l.split()  # opening line will be - ['Rotshild',ID], and headers - [header_name, info]
                                     if l_parts[0] == 'user_name:':
-                                        message = packet.handle_chat(line_parts[1],
-                                                                     l_parts[
-                                                                         1])  # getting in answer the message to print
+                                        message = packet.handle_chat(l_parts[1], line_parts[1])  # getting in answer the message to print
+                                        self.ui.chat_messages.append(message)
+                                        # checking if we display to much messages:
+                                        if len(self.ui.chat_messages) > 7:
+                                            self.ui.chat_messages.pop(0)
                                         break
                             elif line_parts[0] == 'server_shutdown:':
                                 shut_down_event.set()
@@ -338,7 +343,7 @@ class Level:
         :return:
         """
         if style == 'heal':  # need to replace with 'teleport'
-            self.magic_player.teleport(self.player, cost)
+            self.magic_player.ammo_add(self.player, cost, packet_to_send)
         if style == 'flame':  # highspeed
 
             self.magic_player.highspeed(self.player, cost, packet_to_send)

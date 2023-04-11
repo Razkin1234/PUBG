@@ -26,7 +26,6 @@ class Enemy(Entity):
         self.status = 'move'
         if hit != 'no':
             self.hit = True
-            self.can_attack = False
         else:
             self.hit = False
             self.can_attack = True
@@ -51,6 +50,7 @@ class Enemy(Entity):
         self.attack_type = monster_info['attack_type']  # the type of the monster's attack
 
         # player interaction
+        self.can_attack = True
         self.attack_time = 0
         self.attack_cooldown = 400
         self.damage_player = damage_player
@@ -151,6 +151,8 @@ class Enemy(Entity):
         if self.vulnerable:
             if attack_type == 'weapon':
                 packet_to_send.add_hit_an_enemy(self.id, player.get_full_weapon_damege())
+                print(packet_to_send.get_packet())
+                print('sending hit an enemy')
             else:
                 pass
                 # away_damage
@@ -187,11 +189,24 @@ class Enemy(Entity):
             if self.direction.magnitude() != 0:
                 self.direction = self.direction.normalize()  # making the speed good when we are gowing 2 diractions
             self.hitbox.x += self.direction.x * speed  # making the player move horizontaly
+            #self.collision('horizontal')
             self.hitbox.y += self.direction.y * speed  # making the player move verticaly
+            #self.collision('vertical')
             self.rect.center = self.hitbox.center
         except Exception as e:
             print(e)
             print('move')
+
+    def collision(self, direction):  # checking for collisions
+        if direction == 'horizontal':
+            for sprite in self.obstacle_sprites:
+                if sprite.hitbox.colliderect(self.hitbox):
+                    if self.direction.x > 0:  # when we are moving right
+                        self.hitbox.right = sprite.hitbox.left
+                    if self.direction.x < 0:  # when we are moving left
+                        self.hitbox.left = sprite.hitbox.right
+                    self.direction.x = 0
+                    self.direction.y = 0
 
     def stop(self):  # chack if the character in the place the player prassed on
         try:

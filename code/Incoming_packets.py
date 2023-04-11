@@ -1,4 +1,3 @@
-from typing import Tuple
 
 from settings import *
 # from level import Level
@@ -200,21 +199,30 @@ class Incoming_packets:
             print('fuckkkkk')
             print(b)
 
-    def handle_shot_place(self, info, bullet, obsicales_sprites):
+
+    def handle_shot_place(self, info, shooter_id, bullet, obsicales_sprites):
 
         # add check if hit you
         # to check if its real and if not return false and
         # if yes print it on the map
-        each_shot = info.split('-')
-        for shot in each_shot:
-            shot1 = shot.split('/')
-            shot_place_start = shot1[0]
-            shot_place_start = tuple((shot_place_start[1:-1].split(',')))  # converting the place from str to tuple
-            shot_place_start = (int(shot_place_start[0]), int(shot_place_start[1]))
-            shot_place_end = shot1[1]
-            shot_place_end = tuple((shot_place_end[1:-1].split(',')))  # converting the place from str to tuple
-            shot_place_end = (int(shot_place_end[0]), int(shot_place_end[1]))
-            OtherBullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
+        try:
+            each_shot = info.split('-')
+            print(each_shot)
+            for shot in each_shot:
+                shot1 = shot.split('/')
+                shot_place_start = shot1[0]
+                shot_place_start = tuple((shot_place_start[1:-1].split(',')))  # converting the place from str to tuple
+                shot_place_start = (int(shot_place_start[0]), int(shot_place_start[1]))
+                shot_place_end = shot1[1]
+                shot_place_end = tuple((shot_place_end[1:-1].split(',')))  # converting the place from str to tuple
+                shot_place_end = (int(shot_place_end[0]), int(shot_place_end[1]))
+                if shooter_id != '-1':
+                    Bullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
+                else:
+                    OtherBullets(shot_place_start, bullet, obsicales_sprites, shot_place_end)
+        except Exception as e:
+            print(e)
+            print('here shot')
 
     def handle_dead(self, dead_id, visble_sprites):  # dont need
 
@@ -223,6 +231,7 @@ class Incoming_packets:
 
     def handle_chat(self, user_name, message):
         # print here the message and the user name
+        message = message.replace('_', " ")
         return f'{user_name}: {message}'
 
     def handle_server_shutdown(self):
@@ -238,6 +247,7 @@ class Incoming_packets:
         type_for_clients = ''
         for each_change in changes:
             each_change = each_change.split('-')
+            print(f'object update info : {each_change}')
             if 'backpack' == each_change[1]:
                 type_for_clients = 'backpack'
                 how_many_item = each_change[3]
@@ -273,8 +283,7 @@ class Incoming_packets:
                 each_change1 = tuple((each_change[2][1:-1].split(',')))  # converting the place from str to tuple
                 each_change1 = (int(each_change1[0]), int(each_change1[1]))
 
-                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or \
-                        each_change[1] == 'bandage' or each_change[1] == 'boots' or each_change[1] == 'exp':
+                if each_change[1] == 'ammo' or each_change[1] == 'med_kit' or each_change[1] == 'backpack' or each_change[1] == 'bandage' or each_change[1] == 'boots' or each_change[1] == 'exp':
                     for i in range(int(how_many_item)):
                         Item(each_change1, item_sprites, type_for_clients)
                 else:
@@ -393,20 +402,18 @@ class Incoming_packets:
 
     def handle_dead_enemy(self, id, visble_sprites):
         # delete enemy from your list
-        visble_sprites.erase_dead_sprites(int(id))
+        visble_sprites.erase_dead_sprites(id)
 
     # [id_enemy]/([the X coordinate],[the Y coordinate])/[type_of_enemy]/[Yes or No(if hitting)]-
 
-    @staticmethod
-    def handle_enemy_player_place_type_hit(header_info, visible_sprites: YsortCameraGroup,
+    def handle_enemy_player_place_type_hit(self, header_info, visible_sprites: YsortCameraGroup,
                                            obstacle_sprites, damage_player, attackable_sprites):
         info = header_info.split('-')
         print(f' what is in info: {info}')
         try:
             for each_info in info:
                 each_info = each_info.split('/')
-                enemy_place_to_go = tuple(
-                    each_info[1][1:-1].split(','))  # converting the place from str to Tuple[str, str]
+                enemy_place_to_go = tuple(each_info[1][1:-1].split(','))  # converting the place from str to Tuple[str, str]
                 enemy_place_to_go = (int(enemy_place_to_go[0]), int(enemy_place_to_go[1]))
                 enemy_pos = tuple(each_info[4][1:-1].split(','))  # converting the place from str to Tuple[str, str]
                 enemy_pos = (int(enemy_pos[0]), int(enemy_pos[1]))  # convert to Tuple[int, int]

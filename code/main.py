@@ -205,7 +205,6 @@ class Game:
                             sign_in = True
 
                         elif log_in_button.checkForInput(event.pos):
-                            sign_in = False
                             log_in = True
                         push = True
                     if play_button.checkForInput(event.pos):
@@ -315,7 +314,7 @@ class Game:
         try:
             with ThreadPoolExecutor(thread_name_prefix='worker_thread_') as executor:
                 place_to_start = give_me_first_place(packet)
-                self.level = Level(place_to_start, self.player_id)
+                self.level = Level(place_to_start, self.player_id, self.my_socket)
                 #self.level = Level(place_to_start)
                 pygame.display.set_caption('PUBG')
                 self.screen.fill('black')
@@ -340,17 +339,16 @@ class Game:
                             pygame.quit()
                             self.my_socket.close()
                             sys.exit()
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            print("a")
 
                     packet_to_send = self.level.run(packet_to_send, self.player_id)
                     if len(packet_to_send.get_packet().split('\r\n')) > 3:
-                        print(f'packet_to_send:    {packet_to_send.get_packet()}')
+                        print(f'\nhitted an enemy: {packet_to_send.get_packet()}')
                         self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
                     pygame.display.update()
                     self.clock.tick(FPS)
         except Exception as e:
             print(e)
+            print('problem')
             packet_to_send = ConnectionToServer(self.player_id)
             packet_to_send.add_header_disconnect(self.player_id)
             self.my_socket.send(packet_to_send.get_packet().encode('utf-8'))
