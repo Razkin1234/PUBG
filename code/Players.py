@@ -106,6 +106,7 @@ class Players(Entity):
 
         # chat stuff:
         self.chat_input = False
+        
         super().__init__(groups)
 
     def import_player_assets(self):
@@ -269,7 +270,7 @@ class Players(Entity):
             self.animate()
             self.move(self.speed)  # making the player move
             self.stop()
-            
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
