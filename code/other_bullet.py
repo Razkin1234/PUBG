@@ -16,7 +16,7 @@ class OtherBullets(Entity):
         self.need_to_stop = True
         self.bullet_duration = 500
 
-        if mouse_pos != None and self.rect.center != None:
+        if mouse_pos is not None and self.rect.center is not None:
             pos_vector = pygame.math.Vector2(self.rect.center[0], self.rect.center[1])
             target_pos_vector = pygame.math.Vector2(mouse_pos[0], mouse_pos[1])
             self.direction = target_pos_vector - pos_vector

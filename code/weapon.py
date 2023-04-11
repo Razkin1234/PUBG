@@ -13,7 +13,8 @@ class Weapon(pygame.sprite.Sprite):
             # graphics
             full_path = f'../graphics/weapons/{player.weapon}/{direction}.png'
             self.image = pygame.image.load(full_path).convert_alpha()
-
+            self.attack_cooldown = 50
+            self.attack_time = pygame.time.get_ticks()
             # placement
             if direction == 'right':
                 self.rect = self.image.get_rect(

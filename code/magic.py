@@ -1,6 +1,6 @@
 import pygame
 from settings import *
-
+from player import  Player
 class MagicPlayer:
     def __init__(self, animation_player):
         self.animation_player = animation_player
@@ -12,16 +12,17 @@ class MagicPlayer:
             self.animation_player.create_particles('aura',player.rect.center,groups)
             player.shield_timer = pygame.time.get_ticks()
 
-
-    def highspeed(self,player,cost, packet_to_send):
+    @staticmethod
+    def highspeed(player: Player, cost, packet_to_send):
         if player.exp >= cost and player.can_run:
             player.can_run = False
             player.exp -= cost
             player.speed = 16
-            packet_to_send.add_header_player_place_and_image((int(player.rect.center[0]), int(player.rect.center[1])),
-                                                             (int(player.place_to_go[0]), int(player.place_to_go[1])),
-                                                             16, f'{player.status},no')
             player.run_timer = pygame.time.get_ticks()
+            # packet_to_send.add_header_player_place_and_image((int(player.rect.center[0]), int(player.rect.center[1])),
+            #                                                  (int(player.place_to_go[0]), int(player.place_to_go[1])),
+            #                                                  16, f'{player.status},no')
+
 
     def ammo_add(self, player, cost, packet_to_send):  # gives us emmo not teleport
         if player.exp >= cost and player.can_ammo:

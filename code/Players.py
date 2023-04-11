@@ -106,6 +106,7 @@ class Players(Entity):
 
         # chat stuff:
         self.chat_input = False
+        
         super().__init__(groups)
 
     def import_player_assets(self):
@@ -163,11 +164,12 @@ class Players(Entity):
             if 'attack' in self.status:
                 self.status = self.status.replace('_attack', '')
 
-    def create_attack(self,player,visibale_sprites, attack_sprites):
+    def create_attack(self, player, visibale_sprites, other_weapons):
         print("weapon")
         print(player)
         print(self.weapon)
-        self.current_attack = Weapon(player, [visibale_sprites, attack_sprites])
+        if self.current_attack is None:
+            self.current_attack = Weapon(player, [visibale_sprites, other_weapons])
 
 
     def cooldowns(self):
@@ -268,15 +270,7 @@ class Players(Entity):
             self.animate()
             self.move(self.speed)  # making the player move
             self.stop()
-            for items in self.items_on:
-                if self.items_on[items]["name"] == 'ammo':
-                    if self.items_on[items]['amount'] == 0:
-                        del self.items_on[items]
-                        break
-            if 'boots' in self.items_on.keys():  # checks if to be faster if we have boots in inventory
-                self.speed = self.stats['speed'] + 2
-            else:
-                self.speed = self.stats['speed']
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
